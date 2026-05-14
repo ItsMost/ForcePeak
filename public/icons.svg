@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <!-- تدرج لوني احترافي وحيوي للخلفية -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ff9a1f" />
+      <stop offset="100%" stop-color="#dd4500" />
+    </linearGradient>
+    
+    <!-- ظل مزدوج ناعم وعميق للأيقونة -->
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#000000" flood-opacity="0.25"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#000000" flood-opacity="0.15"/>
+    </filter>
+  </defs>
+
+  <!-- خلفية الأيقونة (مستطيل بحواف ناعمة جداً) -->
+  <rect width="512" height="512" rx="116" fill="url(#bgGrad)" />
+
+  <!-- مجموعة الرسم المدمجة مع الظل -->
+  <g filter="url(#dropShadow)">
+    
+    <!-- الرأس -->
+    <circle cx="340" cy="130" r="42" fill="#ffffff" />
+    
+    <!-- الجسم (استخدام خطوط متصلة لضمان نعومة المفاصل تماماً) -->
+    <g fill="none" stroke="#ffffff" stroke-width="46" stroke-linecap="round" stroke-linejoin="round">
+      
+      <!-- الذراعين (مسار متصل واحد يمر بالكتف لضمان النعومة) -->
+      <path d="M 130 300 L 190 230 L 280 210 L 350 260 L 420 180" />
+      
+      <!-- الساقين (مسار متصل واحد يمر بالحوض) -->
+      <path d="M 80 440 L 150 390 L 220 330 L 310 350 L 260 460" />
+      
+      <!-- الجذع (يربط بين الكتف والحوض كطبقة خلفية ناعمة) -->
+      <path d="M 280 210 L 220 330" />
+      
+    </g>
+  </g>
+</svg>
