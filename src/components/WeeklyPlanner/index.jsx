@@ -145,23 +145,35 @@ export default function WeeklyPlanner() {
   const weekDatesFull = getDatesForWeek();
   const weekDates = weekDatesFull.map(d => d.getDate());
 
+  // === دوال مساعدة لإنشاء الأجندة ===
   const renderLargeCalendarDays = () => {
     const days = [];
     const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
-    for(let i=0; i<startDay; i++) days.push(<div key={`empty-${i}`} className="p-4 border border-transparent"></div>); 
+    
+    // المربعات الفارغة في بداية الشهر
+    for(let i=0; i<startDay; i++) days.push(<div key={`empty-${i}`} className="p-1 sm:p-4 border border-transparent"></div>); 
+    
     for (let i = 1; i <= daysInMonth; i++) {
       const isSelectedWeek = weekDates.includes(i);
       let dayTitle = "";
       if (isSelectedWeek) {
           const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
           const dayName = DAYS_OF_WEEK[dateObj.getDay()];
-          dayTitle = dayTitles[dayName] || "Untitled Workout";
+          dayTitle = dayTitles[dayName] || "Workout"; // اختصرنا الكلمة الافتراضية
       }
       days.push(
-        <button key={i} onClick={() => { const newDate = new Date(currentDate); newDate.setDate(i); setCurrentDate(newDate); setShowMonthCalendar(false); }} className={`h-28 w-full rounded-2xl p-3 flex flex-col items-start justify-start border transition-all ${isSelectedWeek ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 shadow-sm' : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
-          <span className={`text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full mb-2 ${isSelectedWeek ? 'bg-orange-500 text-white' : 'text-slate-700 dark:text-slate-300'}`}>{i}</span>
-          {isSelectedWeek && <span className="text-xs font-medium text-slate-600 dark:text-slate-300 text-left line-clamp-2">{dayTitle}</span>}
+        <button key={i} onClick={() => { const newDate = new Date(currentDate); newDate.setDate(i); setCurrentDate(newDate); setShowMonthCalendar(false); }} 
+          // التعديل هنا: h-20 للموبايل و sm:h-28 للكمبيوتر، مع تقليل الـ padding
+          className={`h-20 sm:h-28 w-full rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col items-center sm:items-start justify-start border transition-all overflow-hidden ${isSelectedWeek ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 shadow-sm' : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
+          
+          <span className={`text-[10px] sm:text-sm font-bold w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center rounded-full mb-1 sm:mb-2 shrink-0 ${isSelectedWeek ? 'bg-orange-500 text-white' : 'text-slate-700 dark:text-slate-300'}`}>{i}</span>
+          
+          {isSelectedWeek && (
+            <span className="text-[8px] sm:text-xs font-medium text-slate-600 dark:text-slate-300 text-center sm:text-left line-clamp-2 leading-tight break-words w-full">
+              {dayTitle}
+            </span>
+          )}
         </button>
       );
     }
@@ -338,15 +350,25 @@ export default function WeeklyPlanner() {
         <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} /> 
       )}
 
-      {showMonthCalendar && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 w-full max-w-4xl border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-2xl font-bold dark:text-white flex items-center gap-3"><CalendarIcon className="w-8 h-8 text-orange-500" />{monthYearString}</h3>
-              <button onClick={() => setShowMonthCalendar(false)} className="p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"><X className="w-6 h-6"/></button>
+{showMonthCalendar && (
+        // تقليل الـ padding الخارجي على الموبايل p-2
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}>
+          {/* إضافة max-h-[95vh] و overflow-y-auto لمنع خروج الأجندة عن الشاشة */}
+          <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl border border-slate-200 dark:border-slate-700 max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            
+            <div className="flex justify-between items-center mb-4 sm:mb-8">
+              <h3 className="text-xl sm:text-2xl font-bold dark:text-white flex items-center gap-2 sm:gap-3"><CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />{monthYearString}</h3>
+              <button onClick={() => setShowMonthCalendar(false)} className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"><X className="w-5 h-5 sm:w-6 sm:h-6"/></button>
             </div>
-            <div className="grid grid-cols-7 gap-4 text-center mb-4">{['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(d => ( <div key={d} className="text-sm font-bold text-slate-400 uppercase">{d}</div> ))}</div>
-            <div className="grid grid-cols-7 gap-4">{renderLargeCalendarDays()}</div>
+            
+            {/* التعديل الجوهري: اختصار أسماء الأيام وتقليل المسافات (gap-1 للموبايل) */}
+            <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2 sm:mb-4">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => ( 
+                <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase tracking-tighter sm:tracking-normal">{d}</div> 
+              ))}
+            </div>
+            
+            <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div>
           </div>
         </div>
       )}
