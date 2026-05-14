@@ -412,15 +412,17 @@ export default function WeeklyPlanner() {
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal}
       />
 
-      <div className="flex transition-all duration-300 mx-auto h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible w-full">
+      {/* الإطار الأساسي يحتوي على Sidebar ومساحة العمل */}
+      <div className={`flex flex-col md:flex-row transition-all duration-300 mx-auto h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible ${isMobileView ? 'max-w-[420px] border-x border-slate-200 dark:border-slate-700 shadow-2xl' : 'w-full max-w-[1600px]'}`}>
         
         <Sidebar 
-          isMobileView={isMobileView} isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode} 
+          isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode} 
           onCopy={() => handleToast('تم نسخ الجدول')} onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
           onShare={() => handleToast('تم النسخ للمشاركة')} onPrint={handleExportPDF} onExportExcel={handleExportExcel} 
         />
 
-        <div className="flex-1 overflow-x-auto overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 print:bg-white print:overflow-visible w-full">
+        {/* أضفنا pb-20 أو pb-24 هنا لضمان عدم تغطية الشريط السفلي للتمارين على الموبايل */}
+        <div className="flex-1 overflow-x-auto overflow-y-auto bg-slate-50/50 dark:bg-slate-900/50 print:bg-white print:overflow-visible w-full pb-24 md:pb-0">
           
           <div className="hidden print:block mb-8 w-full border-b-2 border-slate-800 pb-4 pt-4 px-4">
             <div className="flex justify-between items-end">
@@ -435,13 +437,14 @@ export default function WeeklyPlanner() {
             </div>
           </div>
 
-          <div className={`flex h-full p-4 gap-2 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full' : 'min-w-[1200px]'}`}>
+          {/* التعديل الجوهري: استخدام flex-col للموبايل لترتيب الأيام تحت بعضها، و xl:flex-row للشاشات الكبيرة */}
+          <div className={`flex h-full p-4 gap-4 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full' : 'flex-col xl:flex-row xl:min-w-[1200px] w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
-              // تنسيق التاريخ الكامل ليتم عرضه بشكل احترافي للمتابعة الدقيقة
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               
               return (
               <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'flex-1 min-w-[220px]'} print:break-inside-avoid print:mb-0`}>
+                {/* ... (باقي كود الأيام والتمارين TimelineCard كما هو بدون أي تغيير) ... */}
                 
                 <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-2 print:border-slate-400">
                   <div className="flex justify-between items-baseline mb-2">
