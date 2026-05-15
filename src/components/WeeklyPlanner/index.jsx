@@ -9,19 +9,24 @@ import AthleteProfileModal from './AthleteProfileModal.jsx';
 import { INITIAL_ATHLETES, INITIAL_SCHEDULE, INITIAL_LIBRARY, DAYS_OF_WEEK } from '../../data/constants.js';
 import { supabase } from '../../supabaseClient.js';
 
+// توحيد فئات التمارين لتشمل كل الأنواع المطلوبة
 const EXERCISE_CATEGORIES = {
   mobility: 'Mobility (حركية)',
   core: 'Core (جذع)',
+  isometric: 'Isometric (ثبات)',
   power: 'Power (قدرة)',
   strength: 'Strength (قوة)',
   physical: 'Physical (بدني عام)'
 };
 
+// الترتيب المطلوب لظهور التمارين داخل اليوم الواحد
+const CATEGORY_ORDER = ['mobility', 'isometric', 'core', 'power', 'strength', 'physical'];
+
 export default function WeeklyPlanner() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   
-  // حالة التحميل
+  // حالة التحميل لمنع التعليق
   const [isLoading, setIsLoading] = useState(true);
   
   const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
@@ -70,7 +75,7 @@ export default function WeeklyPlanner() {
   const currentWeekStart = getStartOfWeek(currentDate);
   const monthYearString = currentWeekStart.toLocaleString('en-US', { month: 'long', year: 'numeric' });
   
-  // الحل الجذري للـ Infinite Loop: تحويل التاريخ لنص ثابت لا يتغير كل جزء من الثانية
+  // حفظ التاريخ كنص ثابت لمنع حلقة Render المفرغة (Infinite Loop)
   const weekStartDateStr = getDbDateStr(currentWeekStart);
 
   const getDatesForWeek = () => {
@@ -82,6 +87,7 @@ export default function WeeklyPlanner() {
   const weekDatesFull = getDatesForWeek();
   const weekDates = weekDatesFull.map(d => d.getDate());
 
+  // === جلب البيانات من Supabase ===
   useEffect(() => {
     const fetchAthletes = async () => {
       const { data } = await supabase.from('agilitylap_athletes').select('*').order('created_at', { ascending: false });
@@ -128,7 +134,7 @@ export default function WeeklyPlanner() {
     };
 
     fetchWeekData();
-  // استخدام النص الثابت هنا يمنع حلقة الـ Render المفرغة
+  // الاعتماد على weekStartDateStr بدلاً من الكائن لحل مشكلة التعليق
   }, [selectedAthleteId, weekStartDateStr]);
 
   const autoSaveDay = async (day, drillsToSave, titleToSave) => {
@@ -231,7 +237,7 @@ export default function WeeklyPlanner() {
     }); setDraggedItem(null);
   };
 
-  const handleAddExercise = (day) => { const newWorkout = { id: `w-${Date.now()}`, type: 'physical', title: '', details: '', percentage: '', isNew: true }; const updatedDrills = [...(schedule[day] || []), newWorkout]; setSchedule(prev => ({ ...prev, [day]: updatedDrills })); autoSaveDay(day, updatedDrills, dayTitles[day]); };
+  const handleAddExercise = (day) => { const newWorkout = { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', isNew: true }; const updatedDrills = [...(schedule[day] || []), newWorkout]; setSchedule(prev => ({ ...prev, [day]: updatedDrills })); autoSaveDay(day, updatedDrills, dayTitles[day]); };
   const handleUpdateExercise = (day, id, updatedDrill) => { const updatedDrills = schedule[day].map(w => w.id === id ? updatedDrill : w); setSchedule(prev => ({ ...prev, [day]: updatedDrills })); autoSaveDay(day, updatedDrills, dayTitles[day]); };
   const handleDeleteExercise = (day, id) => { const updatedDrills = schedule[day].filter(w => w.id !== id); setSchedule(prev => ({ ...prev, [day]: updatedDrills })); autoSaveDay(day, updatedDrills, dayTitles[day]); };
   const handleDayTitleChange = (day, newTitle) => { setDayTitles(prev => ({ ...prev, [day]: newTitle })); autoSaveDay(day, schedule[day], newTitle); };
@@ -294,6 +300,16 @@ export default function WeeklyPlanner() {
     });
     const avgIntensity = validIntensityCount > 0 ? Math.round(sumIntensity / validIntensityCount) : 0;
     return { totalExercises, totalVolumeScore: Math.round(totalVolumeScore * 10), avgIntensity };
+  };
+
+  // دالة فرز التمارين حسب النوع
+  const sortDrills = (drills) => {
+    return [...drills].sort((a, b) => {
+      // إعطاء أولوية أقل للأنواع غير الموجودة في الترتيب
+      const indexA = CATEGORY_ORDER.indexOf(a.type) !== -1 ? CATEGORY_ORDER.indexOf(a.type) : 99;
+      const indexB = CATEGORY_ORDER.indexOf(b.type) !== -1 ? CATEGORY_ORDER.indexOf(b.type) : 99;
+      return indexA - indexB;
+    });
   };
 
   return (
@@ -378,7 +394,6 @@ export default function WeeklyPlanner() {
             </div>
           </div>
 
-          {/* تأثير التحميل (Skeleton Loader) بعد التعديل لحل مشكلة التداخل */}
           {isLoading && (
              <div className="absolute inset-0 flex items-center justify-center bg-white/90 dark:bg-slate-900/90 backdrop-blur-md z-50 transition-opacity duration-300 print:hidden">
                 <div className="flex flex-col items-center gap-4">
@@ -391,7 +406,8 @@ export default function WeeklyPlanner() {
           <div className={`flex h-full p-2 md:p-4 gap-2 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full' : 'flex-row w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-              
+              const sortedDrills = sortDrills(schedule[day] || []);
+
               return (
               <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'flex-1 min-w-0'} print:break-inside-avoid print:mb-0`}>
                 
@@ -421,10 +437,10 @@ export default function WeeklyPlanner() {
                 </div>
 
                 <div className={`flex-1 px-1 md:px-2 pb-20 ${draggedItem && draggedItem.sourceDay !== day ? 'bg-slate-100/50 dark:bg-slate-800/30 border-dashed border border-slate-200 dark:border-slate-700 rounded-xl' : ''} print:pb-0`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, day)}>
-                  {schedule[day].map((drill, drillIndex) => (
+                  {sortedDrills.map((drill, drillIndex) => (
                     <TimelineCard 
                       key={drill.id} drill={drill} day={day} index={drillIndex}
-                      isLast={drillIndex === schedule[day].length - 1} isPreviewMode={isPreviewMode}
+                      isLast={drillIndex === sortedDrills.length - 1} isPreviewMode={isPreviewMode}
                       onUpdate={handleUpdateExercise} onDelete={handleDeleteExercise}
                       onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop}
                     />
