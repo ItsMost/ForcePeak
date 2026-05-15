@@ -1,135 +1,122 @@
-import React from 'react';
-import { Library, X, Layers, Plus } from 'lucide-react';
-import { DRILL_TYPES } from '../../data/constants';
+import React, { useState } from 'react';
+import { Search, Plus, Trash2, Edit2, X, Dumbbell, Zap, Shield, Activity } from 'lucide-react';
 
-export default function ExerciseLibrary({
-  showLibrary,
-  setShowLibrary,
-  library,
-  handleLibraryDragStart,
-  setAddExerciseModal,
-  setSaveWeekTemplateModal,
+// تعريف الألوان والأيقونات لكل نوع تمرين بأمان تام
+const CATEGORY_STYLES = {
+  mobility: { color: 'bg-orange-500', icon: <Activity className="w-3.5 h-3.5" />, label: 'Mobility' },
+  core: { color: 'bg-purple-500', icon: <Shield className="w-3.5 h-3.5" />, label: 'Core' },
+  power: { color: 'bg-yellow-500', icon: <Zap className="w-3.5 h-3.5" />, label: 'Power' },
+  strength: { color: 'bg-blue-500', icon: <Dumbbell className="w-3.5 h-3.5" />, label: 'Strength' },
+  physical: { color: 'bg-slate-500', icon: <Dumbbell className="w-3.5 h-3.5" />, label: 'Physical' }
+};
+
+export default function ExerciseLibrary({ 
+  showLibrary, setShowLibrary, library, 
+  handleLibraryDragStart, setAddExerciseModal,
+  onDeleteTemplate, onEditTemplate,
+  onDeleteDrill, onEditDrill
 }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState('drills');
+
+  // حماية برمجية للتأكد من وجود البيانات وعدم حدوث أي Crash
+  const safeDrills = library?.drills || [];
+  const safeTemplates = library?.templates || [];
+
+  const filteredDrills = safeDrills.filter(d => 
+    d.title && d.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const filteredTemplates = safeTemplates.filter(t => 
+    t.title && t.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // دالة ذكية لاختيار التصميم المناسب حتى لو النوع مكتوب بحروف كابيتال أو مش موجود
+  const getStyle = (type) => {
+    const safeType = type ? type.toLowerCase() : 'physical';
+    return CATEGORY_STYLES[safeType] || CATEGORY_STYLES.physical;
+  };
+
   return (
-    <div
-      className={`absolute top-0 right-0 h-full w-80 max-w-[90%] bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 shadow-2xl transform transition-transform duration-300 z-30 flex flex-col print:hidden ${
-        showLibrary ? 'translate-x-0' : 'translate-x-full'
-      }`}
-    >
-      <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-        <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-          <Library className="w-5 h-5 text-orange-500" /> مكتبة التمارين
-        </h3>
-        <button
-          onClick={() => setShowLibrary(false)}
-          className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-        >
-          <X className="w-5 h-5" />
-        </button>
+    <aside className={`fixed right-0 top-16 h-[calc(100vh-64px)] bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 transition-all duration-300 z-30 flex flex-col shadow-2xl ${showLibrary ? 'w-80' : 'w-0 opacity-0 pointer-events-none'}`}>
+      
+      {/* Search & Header */}
+      <div className="p-4 border-b border-slate-100 dark:border-slate-700">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="font-bold text-slate-800 dark:text-white">Exercise Library</h3>
+          <button onClick={() => setShowLibrary(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"><X className="w-5 h-5"/></button>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" />
+          <input 
+            type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search exercises..." 
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500/20"
+          />
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-2 mt-4">
+          <button onClick={() => setActiveTab('drills')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'drills' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-500'}`}>Drills</button>
+          <button onClick={() => setActiveTab('templates')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'templates' ? 'bg-orange-500 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-900 text-slate-500'}`}>Templates</button>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-6">
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
-              <Layers className="w-3.5 h-3.5" /> قوالب الأيام (TEMPLATES)
-            </h4>
-            {/* زر الإضافة الجديد للقوالب */}
-            <button
-              onClick={() =>
-                setSaveWeekTemplateModal({ isOpen: true, name: '' })
-              }
-              className="text-orange-500 hover:text-orange-600 p-1 bg-orange-50 dark:bg-orange-900/30 rounded transition-colors"
-              title="إضافة الأسبوع كقالب"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {library.templates.map((tpl) => (
-              <div
-                key={tpl.id}
-                draggable
-                onDragStart={(e) => handleLibraryDragStart(e, tpl, true)}
-                className="p-3 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-orange-300 dark:hover:border-orange-600 hover:shadow-md cursor-grab bg-white dark:bg-slate-800 transition-all"
+      {/* Content List */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        {activeTab === 'drills' ? (
+          filteredDrills.map(drill => {
+            const style = getStyle(drill.type);
+            return (
+              <div 
+                key={drill.id} draggable onDragStart={(e) => handleLibraryDragStart(e, drill)}
+                className="group p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-xl hover:border-orange-200 dark:hover:border-orange-900 cursor-grab active:cursor-grabbing transition-all shadow-sm hover:shadow-md"
               >
-                <div className="font-bold text-sm text-slate-700 dark:text-slate-200">
-                  {tpl.title}
+                <div className="flex justify-between items-start mb-1">
+                  <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold text-white ${style.color}`}>
+                    {style.icon} {style.label}
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => onEditDrill && onEditDrill(drill)} className="p-1 text-slate-400 hover:text-blue-500"><Edit2 className="w-3.5 h-3.5"/></button>
+                    <button onClick={() => onDeleteDrill && onDeleteDrill(drill.id)} className="p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5"/></button>
+                  </div>
                 </div>
-                <div className="text-xs text-slate-500 mt-1">
-                  {tpl.drills.length} تمارين متضمنة
+                <h4 className="text-sm font-bold text-slate-800 dark:text-slate-100">{drill.title}</h4>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1 mt-1">{drill.details}</p>
+              </div>
+            );
+          })
+        ) : (
+          filteredTemplates.map(tpl => (
+            <div 
+              key={tpl.id} draggable onDragStart={(e) => handleLibraryDragStart(e, tpl, true)}
+              className="group p-3 bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-xl hover:border-orange-300 transition-all cursor-grab active:cursor-grabbing"
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-sm font-bold text-orange-700 dark:text-orange-400">{tpl.title}</h4>
+                  <p className="text-[10px] text-orange-600/70">{tpl.drills?.length} exercises</p>
+                </div>
+                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => onEditTemplate && onEditTemplate(tpl)} className="p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-blue-500 hover:bg-blue-50"><Edit2 className="w-3.5 h-3.5"/></button>
+                  <button onClick={() => onDeleteTemplate && onDeleteTemplate(tpl.id)} className="p-1.5 bg-white dark:bg-slate-800 rounded-lg shadow-sm text-red-500 hover:bg-red-50"><Trash2 className="w-3.5 h-3.5"/></button>
                 </div>
               </div>
-            ))}
-            {library.templates.length === 0 && (
-              <p className="text-xs text-slate-400 text-center py-2">
-                لا توجد قوالب محفوظة.
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="w-full h-px bg-slate-100 dark:bg-slate-700"></div>
-
-        <div>
-          <div className="flex justify-between items-center mb-3">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              تمارين فردية
-            </h4>
-            <button
-              onClick={() =>
-                setAddExerciseModal({
-                  isOpen: true,
-                  title: '',
-                  details: '',
-                  type: 'physical',
-                  percentage: '',
-                })
-              }
-              className="text-orange-500 hover:text-orange-600 p-1 bg-orange-50 dark:bg-orange-900/30 rounded transition-colors"
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <div className="flex flex-col gap-2">
-            {library.drills.map((drill) => {
-              const typeStyle = DRILL_TYPES[drill.type];
-              const Icon = typeStyle.icon;
-              return (
-                <div
-                  key={drill.id}
-                  draggable
-                  onDragStart={(e) => handleLibraryDragStart(e, drill, false)}
-                  className="p-2 border border-slate-200 dark:border-slate-700 rounded-xl hover:border-orange-300 cursor-grab bg-white dark:bg-slate-800 flex items-center gap-3 transition-all relative"
-                >
-                  <div
-                    className={`w-8 h-8 rounded-full border ${typeStyle.border} flex items-center justify-center shrink-0`}
-                  >
-                    <Icon className={`w-4 h-4 ${typeStyle.color}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-bold text-xs text-slate-700 dark:text-slate-200 truncate">
-                      {drill.title}
-                    </div>
-                    <div className="text-[10px] text-slate-500 truncate">
-                      {drill.details}
-                    </div>
-                  </div>
-                  {drill.percentage && (
-                    <div className="text-[10px] font-bold text-orange-500 bg-orange-50 dark:bg-orange-500/10 px-1.5 py-0.5 rounded">
-                      {drill.percentage}%
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+            </div>
+          ))
+        )}
       </div>
-      <div className="p-4 border-t border-slate-200 dark:border-slate-700 text-xs text-center text-slate-500 bg-slate-50 dark:bg-slate-900/50">
-        اسحب الكروت وأفلتها في الأيام لإضافتها.
+
+      {/* Footer Action */}
+      <div className="p-4 border-t border-slate-100 dark:border-slate-700">
+        <button 
+          onClick={() => setAddExerciseModal({ isOpen: true, title: '', details: '', type: 'strength', percentage: '' })}
+          className="w-full py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+        >
+          <Plus className="w-4 h-4" /> Add New Drill
+        </button>
       </div>
-    </div>
+    </aside>
   );
 }
