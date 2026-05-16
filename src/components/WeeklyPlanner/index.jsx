@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Percent, UserPlus, X, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2 } from 'lucide-react';
+import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Percent, UserPlus, X, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2 } from 'lucide-react';
 
 import Header from './Header.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -18,16 +18,15 @@ const EXERCISE_CATEGORIES = {
   physical: 'Physical (بدني عام)'
 };
 
-const CATEGORY_ORDER = ['mobility', 'isometric', 'core', 'power', 'strength', 'physical'];
-
 export default function WeeklyPlanner() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   
   const [athletes, setAthletes] = useState(INITIAL_ATHLETES);
-  const [selectedAthleteId, setSelectedAthleteId] = useState(null);
+  const [selectedAthleteId, setSelectedAthleteId] = useState(() => localStorage.getItem('lastSelectedAthlete') || null);
   const selectedAthlete = athletes.find(a => a.id === selectedAthleteId) || athletes[0] || null;
+  
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [newAthleteData, setNewAthleteData] = useState({ name: '', birthYear: '', weight: '' });
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
@@ -48,7 +47,9 @@ export default function WeeklyPlanner() {
   const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, type: null, targetDay: null });
   const [saveTemplateModal, setSaveTemplateModal] = useState({ isOpen: false, day: null, name: '' });
   const [saveWeekTemplateModal, setSaveWeekTemplateModal] = useState({ isOpen: false, name: '' });
+  
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '' });
+  const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
   const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
@@ -69,10 +70,7 @@ export default function WeeklyPlanner() {
   const weekDates = weekDatesFull.map(d => d.getDate());
 
   const pushToHistory = (newSchedule, newTitles) => {
-    const newState = { 
-      schedule: JSON.parse(JSON.stringify(newSchedule)), 
-      titles: JSON.parse(JSON.stringify(newTitles)) 
-    };
+    const newState = { schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) };
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newState);
     if (newHistory.length > 50) newHistory.shift(); 
@@ -187,23 +185,6 @@ export default function WeeklyPlanner() {
     DAYS_OF_WEEK.forEach(day => autoSaveDay(day, newSchedule[day], newTitles[day])); handleToast('تم لصق الأسبوع بنجاح');
   };
 
-  const handleDeleteDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); handleToast('تم مسح التمرين'); } };
-  const handleEditDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '' }); };
-  const handleDeleteTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); handleToast('تم مسح القالب بنجاح'); } };
-  const handleEditTemplate = (tpl) => { handleToast('نصيحة: لتعديل قالب، اسحبه لأي يوم، قم بتعديله، ثم احفظه كقالب جديد.'); };
-
-  const handleSaveLibraryExercise = async () => { 
-    if(!addExerciseModal.title.trim()) { handleToast('يرجى كتابة اسم التمرين!'); return; } 
-    const drillData = { title: addExerciseModal.title, details: addExerciseModal.details, type: addExerciseModal.type, percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null }; 
-    if (addExerciseModal.id) {
-      const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '' }); handleToast('تم تحديث التمرين بنجاح'); }
-    } else {
-      const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '' }); handleToast('تم إضافة التمرين للمكتبة'); }
-    }
-  };
-
   const renderLargeCalendarDays = () => {
     const days = []; const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     for(let i=0; i<startDay; i++) days.push(<div key={`empty-${i}`} className="p-1 sm:p-4 border border-transparent"></div>); 
@@ -220,6 +201,9 @@ export default function WeeklyPlanner() {
     } return days;
   };
 
+  // ===============================================
+  // === إصلاح الـ Drag and Drop (منع التكرار نهائياً) ===
+  // ===============================================
   const [draggedItem, setDraggedItem] = useState(null);
   const handleDragStart = (e, day, drill, index) => { setDraggedItem({ source: 'timeline', day, drill, index }); e.dataTransfer.effectAllowed = 'move'; };
   const handleLibraryDragStart = (e, item, isTemplate = false) => { setDraggedItem({ source: 'library', item, isTemplate }); e.dataTransfer.effectAllowed = 'copy'; };
@@ -227,19 +211,45 @@ export default function WeeklyPlanner() {
   
   const handleDrop = (e, targetDay, targetIndex = null) => {
     e.preventDefault(); e.stopPropagation(); if (!draggedItem) return;
+    
     setSchedule(prev => {
       const newSchedule = { ...prev }; 
+      
       if (draggedItem.source === 'timeline') {
         const { day: sourceDay, drill, index: sourceIndex } = draggedItem;
-        if (sourceDay === targetDay && sourceIndex === targetIndex) return newSchedule;
-        const sourceDrills = Array.from(newSchedule[sourceDay]); sourceDrills.splice(sourceIndex, 1); newSchedule[sourceDay] = sourceDrills;
-        const targetDrills = sourceDay === targetDay ? sourceDrills : Array.from(newSchedule[targetDay]);
-        if (targetIndex !== null) { let adjustedIndex = targetIndex; if (sourceDay === targetDay && sourceIndex < targetIndex) adjustedIndex -= 1; targetDrills.splice(adjustedIndex, 0, drill); } 
-        else { targetDrills.push(drill); }
-        newSchedule[targetDay] = targetDrills;
-        pushToHistory(newSchedule, dayTitles);
-        if (sourceDay !== targetDay) autoSaveDay(sourceDay, newSchedule[sourceDay], dayTitles[sourceDay]);
-        autoSaveDay(targetDay, newSchedule[targetDay], dayTitles[targetDay]);
+        
+        if (sourceDay === targetDay) {
+          // النقل داخل نفس اليوم
+          if (sourceIndex === targetIndex) return prev;
+          
+          const updatedDrills = Array.from(newSchedule[sourceDay]);
+          updatedDrills.splice(sourceIndex, 1);
+          
+          let finalTargetIndex = targetIndex !== null ? targetIndex : updatedDrills.length;
+          if (targetIndex !== null && sourceIndex < targetIndex) { finalTargetIndex -= 1; }
+          
+          updatedDrills.splice(finalTargetIndex, 0, drill);
+          newSchedule[sourceDay] = updatedDrills;
+
+          pushToHistory(newSchedule, dayTitles);
+          autoSaveDay(sourceDay, updatedDrills, dayTitles[sourceDay]);
+
+        } else {
+          // النقل ليوم مختلف
+          const sourceDrills = Array.from(newSchedule[sourceDay]);
+          sourceDrills.splice(sourceIndex, 1);
+          newSchedule[sourceDay] = sourceDrills;
+
+          const targetDrills = Array.from(newSchedule[targetDay]);
+          if (targetIndex !== null) targetDrills.splice(targetIndex, 0, drill);
+          else targetDrills.push(drill);
+          newSchedule[targetDay] = targetDrills;
+
+          pushToHistory(newSchedule, dayTitles);
+          autoSaveDay(sourceDay, sourceDrills, dayTitles[sourceDay]);
+          autoSaveDay(targetDay, targetDrills, dayTitles[targetDay]);
+        }
+
       } else if (draggedItem.source === 'library') {
         const { item, isTemplate } = draggedItem; newSchedule[targetDay] = [...newSchedule[targetDay]];
         if (isTemplate) { 
@@ -256,12 +266,76 @@ export default function WeeklyPlanner() {
     }); setDraggedItem(null);
   };
 
-  const handleAddExercise = (day) => { const newWorkout = { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', isNew: true }; const updatedDrills = [...(schedule[day] || []), newWorkout]; const newSchedule = { ...schedule, [day]: updatedDrills }; setSchedule(newSchedule); pushToHistory(newSchedule, dayTitles); autoSaveDay(day, updatedDrills, dayTitles[day]); };
-  const handleUpdateExercise = (day, id, updatedDrill) => { const updatedDrills = schedule[day].map(w => w.id === id ? updatedDrill : w); const newSchedule = { ...schedule, [day]: updatedDrills }; setSchedule(newSchedule); pushToHistory(newSchedule, dayTitles); autoSaveDay(day, updatedDrills, dayTitles[day]); };
+  // ===============================================
+  // === دوال الأسهم للترتيب اليدوي (أعلى / أسفل) ===
+  // ===============================================
+  const moveDrillUp = (day, index) => {
+    if (index === 0) return;
+    setSchedule(prev => {
+      const newSchedule = { ...prev };
+      const drills = [...newSchedule[day]];
+      [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; // تبديل الأماكن
+      newSchedule[day] = drills;
+      pushToHistory(newSchedule, dayTitles);
+      autoSaveDay(day, drills, dayTitles[day]);
+      return newSchedule;
+    });
+  };
+
+  const moveDrillDown = (day, index) => {
+    if (index === schedule[day].length - 1) return;
+    setSchedule(prev => {
+      const newSchedule = { ...prev };
+      const drills = [...newSchedule[day]];
+      [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; // تبديل الأماكن
+      newSchedule[day] = drills;
+      pushToHistory(newSchedule, dayTitles);
+      autoSaveDay(day, drills, dayTitles[day]);
+      return newSchedule;
+    });
+  };
+
+  // ===============================================
+  // === دوال فتح الشاشة الجديدة الموحدة (بدون أخطاء بيضاء) ===
+  // ===============================================
+  const handleAddExerciseBtn = (day) => { 
+    setDayDrillModal({ 
+      isOpen: true, 
+      day: day, 
+      drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '' }, 
+      isNew: true 
+    }); 
+  };
+
+  const handleEditExerciseBtn = (day, drill) => { 
+    setDayDrillModal({ isOpen: true, day: day, drill: { ...drill }, isNew: false }); 
+  };
+
+  const handleSaveDayDrillModal = () => {
+    const { day, drill, isNew } = dayDrillModal;
+    
+    // حماية تمنع الحفظ بتمرين فارغ
+    if (!drill.title || !drill.title.trim()) {
+      handleToast('يرجى كتابة اسم التمرين أولاً!');
+      return;
+    }
+
+    let updatedDrills;
+    if (isNew) {
+      updatedDrills = [...(schedule[day] || []), drill]; // الترتيب اليدوي (يتم إضافته في النهاية)
+    } else {
+      updatedDrills = schedule[day].map(w => w.id === drill.id ? drill : w);
+    }
+    
+    const newSchedule = { ...schedule, [day]: updatedDrills };
+    setSchedule(newSchedule); 
+    pushToHistory(newSchedule, dayTitles); 
+    autoSaveDay(day, updatedDrills, dayTitles[day]);
+    setDayDrillModal({ isOpen: false, day: null, drill: null, isNew: false });
+  };
+
   const handleDeleteExercise = (day, id) => { const updatedDrills = schedule[day].filter(w => w.id !== id); const newSchedule = { ...schedule, [day]: updatedDrills }; setSchedule(newSchedule); pushToHistory(newSchedule, dayTitles); autoSaveDay(day, updatedDrills, dayTitles[day]); };
   const handleDayTitleChange = (day, newTitle) => { const newTitles = { ...dayTitles, [day]: newTitle }; setDayTitles(newTitles); pushToHistory(schedule, newTitles); autoSaveDay(day, schedule[day], newTitle); };
-
-  const sortDrills = (drills) => { return [...drills].sort((a, b) => { const indexA = CATEGORY_ORDER.indexOf(a.type) !== -1 ? CATEGORY_ORDER.indexOf(a.type) : 99; const indexB = CATEGORY_ORDER.indexOf(b.type) !== -1 ? CATEGORY_ORDER.indexOf(b.type) : 99; return indexA - indexB; }); };
 
   const confirmDelete = () => {
     if (deleteConfirmation.type === 'week') { const emptySchedule = DAYS_OF_WEEK.reduce((acc, day) => ({...acc, [day]: []}), {}); setSchedule(emptySchedule); setDayTitles({}); pushToHistory(emptySchedule, {}); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, [], '')); handleToast('تم تفريغ الأسبوع بالكامل'); } 
@@ -276,6 +350,24 @@ export default function WeeklyPlanner() {
   const handleSaveProfile = async (updatedProfile) => { const { error } = await supabase.from('agilitylap_athletes').update({ name: updatedProfile.name, birth_year: updatedProfile.birthYear ? parseInt(updatedProfile.birthYear) : null, weight: updatedProfile.weight ? parseFloat(updatedProfile.weight) : null, height: updatedProfile.height ? parseFloat(updatedProfile.height) : null, body_fat: updatedProfile.bodyFat ? parseFloat(updatedProfile.bodyFat) : null, vertical_jump: updatedProfile.verticalJump ? parseFloat(updatedProfile.verticalJump) : null, clean: updatedProfile.clean ? parseFloat(updatedProfile.clean) : null, half_squat: updatedProfile.halfSquat ? parseFloat(updatedProfile.halfSquat) : null, quarter_squat: updatedProfile.quarterSquat ? parseFloat(updatedProfile.quarterSquat) : null, bench: updatedProfile.bench ? parseFloat(updatedProfile.bench) : null, }).eq('id', updatedProfile.id); if (!error) { setAthletes(prev => prev.map(a => a.id === updatedProfile.id ? updatedProfile : a)); setShowProfileModal(false); handleToast('تم تحديث بيانات اللاعب بنجاح'); } };
 
   const calculateDayVolume = (dayDrills) => { let totalExercises = dayDrills.length; let totalVolumeScore = 0; let validIntensityCount = 0; let sumIntensity = 0; dayDrills.forEach(drill => { const match = drill.details.match(/(\d+)\s*[xX*]\s*(\d+)/); let repsMultiplier = 1; if (match) { repsMultiplier = parseInt(match[1]) * parseInt(match[2]); } const intensity = parseInt(drill.percentage) || 0; if (intensity > 0) { validIntensityCount++; sumIntensity += intensity; } totalVolumeScore += repsMultiplier * (intensity > 0 ? (intensity/100) : 1); }); const avgIntensity = validIntensityCount > 0 ? Math.round(sumIntensity / validIntensityCount) : 0; return { totalExercises, totalVolumeScore: Math.round(totalVolumeScore * 10), avgIntensity }; };
+
+  const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); handleToast('تم مسح التمرين'); } };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '' }); };
+  const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); handleToast('تم مسح القالب بنجاح'); } };
+  const handleEditTemplate = (tpl) => { handleToast('نصيحة: لتعديل قالب، اسحبه لأي يوم، قم بتعديله، ثم احفظه كقالب جديد.'); };
+  
+  const handleSaveLibraryExercise = async () => { 
+    if(!addExerciseModal.title.trim()) { handleToast('يرجى كتابة اسم التمرين!'); return; } 
+    const drillData = { title: addExerciseModal.title, details: addExerciseModal.details, type: addExerciseModal.type, percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null }; 
+    if (addExerciseModal.id) {
+      const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '' }); handleToast('تم تحديث التمرين بنجاح'); }
+    } else {
+      const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '' }); handleToast('تم إضافة التمرين للمكتبة'); }
+    }
+  };
+
 
   return (
     <div className={`min-h-screen font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black`}>
@@ -296,7 +388,93 @@ export default function WeeklyPlanner() {
       {saveTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-1 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ قالب لليوم</h3> <p className="text-[11px] text-slate-500 mb-4">أسهل طريقة لعمل Template هي بناء التمارين في أي يوم، ثم الضغط على علامة الحفظ 🔖 أعلى اليوم.</p> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم القالب</label> <input type="text" value={saveTemplateModal.name} onChange={(e) => setSaveTemplateModal({...saveTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveTemplateModal({isOpen: false, day: null, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ الأسبوع كقالب</h3> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم البرنامج</label> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       
+      {/* نافذة المكتبة - تمرين جديد */}
       {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'تعديل بيانات التمرين' : 'إضافة تمرين للمكتبة'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">نوع التمرين</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="w-28"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">النسبة (%)</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2.5 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all" placeholder="0" /> <Percent className="w-4 h-4 absolute left-2.5 top-3 text-slate-400" /> </div> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">اسم التمرين</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} placeholder="مثال: Barbell Back Squat" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">التفاصيل (عدات، وقت...)</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} placeholder="مثال: 5 sets x 5 reps..." className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white h-24 resize-none" /> </div> </div> <div className="flex justify-end gap-3 mt-8"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: ''})} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-sm">إلغاء</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm">{addExerciseModal.id ? 'حفظ التعديلات' : 'إضافة للمكتبة'}</button> </div> </div> </div> )}
+
+      {/* ==================================================== */}
+      {/* النافذة الجديدة الموحدة (إضافة أو تعديل داخل اليوم) */}
+      {/* ==================================================== */}
+      {dayDrillModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700">
+            <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                {dayDrillModal.isNew ? <Plus className="w-5 h-5 text-green-500" /> : <Edit2 className="w-5 h-5 text-blue-500" />}
+                {dayDrillModal.isNew ? 'إضافة تمرين جديد' : 'تعديل التمرين'}
+              </h3>
+              <button onClick={() => setDayDrillModal({ isOpen: false, day: null, drill: null, isNew: false })} className="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors">
+                <X className="w-5 h-5"/>
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">النوع</label>
+                  <select
+                    value={dayDrillModal.drill.type}
+                    onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, type: e.target.value}})}
+                    className="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  >
+                    {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (
+                      <option key={key} value={key}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">النسبة (%)</label>
+                  <div className="relative w-full">
+                    <input
+                      type="number"
+                      value={dayDrillModal.drill.percentage || ''}
+                      onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, percentage: e.target.value}})}
+                      className="w-full text-sm py-2.5 pl-7 pr-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                      placeholder="0"
+                    />
+                    <Percent className="w-3.5 h-3.5 absolute left-2 top-3 text-slate-400" />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">الاسم</label>
+                <input
+                  type="text"
+                  value={dayDrillModal.drill.title}
+                  onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, title: e.target.value}})}
+                  placeholder="اسم التمرين..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white font-medium"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">التفاصيل (عدات، وقت...)</label>
+                <textarea
+                  value={dayDrillModal.drill.details}
+                  onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, details: e.target.value}})}
+                  placeholder="مثال: 5 sets x 5 reps..."
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all dark:text-white h-24 resize-none"
+                />
+              </div>
+            </div>
+            <div className="p-5 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center">
+               {!dayDrillModal.isNew ? (
+                 <button onClick={() => { handleDeleteExercise(dayDrillModal.day, dayDrillModal.drill.id); setDayDrillModal({isOpen: false, day: null, drill: null, isNew: false}); }} className="px-4 py-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl font-bold text-sm transition-colors flex items-center gap-2">
+                   <Trash2 className="w-4 h-4"/> مسح
+                 </button>
+               ) : <div></div>}
+              <div className="flex gap-2">
+                <button onClick={() => setDayDrillModal({ isOpen: false, day: null, drill: null, isNew: false })} className="px-4 py-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-bold text-sm">
+                  إلغاء
+                </button>
+                <button onClick={handleSaveDayDrillModal} className={`px-6 py-2 ${dayDrillModal.isNew ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center gap-2`}>
+                  <Save className="w-4 h-4"/> {dayDrillModal.isNew ? 'إضافة' : 'حفظ'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddAthleteModal && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><UserPlus className="w-5 h-5 text-orange-500" /> Add New Athlete</h3> <div className="space-y-3 mb-6"> <div> <label className="block text-xs font-medium text-slate-500 mb-1">Full Name</label> <input type="text" value={newAthleteData.name} onChange={(e) => setNewAthleteData({...newAthleteData, name: e.target.value})} placeholder="e.g. Mostafa Ali" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white" autoFocus /> </div> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-medium text-slate-500 mb-1">Birth Year</label> <input type="number" value={newAthleteData.birthYear} onChange={(e) => setNewAthleteData({...newAthleteData, birthYear: e.target.value})} placeholder="2007" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white" /> </div> <div className="flex-1"> <label className="block text-xs font-medium text-slate-500 mb-1">Weight (kg)</label> <input type="number" value={newAthleteData.weight} onChange={(e) => setNewAthleteData({...newAthleteData, weight: e.target.value})} placeholder="75" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white" /> </div> </div> </div> <div className="flex justify-end gap-3"> <button onClick={() => setShowAddAthleteModal(false)} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium">Cancel</button> <button onClick={handleAddAthlete} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium">Add Athlete</button> </div> </div> </div> )}
 
       <Header 
         currentDate={currentDate} setCurrentDate={setCurrentDate} currentWeekStart={currentWeekStart} setShowMonthCalendar={setShowMonthCalendar}
@@ -307,7 +485,6 @@ export default function WeeklyPlanner() {
 
       <div className={`flex flex-col md:flex-row transition-all duration-300 w-full h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible ${isMobileView ? 'max-w-[420px] mx-auto border-x border-slate-200 dark:border-slate-700 shadow-2xl' : ''}`}>
         
-        {/* === تمرير الدوال الجديدة للشريط الجانبي === */}
         <Sidebar 
           isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode} 
           onCopyWeek={handleCopyWeek} onPasteWeek={handlePasteWeek} 
@@ -344,7 +521,9 @@ export default function WeeklyPlanner() {
           <div className={`flex h-full p-2 md:p-4 gap-2 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full' : 'flex-row w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-              const sortedDrills = sortDrills(schedule[day] || []);
+              
+              // الترتيب اليدوي: يتم قراءة التمارين مباشرة كما هي في المصفوفة
+              const dayDrills = schedule[day] || [];
 
               return (
               <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'flex-1 min-w-0'} print:break-inside-avoid print:mb-0`}>
@@ -377,17 +556,18 @@ export default function WeeklyPlanner() {
                 </div>
 
                 <div className={`flex-1 px-1 md:px-2 pb-20 ${draggedItem && draggedItem.sourceDay !== day ? 'bg-slate-100/50 dark:bg-slate-800/30 border-dashed border border-slate-200 dark:border-slate-700 rounded-xl' : ''} print:pb-0`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, day)}>
-                  {sortedDrills.map((drill, drillIndex) => (
+                  {dayDrills.map((drill, drillIndex) => (
                     <TimelineCard 
                       key={drill.id} drill={drill} day={day} index={drillIndex}
-                      isLast={drillIndex === sortedDrills.length - 1} isPreviewMode={isPreviewMode}
-                      onUpdate={handleUpdateExercise} onDelete={handleDeleteExercise} onCopy={handleCopyExercise}
+                      isLast={drillIndex === dayDrills.length - 1} isPreviewMode={isPreviewMode}
+                      onEdit={handleEditExerciseBtn} onDelete={handleDeleteExercise} onCopy={handleCopyExercise}
+                      onMoveUp={() => moveDrillUp(day, drillIndex)} onMoveDown={() => moveDrillDown(day, drillIndex)}
                       onDragStart={handleDragStart} onDragOver={handleDragOver} onDrop={handleDrop}
                     />
                   ))}
                   
                   {!isPreviewMode && (
-                    <div className="flex items-center gap-2 mt-2 group cursor-pointer print:hidden" onClick={() => handleAddExercise(day)}>
+                    <div className="flex items-center gap-2 mt-2 group cursor-pointer print:hidden" onClick={() => handleAddExerciseBtn(day)}>
                       <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center group-hover:bg-green-200 dark:group-hover:bg-green-800/50 transition-colors ml-[1px]">
                          <Plus className="w-3 h-3 md:w-3.5 md:h-3.5 text-green-600 dark:text-green-400" />
                       </div>
@@ -423,9 +603,9 @@ export default function WeeklyPlanner() {
           showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library}
           handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal}
           setSaveWeekTemplateModal={setSaveWeekTemplateModal}
-          onDeleteDrill={handleDeleteDrill}
-          onEditDrill={handleEditDrill}
-          onDeleteTemplate={handleDeleteTemplate}
+          onDeleteDrill={handleDeleteLibraryDrill}
+          onEditDrill={handleEditLibraryDrill}
+          onDeleteTemplate={handleDeleteLibraryTemplate}
           onEditTemplate={handleEditTemplate}
         />
 
