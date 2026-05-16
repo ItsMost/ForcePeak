@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  ChevronDown, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus 
+  ChevronDown, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search
 } from 'lucide-react';
 
 export default function Header({
@@ -13,24 +13,27 @@ export default function Header({
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal
 }) {
   
-  // استخدمنا 'short' بدلاً من 'long' ليكون الشهر مختصراً (مثال: May بدلاً من حروف طويلة) لتوفير المساحة
+  // حالة جديدة للبحث عن اسم اللاعب
+  const [athleteSearch, setAthleteSearch] = useState('');
+
   const monthYearString = currentWeekStart.toLocaleString('en-US', { month: 'short', year: 'numeric' });
 
+  // فلترة اللاعبين بناءً على البحث
+  const filteredAthletes = athletes.filter(a => 
+    a.name.toLowerCase().includes(athleteSearch.toLowerCase())
+  );
+
   return (
-    // أضفنا h-auto و min-h لكي يتمدد الشريط العلوي ليحتوي السطرين على الموبايل
     <header className="min-h-[64px] h-auto py-2 sm:py-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200">
       
-      {/* استخدمنا flex-wrap للسماح للعناصر بالنزول لسطر جديد عند ضيق الشاشة */}
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-y-3 gap-x-1 sm:gap-6 w-full max-w-[1600px] mx-auto">
         
-        {/* ================= القسم الأيسر: اسم التطبيق والتقويم ================= */}
-        {/* order-1 يجعله دائماً في الأعلى واليسار */}
+        {/* ================= القسم الأيسر ================= */}
         <div className="flex items-center gap-2 sm:gap-6 shrink-0 order-1">
           <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-400 bg-clip-text text-transparent hidden md:block">
             Weekly Planner
           </h1>
           
-          {/* أزلنا كلاس الإخفاء (hidden sm:flex) ليظهر التقويم دائماً */}
           <div className="flex items-center gap-0.5 sm:gap-1 bg-slate-100 dark:bg-slate-900 rounded-full p-1 border border-slate-200 dark:border-slate-700">
             <button onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} className="p-1 sm:p-1.5 rounded-full hover:bg-white dark:hover:bg-slate-800 text-slate-500 transition-colors">
               <ChevronLeft className="w-4 h-4" />
@@ -45,8 +48,7 @@ export default function Header({
           </div>
         </div>
 
-        {/* ================= القسم الأيمن: أدوات الواجهة ================= */}
-        {/* order-2 يجعله بجوار التقويم في السطر الأول على الموبايل */}
+        {/* ================= القسم الأيمن (تم تغيير الكلمة للإنجليزي) ================= */}
         <div className="flex items-center gap-1 sm:gap-3 shrink-0 order-2 sm:order-3">
           <button onClick={() => setIsMobileView(!isMobileView)} className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMobileView ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-400 hover:text-blue-500 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700'}`} title="Mobile View Toggle">
             {isMobileView ? <Monitor className="w-4 h-4 sm:w-5 sm:h-5" /> : <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -58,21 +60,20 @@ export default function Header({
           
           <div className="w-px h-5 sm:h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
           
+          {/* تغيير الاسم هنا */}
           <button onClick={() => setShowLibrary(!showLibrary)} className={`p-1.5 sm:px-4 sm:py-2 rounded-xl font-medium text-sm shadow-sm transition-all flex items-center gap-2 border ${showLibrary ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}>
             <Library className="w-4 h-4 sm:w-4 sm:h-4" /> 
-            <span className="hidden sm:inline">مكتبة التمارين</span>
+            <span className="hidden sm:inline">Exercise Library</span>
           </button>
         </div>
 
         {/* ================= القسم الأوسط: إدارة اللاعبين ================= */}
-        {/* order-3 و w-full يجبر هذا القسم على النزول لسطر منفصل على الموبايل */}
         <div className="relative flex items-center gap-1 sm:gap-2 flex-1 justify-center sm:justify-start order-3 sm:order-2 w-full sm:w-auto mt-1 sm:mt-0">
            
-           <button onClick={() => setIsAthleteDropdownOpen(!isAthleteDropdownOpen)} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group w-full sm:w-auto bg-slate-50 sm:bg-transparent dark:bg-slate-800/50">
+           <button onClick={() => { setIsAthleteDropdownOpen(!isAthleteDropdownOpen); setAthleteSearch(''); }} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group w-full sm:w-auto bg-slate-50 sm:bg-transparent dark:bg-slate-800/50">
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-sm shrink-0">
               {selectedAthlete?.name ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
             </div>
-            {/* أزلنا الإخفاء ليظهر اسم اللاعب بوضوح تام على الموبايل */}
             <span className="font-semibold text-sm sm:text-base text-slate-800 dark:text-slate-100 truncate">
               {selectedAthlete?.name || 'No Athlete'}
             </span>
@@ -93,21 +94,45 @@ export default function Header({
             <BookmarkPlus className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
+          {/* قائمة اللاعبين المحسنة مع شريط البحث */}
           {isAthleteDropdownOpen && (
-            <div className="absolute top-full mt-2 w-full sm:w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 z-50 left-0">
-              {athletes.map(athlete => (
-                <button 
-                  key={athlete.id} 
-                  onClick={() => { 
-                    setSelectedAthleteId(athlete.id); 
-                    setIsAthleteDropdownOpen(false); 
-                    handleToast(`تم اختيار ${athlete.name}`); 
-                  }} 
-                  className={`w-full text-left px-4 py-3 sm:py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors dark:text-slate-200 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-medium bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
-                >
-                  {athlete.name}
-                </button>
-              ))}
+            <div className="absolute top-full mt-2 w-full sm:w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-100 dark:border-slate-700 py-3 z-50 left-0">
+              
+              <div className="px-3 pb-3 mb-2 border-b border-slate-100 dark:border-slate-700">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-2 w-4 h-4 text-slate-400" />
+                  <input 
+                    type="text" 
+                    placeholder="Search athlete..." 
+                    value={athleteSearch}
+                    onChange={(e) => setAthleteSearch(e.target.value)}
+                    onClick={(e) => e.stopPropagation()} 
+                    className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-60 overflow-y-auto">
+                {filteredAthletes.length > 0 ? (
+                  filteredAthletes.map(athlete => (
+                    <button 
+                      key={athlete.id} 
+                      onClick={() => { 
+                        setSelectedAthleteId(athlete.id); 
+                        setIsAthleteDropdownOpen(false); 
+                        setAthleteSearch('');
+                        handleToast(`تم اختيار ${athlete.name}`); 
+                      }} 
+                      className={`w-full text-left px-4 py-3 sm:py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors dark:text-slate-200 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-bold bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
+                    >
+                      {athlete.name}
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-sm text-center text-slate-500">No athletes found</div>
+                )}
+              </div>
             </div>
           )}
         </div>
