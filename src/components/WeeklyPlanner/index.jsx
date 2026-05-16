@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Percent, UserPlus, X, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2 } from 'lucide-react';
+// تم إضافة Trash2 هنا في السطر ده عشان الشاشة البيضا متظهرش تاني أبداً
+import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2 } from 'lucide-react';
 
 import Header from './Header.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -201,9 +202,6 @@ export default function WeeklyPlanner() {
     } return days;
   };
 
-  // ===============================================
-  // === إصلاح الـ Drag and Drop (منع التكرار نهائياً) ===
-  // ===============================================
   const [draggedItem, setDraggedItem] = useState(null);
   const handleDragStart = (e, day, drill, index) => { setDraggedItem({ source: 'timeline', day, drill, index }); e.dataTransfer.effectAllowed = 'move'; };
   const handleLibraryDragStart = (e, item, isTemplate = false) => { setDraggedItem({ source: 'library', item, isTemplate }); e.dataTransfer.effectAllowed = 'copy'; };
@@ -219,15 +217,11 @@ export default function WeeklyPlanner() {
         const { day: sourceDay, drill, index: sourceIndex } = draggedItem;
         
         if (sourceDay === targetDay) {
-          // النقل داخل نفس اليوم
           if (sourceIndex === targetIndex) return prev;
-          
           const updatedDrills = Array.from(newSchedule[sourceDay]);
           updatedDrills.splice(sourceIndex, 1);
-          
           let finalTargetIndex = targetIndex !== null ? targetIndex : updatedDrills.length;
           if (targetIndex !== null && sourceIndex < targetIndex) { finalTargetIndex -= 1; }
-          
           updatedDrills.splice(finalTargetIndex, 0, drill);
           newSchedule[sourceDay] = updatedDrills;
 
@@ -235,7 +229,6 @@ export default function WeeklyPlanner() {
           autoSaveDay(sourceDay, updatedDrills, dayTitles[sourceDay]);
 
         } else {
-          // النقل ليوم مختلف
           const sourceDrills = Array.from(newSchedule[sourceDay]);
           sourceDrills.splice(sourceIndex, 1);
           newSchedule[sourceDay] = sourceDrills;
@@ -266,15 +259,12 @@ export default function WeeklyPlanner() {
     }); setDraggedItem(null);
   };
 
-  // ===============================================
-  // === دوال الأسهم للترتيب اليدوي (أعلى / أسفل) ===
-  // ===============================================
   const moveDrillUp = (day, index) => {
     if (index === 0) return;
     setSchedule(prev => {
       const newSchedule = { ...prev };
       const drills = [...newSchedule[day]];
-      [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; // تبديل الأماكن
+      [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]];
       newSchedule[day] = drills;
       pushToHistory(newSchedule, dayTitles);
       autoSaveDay(day, drills, dayTitles[day]);
@@ -287,7 +277,7 @@ export default function WeeklyPlanner() {
     setSchedule(prev => {
       const newSchedule = { ...prev };
       const drills = [...newSchedule[day]];
-      [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; // تبديل الأماكن
+      [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]];
       newSchedule[day] = drills;
       pushToHistory(newSchedule, dayTitles);
       autoSaveDay(day, drills, dayTitles[day]);
@@ -295,9 +285,6 @@ export default function WeeklyPlanner() {
     });
   };
 
-  // ===============================================
-  // === دوال فتح الشاشة الجديدة الموحدة (بدون أخطاء بيضاء) ===
-  // ===============================================
   const handleAddExerciseBtn = (day) => { 
     setDayDrillModal({ 
       isOpen: true, 
@@ -313,16 +300,11 @@ export default function WeeklyPlanner() {
 
   const handleSaveDayDrillModal = () => {
     const { day, drill, isNew } = dayDrillModal;
-    
-    // حماية تمنع الحفظ بتمرين فارغ
-    if (!drill.title || !drill.title.trim()) {
-      handleToast('يرجى كتابة اسم التمرين أولاً!');
-      return;
-    }
+    if (!drill.title || !drill.title.trim()) { handleToast('يرجى كتابة اسم التمرين أولاً!'); return; }
 
     let updatedDrills;
     if (isNew) {
-      updatedDrills = [...(schedule[day] || []), drill]; // الترتيب اليدوي (يتم إضافته في النهاية)
+      updatedDrills = [...(schedule[day] || []), drill]; 
     } else {
       updatedDrills = schedule[day].map(w => w.id === drill.id ? drill : w);
     }
@@ -384,7 +366,7 @@ export default function WeeklyPlanner() {
       )}
 
       {showMonthCalendar && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}> <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl border border-slate-200 dark:border-slate-700 max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4 sm:mb-8"> <h3 className="text-xl sm:text-2xl font-bold dark:text-white flex items-center gap-2 sm:gap-3"><CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />{monthYearString}</h3> <button onClick={() => setShowMonthCalendar(false)} className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"><X className="w-5 h-5 sm:w-6 sm:h-6"/></button> </div> <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2 sm:mb-4"> {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => ( <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase tracking-tighter sm:tracking-normal">{d}</div> ))} </div> <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div> </div> </div> )}
-      {deleteConfirmation.isOpen && ( <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center"> <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8 text-red-500" /></div> <h3 className="text-lg font-bold mb-2">هل أنت متأكد؟</h3> <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{deleteConfirmation.type === 'week' ? "سيتم مسح جميع التمارين في هذا الأسبوع بشكل نهائي." : `سيتم مسح جميع تمارين يوم ${deleteConfirmation.targetDay}.`}</p> <div className="flex gap-3"> <button onClick={() => setDeleteConfirmation({isOpen: false})} className="flex-1 px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors font-medium text-sm">إلغاء</button> <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">نعم، امسح</button> </div> </div> </div> )}
+      {deleteConfirmation.isOpen && ( <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center"> <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8 text-red-500" /></div> <h3 className="text-lg font-bold mb-2">هل أنت متأكد؟</h3> <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{deleteConfirmation.type === 'week' ? "سيتم مسح جميع التمارين في هذا الأسبوع بشكل نهائي." : `سيتم مسح جميع تمارين يوم ${deleteConfirmation.targetDay}.`}</p> <div className="flex gap-3"> <button onClick={() => setDeleteConfirmation({isOpen: false})} className="flex-1 px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors font-medium text-sm">إلغاء</button> <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">نعم، امسح</button> </div> </div> </div> )}
       {saveTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-1 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ قالب لليوم</h3> <p className="text-[11px] text-slate-500 mb-4">أسهل طريقة لعمل Template هي بناء التمارين في أي يوم، ثم الضغط على علامة الحفظ 🔖 أعلى اليوم.</p> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم القالب</label> <input type="text" value={saveTemplateModal.name} onChange={(e) => setSaveTemplateModal({...saveTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveTemplateModal({isOpen: false, day: null, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ الأسبوع كقالب</h3> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم البرنامج</label> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       
@@ -522,11 +504,10 @@ export default function WeeklyPlanner() {
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               
-              // الترتيب اليدوي: يتم قراءة التمارين مباشرة كما هي في المصفوفة
               const dayDrills = schedule[day] || [];
 
               return (
-              <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'flex-1 min-w-0'} print:break-inside-avoid print:mb-0`}>
+              <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'flex-1 min-w-[160px] 2xl:min-w-[200px]'} print:break-inside-avoid print:mb-0`}>
                 
                 <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-1 md:px-2 print:border-slate-400">
                   <div className="flex justify-between items-baseline mb-2">

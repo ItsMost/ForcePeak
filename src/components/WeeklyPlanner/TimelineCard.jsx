@@ -20,7 +20,7 @@ export default function TimelineCard({
 
   return (
     <div 
-      className="relative flex gap-3 group pb-4"
+      className="relative flex gap-2 sm:gap-3 group pb-3"
       draggable={!isPreviewMode}
       onDragStart={(e) => onDragStart && onDragStart(e, day, drill, index)}
       onDragOver={onDragOver}
@@ -37,48 +37,48 @@ export default function TimelineCard({
       </div>
 
       {/* تفاصيل التمرين */}
-      <div className="flex-1 pt-1">
-        <div className="flex justify-between items-start gap-2">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h4 className="text-sm md:text-[15px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
-                {drill.title || "تمرين بدون اسم"}
-              </h4>
-              {drill.percentage && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 rounded">
-                  {drill.percentage}%
-                </span>
-              )}
-            </div>
-            <p className="text-[11px] md:text-[13px] font-medium text-slate-500 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">
-              {drill.details}
-            </p>
-          </div>
-
-          {/* أزرار التحكم - تم إضافة أسهم فوق وتحت */}
-          {!isPreviewMode && (
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={onMoveUp} className="p-1 text-slate-400 hover:text-slate-700 transition-colors" title="تحريك لأعلى">
-                <ArrowUp className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={onMoveDown} className="p-1 text-slate-400 hover:text-slate-700 transition-colors" title="تحريك لأسفل">
-                <ArrowDown className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => onCopy && onCopy(drill)} className="p-1 text-slate-400 hover:text-green-500 transition-colors" title="نسخ التمرين">
-                <Copy className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => onEdit(day, drill)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors" title="تعديل">
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-              <button onClick={() => onDelete(day, drill.id)} className="p-1 text-slate-400 hover:text-red-500 transition-colors" title="مسح">
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-              <div className="p-1 text-slate-400 cursor-grab active:cursor-grabbing">
-                <GripVertical className="w-3.5 h-3.5" />
-              </div>
-            </div>
+      <div className="flex-1 pt-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+          <h4 className="text-[13px] md:text-[14px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
+            {drill.title || "تمرين بدون اسم"}
+          </h4>
+          {drill.percentage && (
+            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400 rounded shrink-0">
+              {drill.percentage}%
+            </span>
           )}
         </div>
+        
+        {/* النص واخد حريته بالكامل بدون أي عصر أو تكسير للحروف */}
+        <p className="text-[11px] md:text-[12px] font-medium text-slate-500 dark:text-slate-400 whitespace-pre-line leading-tight mt-1">
+          {drill.details}
+        </p>
+
+        {/* أزرار التحكم - تظهر أسفل النص بدلاً من التزاحم بجانبه */}
+        {!isPreviewMode && (
+          <div className="flex items-center justify-start flex-wrap gap-1 mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+            <button onClick={onMoveUp} className="p-1 text-slate-400 hover:text-slate-700 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="تحريك لأعلى">
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={onMoveDown} className="p-1 text-slate-400 hover:text-slate-700 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="تحريك لأسفل">
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+            <button onClick={() => onCopy && onCopy(drill)} className="p-1 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="نسخ التمرين">
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onEdit(day, drill)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="تعديل">
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onDelete(day, drill.id)} className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="مسح">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+            <div className="p-1 text-slate-400 cursor-grab active:cursor-grabbing bg-slate-50 dark:bg-slate-800 rounded" title="سحب وإفلات">
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
