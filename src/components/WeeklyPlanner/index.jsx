@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// تم إضافة Trash2 هنا في السطر ده عشان الشاشة البيضا متظهرش تاني أبداً
 import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2 } from 'lucide-react';
 
 import Header from './Header.jsx';
@@ -7,7 +6,8 @@ import Sidebar from './Sidebar.jsx';
 import TimelineCard from './TimelineCard.jsx';
 import ExerciseLibrary from './ExerciseLibrary.jsx';
 import AthleteProfileModal from './AthleteProfileModal.jsx';
-import { INITIAL_ATHLETES, INITIAL_SCHEDULE, INITIAL_LIBRARY, DAYS_OF_WEEK } from '../../data/constants.js';
+// قمنا بإزالة DAYS_OF_WEEK و INITIAL_SCHEDULE من هنا لأننا هنعرفهم بأسلوب جديد يبدأ بالسبت
+import { INITIAL_ATHLETES, INITIAL_LIBRARY } from '../../data/constants.js';
 import { supabase } from '../../supabaseClient.js';
 
 const EXERCISE_CATEGORIES = {
@@ -18,6 +18,11 @@ const EXERCISE_CATEGORIES = {
   strength: 'Strength (قوة)',
   physical: 'Physical (بدني عام)'
 };
+
+// تعريفات الأيام الجديدة (السبت هو البداية)
+const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const CATEGORY_ORDER = ['mobility', 'isometric', 'core', 'power', 'strength', 'physical'];
 
 export default function WeeklyPlanner() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -32,8 +37,15 @@ export default function WeeklyPlanner() {
   const [newAthleteData, setNewAthleteData] = useState({ name: '', birthYear: '', weight: '' });
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
   
-  const [currentDate, setCurrentDate] = useState(new Date("2026-05-14T00:00:00"));
-  const [schedule, setSchedule] = useState(INITIAL_SCHEDULE);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // بناء جدول فارغ يبدأ من السبت
+  const [schedule, setSchedule] = useState(() => {
+    const init = {};
+    DAYS_OF_WEEK.forEach(d => init[d] = []);
+    return init;
+  });
+  
   const [dayTitles, setDayTitles] = useState({});
   const [library, setLibrary] = useState({ drills: [], templates: [] }); 
   
@@ -61,7 +73,15 @@ export default function WeeklyPlanner() {
   }, [isDarkMode]);
 
   const getDbDateStr = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-  const getStartOfWeek = (date) => { const d = new Date(date); d.setDate(d.getDate() - d.getDay()); return d; };
+  
+  // معادلة ذكية جداً لحساب بداية الأسبوع بحيث يكون دائماً يوم السبت
+  const getStartOfWeek = (date) => { 
+    const d = new Date(date); 
+    const dayOffset = (d.getDay() + 1) % 7; 
+    d.setDate(d.getDate() - dayOffset); 
+    return d; 
+  };
+  
   const currentWeekStart = getStartOfWeek(currentDate);
   const monthYearString = currentWeekStart.toLocaleString('en-US', { month: 'long', year: 'numeric' });
   const weekStartDateStr = getDbDateStr(currentWeekStart);
@@ -117,8 +137,12 @@ export default function WeeklyPlanner() {
 
       if (data) {
         data.forEach(record => {
-          const recordDate = new Date(record.workout_date); const dayName = DAYS_OF_WEEK[recordDate.getDay()];
-          if (dayName) { newSchedule[dayName] = record.drills || []; newTitles[dayName] = record.workout_title || ''; }
+          const recordDate = new Date(record.workout_date); 
+          const dayName = JS_DAYS[recordDate.getDay()];
+          if (dayName && DAYS_OF_WEEK.includes(dayName)) { 
+            newSchedule[dayName] = record.drills || []; 
+            newTitles[dayName] = record.workout_title || ''; 
+          }
         });
       }
       
@@ -187,11 +211,17 @@ export default function WeeklyPlanner() {
   };
 
   const renderLargeCalendarDays = () => {
-    const days = []; const startDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const days = []; 
+    // ضبط عدد المربعات الفارغة بناءً على السبت
+    const startDayObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const startDay = (startDayObj.getDay() + 1) % 7; 
+    
     for(let i=0; i<startDay; i++) days.push(<div key={`empty-${i}`} className="p-1 sm:p-4 border border-transparent"></div>); 
+    
+    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     for (let i = 1; i <= daysInMonth; i++) {
       const isSelectedWeek = weekDates.includes(i); let dayTitle = "";
-      if (isSelectedWeek) { const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i); const dayName = DAYS_OF_WEEK[dateObj.getDay()]; dayTitle = dayTitles[dayName] || "Workout"; }
+      if (isSelectedWeek) { const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i); const dayName = JS_DAYS[dateObj.getDay()]; dayTitle = dayTitles[dayName] || "Workout"; }
       days.push(
         <button key={i} onClick={() => { const newDate = new Date(currentDate); newDate.setDate(i); setCurrentDate(newDate); setShowMonthCalendar(false); }} 
           className={`h-20 sm:h-28 w-full rounded-xl sm:rounded-2xl p-1 sm:p-3 flex flex-col items-center sm:items-start justify-start border transition-all overflow-hidden ${isSelectedWeek ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 shadow-sm' : 'border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'}`}>
@@ -365,8 +395,10 @@ export default function WeeklyPlanner() {
         <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} /> 
       )}
 
-      {showMonthCalendar && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}> <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl border border-slate-200 dark:border-slate-700 max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4 sm:mb-8"> <h3 className="text-xl sm:text-2xl font-bold dark:text-white flex items-center gap-2 sm:gap-3"><CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />{monthYearString}</h3> <button onClick={() => setShowMonthCalendar(false)} className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"><X className="w-5 h-5 sm:w-6 sm:h-6"/></button> </div> <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2 sm:mb-4"> {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => ( <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase tracking-tighter sm:tracking-normal">{d}</div> ))} </div> <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div> </div> </div> )}
-      {deleteConfirmation.isOpen && ( <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center"> <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8 text-red-500" /></div> <h3 className="text-lg font-bold mb-2">هل أنت متأكد؟</h3> <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{deleteConfirmation.type === 'week' ? "سيتم مسح جميع التمارين في هذا الأسبوع بشكل نهائي." : `سيتم مسح جميع تمارين يوم ${deleteConfirmation.targetDay}.`}</p> <div className="flex gap-3"> <button onClick={() => setDeleteConfirmation({isOpen: false})} className="flex-1 px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors font-medium text-sm">إلغاء</button> <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">نعم، امسح</button> </div> </div> </div> )}
+      {/* تقويم الشهر */}
+      {showMonthCalendar && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}> <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl border border-slate-200 dark:border-slate-700 max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4 sm:mb-8"> <h3 className="text-xl sm:text-2xl font-bold dark:text-white flex items-center gap-2 sm:gap-3"><CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />{monthYearString}</h3> <button onClick={() => setShowMonthCalendar(false)} className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"><X className="w-5 h-5 sm:w-6 sm:h-6"/></button> </div> <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2 sm:mb-4"> {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => ( <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase tracking-tighter sm:tracking-normal">{d}</div> ))} </div> <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div> </div> </div> )}
+      
+      {deleteConfirmation.isOpen && ( <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center"> <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8 text-red-500" /></div> <h3 className="text-lg font-bold mb-2">هل أنت متأكد؟</h3> <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{deleteConfirmation.type === 'week' ? "سيتم مسح جميع التمارين في هذا الأسبوع بشكل نهائي." : `سيتم مسح جميع تمارين يوم ${deleteConfirmation.targetDay}.`}</p> <div className="flex gap-3"> <button onClick={() => setDeleteConfirmation({isOpen: false})} className="flex-1 px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors font-medium text-sm">إلغاء</button> <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">نعم، امسح</button> </div> </div> </div> )}
       {saveTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-1 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ قالب لليوم</h3> <p className="text-[11px] text-slate-500 mb-4">أسهل طريقة لعمل Template هي بناء التمارين في أي يوم، ثم الضغط على علامة الحفظ 🔖 أعلى اليوم.</p> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم القالب</label> <input type="text" value={saveTemplateModal.name} onChange={(e) => setSaveTemplateModal({...saveTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveTemplateModal({isOpen: false, day: null, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ الأسبوع كقالب</h3> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم البرنامج</label> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       
