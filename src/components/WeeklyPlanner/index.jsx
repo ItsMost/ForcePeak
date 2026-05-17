@@ -198,7 +198,7 @@ export default function WeeklyPlanner() {
   };
 
   // ====================================================
-  // === 🧠 تحديث العقل المدبر: قراءة العدات من الخانات المخصصة فقط ===
+  // === 🧠 تحديث العقل المدبر: إقصاء التمارين الفرعية من الحمل ===
   // ====================================================
   const calculateDayVolume = (dayDrills) => { 
     let totalExercises = dayDrills.length; 
@@ -207,39 +207,38 @@ export default function WeeklyPlanner() {
     let sumIntensity = 0; 
     
     dayDrills.forEach(drill => { 
-      let s = 0; 
-      let r = 0;
-      
-      // التعديل الجديد: قراءة المجاميع والعدات فقط من الخانات المخصصة وتجاهل الملاحظات تماماً
-      if (drill.sets || drill.reps) {
-         s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
-         r = parseInt(String(drill.reps).replace(/\D/g,'')) || 0;
-         if (s > 0 && r === 0) r = 1;
-         if (r > 0 && s === 0) s = 1;
-      }
-
-      let repsMultiplier = s * r;
-
-      let categoryMultiplier = 1;
       const type = (drill.type || '').toLowerCase();
       
-      if (type === 'power') categoryMultiplier = 2.0;       
-      else if (type === 'strength') categoryMultiplier = 1.5; 
-      else if (type === 'isometric') categoryMultiplier = 0.15; 
-      else if (type === 'mobility') categoryMultiplier = 0.1;   
-      else if (type === 'core') categoryMultiplier = 0.5;       
+      // السحر هنا: البرنامج هيتجاهل أي حاجة غير Strength و Power
+      if (type === 'power' || type === 'strength') {
+        let s = 0; 
+        let r = 0;
+        
+        if (drill.sets || drill.reps) {
+           s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
+           r = parseInt(String(drill.reps).replace(/\D/g,'')) || 0;
+           if (s > 0 && r === 0) r = 1;
+           if (r > 0 && s === 0) s = 1;
+        }
 
-      const intensity = parseInt(drill.percentage) || 0; 
-      if (intensity > 0) { validIntensityCount++; sumIntensity += intensity; } 
-      
-      let drillLoad = repsMultiplier * categoryMultiplier * (intensity > 0 ? (intensity/100) : 1) * 10; 
+        let repsMultiplier = s * r;
 
-      const title = (drill.title || '').toLowerCase();
-      if (title.includes('recovery') || title.includes('راحة') || repsMultiplier === 0) {
-        drillLoad = 0;
+        let categoryMultiplier = 1;
+        if (type === 'power') categoryMultiplier = 2.0;       
+        else if (type === 'strength') categoryMultiplier = 1.5; 
+
+        const intensity = parseInt(drill.percentage) || 0; 
+        if (intensity > 0) { validIntensityCount++; sumIntensity += intensity; } 
+        
+        let drillLoad = repsMultiplier * categoryMultiplier * (intensity > 0 ? (intensity/100) : 1) * 10; 
+
+        const title = (drill.title || '').toLowerCase();
+        if (title.includes('recovery') || title.includes('راحة') || repsMultiplier === 0) {
+          drillLoad = 0;
+        }
+
+        totalVolumeScore += drillLoad; 
       }
-
-      totalVolumeScore += drillLoad; 
     }); 
     
     const avgIntensity = validIntensityCount > 0 ? Math.round(sumIntensity / validIntensityCount) : 0; 
@@ -438,14 +437,12 @@ export default function WeeklyPlanner() {
         <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} /> 
       )}
 
-      {/* تقويم الشهر */}
       {showMonthCalendar && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}> <div className="bg-white dark:bg-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl border border-slate-200 dark:border-slate-700 max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4 sm:mb-8"> <h3 className="text-xl sm:text-2xl font-bold dark:text-white flex items-center gap-2 sm:gap-3"><CalendarIcon className="w-6 h-6 sm:w-8 sm:h-8 text-orange-500" />{monthYearString}</h3> <button onClick={() => setShowMonthCalendar(false)} className="p-1.5 sm:p-2 bg-slate-100 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors"><X className="w-5 h-5 sm:w-6 sm:h-6"/></button> </div> <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2 sm:mb-4"> {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => ( <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase tracking-tighter sm:tracking-normal">{d}</div> ))} </div> <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div> </div> </div> )}
       
       {deleteConfirmation.isOpen && ( <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700 p-6 text-center"> <div className="w-16 h-16 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8 text-red-500" /></div> <h3 className="text-lg font-bold mb-2">هل أنت متأكد؟</h3> <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{deleteConfirmation.type === 'week' ? "سيتم مسح جميع التمارين في هذا الأسبوع بشكل نهائي." : `سيتم مسح جميع تمارين يوم ${deleteConfirmation.targetDay}.`}</p> <div className="flex gap-3"> <button onClick={() => setDeleteConfirmation({isOpen: false})} className="flex-1 px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition-colors font-medium text-sm">إلغاء</button> <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">نعم، امسح</button> </div> </div> </div> )}
       {saveTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-1 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ قالب لليوم</h3> <p className="text-[11px] text-slate-500 mb-4">أسهل طريقة لعمل Template هي بناء التمارين في أي يوم، ثم الضغط على علامة الحفظ 🔖 أعلى اليوم.</p> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم القالب</label> <input type="text" value={saveTemplateModal.name} onChange={(e) => setSaveTemplateModal({...saveTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveTemplateModal({isOpen: false, day: null, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> حفظ الأسبوع كقالب</h3> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">اسم البرنامج</label> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">إلغاء</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">حفظ بالمكتبة</button> </div> </div> </div> )}
       
-      {/* نافذة الإحصائيات الأسبوعية (الرسم البياني) - تم إصلاح ارتفاع الأعمدة */}
       {showStatsModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print:hidden" onClick={() => setShowStatsModal(false)}>
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden border border-slate-200 dark:border-slate-700" onClick={e => e.stopPropagation()}>
@@ -474,7 +471,6 @@ export default function WeeklyPlanner() {
 
               <h4 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-4 uppercase tracking-widest">توزيع الحمل اليومي</h4>
               
-              {/* التحديث: إصلاح الارتفاع في الأعمدة عشان تظهر بشكل صح وتملى الشاشة */}
               <div className="flex items-end justify-between gap-2 h-40 mt-4 border-b border-slate-200 dark:border-slate-700 pb-2">
                 {weeklyStats.dailyData.map((data, i) => {
                   const maxLoad = Math.max(...weeklyStats.dailyData.map(d => d.load), 1000); 
@@ -505,7 +501,6 @@ export default function WeeklyPlanner() {
 
       {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'تعديل بيانات التمرين' : 'إضافة تمرين للمكتبة'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">نوع التمرين</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="w-28"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">النسبة (%)</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2.5 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all" placeholder="0" /> <Percent className="w-4 h-4 absolute left-2.5 top-3 text-slate-400" /> </div> </div> </div> <div className="flex gap-2 sm:gap-3"> <div className="flex-1"> <label className="block text-[10px] sm:text-xs font-bold text-slate-500 mb-1.5 uppercase">المجموعات</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} placeholder="مثال: 3" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium text-sm" /> </div> <div className="flex-1"> <label className="block text-[10px] sm:text-xs font-bold text-slate-500 mb-1.5 uppercase">العدادت</label> <input type="text" value={addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, reps: e.target.value})} placeholder="مثال: 10" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium text-sm" /> </div> <div className="flex-1"> <label className="block text-[10px] sm:text-xs font-bold text-slate-500 mb-1.5 uppercase">الراحة</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} placeholder="مثال: 90s" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium text-sm" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">اسم التمرين</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} placeholder="مثال: Barbell Back Squat" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">ملاحظات أخرى</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} placeholder="ملاحظات فنية أو تفاصيل إضافية..." className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white h-20 resize-none" /> </div> </div> <div className="flex justify-end gap-3 mt-8"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: ''})} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-sm">إلغاء</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm">{addExerciseModal.id ? 'حفظ التعديلات' : 'إضافة للمكتبة'}</button> </div> </div> </div> )}
 
-      {/* النافذة الموحدة */}
       {dayDrillModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700">
@@ -667,7 +662,6 @@ export default function WeeklyPlanner() {
           <div className={`flex h-full p-2 md:p-4 gap-2 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full' : 'flex-row w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-              
               const dayDrills = schedule[day] || [];
 
               return (
