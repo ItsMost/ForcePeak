@@ -18,6 +18,7 @@ export default function TimelineCard({
   const safeType = drill.type ? drill.type.toLowerCase() : 'physical';
   const style = CATEGORY_STYLES[safeType] || CATEGORY_STYLES.physical;
 
+  // Automated 1RM Weight Multiplier Calculation from Athlete Profile
   let calculatedWeight = null;
   if (athlete && drill.percentage) {
     const title = (drill.title || '').toLowerCase();
@@ -36,29 +37,39 @@ export default function TimelineCard({
     }
   }
 
+  // Format unit text safely for Reps / Sec / Min / Jumps
+  const formatUnit = (unit) => {
+    if (!unit) return 'Reps';
+    if (unit.toLowerCase() === 'reps') return 'Reps';
+    if (unit.toLowerCase() === 'sec') return 'Sec';
+    if (unit.toLowerCase() === 'min') return 'Min';
+    if (unit.toLowerCase() === 'jumps') return 'Jumps';
+    return unit.charAt(0).toUpperCase() + unit.slice(1);
+  };
+
   return (
     <div 
-      className="relative flex gap-2 sm:gap-3 group pb-3"
+      className="relative flex gap-2 sm:gap-3 group pb-3 cursor-grab active:cursor-grabbing"
       draggable={!isPreviewMode}
       onDragStart={(e) => onDragStart && onDragStart(e, day, drill, index)}
       onDragOver={onDragOver}
       onDrop={(e) => onDrop && onDrop(e, day, index)}
     >
-      {/* الخط الزمني */}
+      {/* Vertical timeline line filament link thread */}
       {!isLast && (
         <div className="absolute top-8 bottom-0 left-[15px] w-px bg-slate-200 dark:bg-slate-700 print:bg-slate-300"></div>
       )}
 
-      {/* الأيقونة */}
+      {/* Category Icon Display Status indicator */}
       <div className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-white dark:bg-slate-800 shrink-0 print:border-slate-400 ${style.color}`}>
         {style.icon}
       </div>
 
-      {/* تفاصيل التمرين */}
+      {/* Exercise core detailed metadata descriptor block */}
       <div className="flex-1 pt-1 min-w-0">
         <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
           <h4 className="text-[13px] md:text-[14px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
-            {drill.title || "تمرين بدون اسم"}
+            {drill.title || "Unnamed Exercise"}
           </h4>
           
           {calculatedWeight && (
@@ -74,7 +85,7 @@ export default function TimelineCard({
           )}
         </div>
 
-        {/* عرض المجموعات والعدات والراحة */}
+        {/* Prescription Volume Parameters Display Row Block */}
         {(drill.sets || drill.reps || drill.rest) && (
           <div className="flex items-center gap-1 mt-1 mb-1 flex-wrap">
             {(drill.sets || drill.reps) && (
@@ -84,7 +95,7 @@ export default function TimelineCard({
                 </span>
                 <span className="text-slate-400 text-[10px] font-bold">x</span>
                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded font-bold text-[11px] tracking-widest">
-                  {drill.reps || '-'} Reps
+                  {drill.reps || '-'} {formatUnit(drill.unit)}
                 </span>
               </>
             )}
@@ -97,24 +108,36 @@ export default function TimelineCard({
           </div>
         )}
         
-        {/* التفاصيل الإضافية */}
+        {/* Engineering specific coaching notes box line container */}
         {drill.details && (
           <p className="text-[11px] md:text-[12px] font-medium text-slate-500 dark:text-slate-400 whitespace-pre-line leading-tight mt-1">
             {drill.details}
           </p>
         )}
 
-        {/* أزرار التحكم */}
+        {/* Quick layout overlay control actions view state menu wrapper */}
         {!isPreviewMode && (
           <div className="flex items-center justify-start flex-wrap gap-1 mt-2.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-            <button onClick={onMoveUp} className="p-1 text-slate-400 hover:text-slate-700 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="تحريك لأعلى"><ArrowUp className="w-3.5 h-3.5" /></button>
-            <button onClick={onMoveDown} className="p-1 text-slate-400 hover:text-slate-700 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="تحريك لأسفل"><ArrowDown className="w-3.5 h-3.5" /></button>
+            <button onClick={onMoveUp} className="p-1 text-slate-400 hover:text-slate-700 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="Move Up">
+              <ArrowUp className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={onMoveDown} className="p-1 text-slate-400 hover:text-slate-700 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="Move Down">
+              <ArrowDown className="w-3.5 h-3.5" />
+            </button>
             <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
-            <button onClick={() => onCopy && onCopy(drill)} className="p-1 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="نسخ التمرين"><Copy className="w-3.5 h-3.5" /></button>
-            <button onClick={() => onEdit(day, drill)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="تعديل"><Edit2 className="w-3.5 h-3.5" /></button>
-            <button onClick={() => onDelete(day, drill.id)} className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="مسح"><Trash2 className="w-3.5 h-3.5" /></button>
+            <button onClick={() => onCopy && onCopy(drill)} className="p-1 text-slate-400 hover:text-green-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="Copy Card Parameters">
+              <Copy className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onEdit(day, drill)} className="p-1 text-slate-400 hover:text-blue-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="Edit Parameters Modal">
+              <Edit2 className="w-3.5 h-3.5" />
+            </button>
+            <button onClick={() => onDelete(day, drill.id)} className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-slate-50 dark:bg-slate-800 rounded" title="Delete Workflow Item">
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
             <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
-            <div className="p-1 text-slate-400 cursor-grab active:cursor-grabbing bg-slate-50 dark:bg-slate-800 rounded" title="سحب وإفلات"><GripVertical className="w-3.5 h-3.5" /></div>
+            <div className="p-1 text-slate-400 bg-slate-50 dark:bg-slate-800 rounded" title="Drag card block layout directly to sidebar or to rearrange days">
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
           </div>
         )}
       </div>
