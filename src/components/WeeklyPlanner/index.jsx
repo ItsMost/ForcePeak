@@ -213,13 +213,41 @@ export default function WeeklyPlanner() {
           ...a, birthYear: a.birth_year, bodyFat: a.body_fat, verticalJump: a.vertical_jump, 
           standingLongJump: a.standing_long_jump, squatJump: a.squat_jump, halfSquat: a.half_squat, quarterSquat: a.quarter_squat, fullSquat: a.full_squat, deadlift: a.deadlift 
         }));
-        setAthletes(formattedData); 
+
+        // Sort by forcepeak_athlete_order from localStorage
+        const savedOrder = JSON.parse(localStorage.getItem('forcepeak_athlete_order') || '[]');
+        const sortedData = [...formattedData].sort((a, b) => {
+          const indexA = savedOrder.indexOf(a.id);
+          const indexB = savedOrder.indexOf(b.id);
+          if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+          if (indexA !== -1) return -1;
+          if (indexB !== -1) return 1;
+          return 0; // maintain database order
+        });
+
+        setAthletes(sortedData); 
         const savedId = localStorage.getItem('lastSelectedAthlete');
-        if (savedId && formattedData.some(a => a.id === savedId)) setSelectedAthleteId(savedId); 
-        else setSelectedAthleteId(formattedData[0].id);
+        if (savedId && sortedData.some(a => a.id === savedId)) setSelectedAthleteId(savedId); 
+        else setSelectedAthleteId(sortedData[0].id);
       }
     }; fetchAthletes();
   }, []);
+
+  const handleMoveAthlete = (athleteId, direction) => {
+    const index = athletes.findIndex(a => a.id === athleteId);
+    if (index === -1) return;
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= athletes.length) return;
+    
+    const updated = [...athletes];
+    const temp = updated[index];
+    updated[index] = updated[newIndex];
+    updated[newIndex] = temp;
+    
+    setAthletes(updated);
+    const newOrderIds = updated.map(a => a.id);
+    localStorage.setItem('forcepeak_athlete_order', JSON.stringify(newOrderIds));
+  };
 
   useEffect(() => { if (selectedAthleteId) localStorage.setItem('lastSelectedAthlete', selectedAthleteId); }, [selectedAthleteId]);
 
@@ -943,7 +971,7 @@ export default function WeeklyPlanner() {
     handleToast(`Day template applied to ${targetDay}!`);
   };
 
-  const handleAddAthlete = async () => { if(newAthleteData.name.trim()) { const newAthlete = { name: newAthleteData.name, birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null }; const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); if (data && data.length > 0) { const addedAthlete = { ...data[0], birthYear: data[0].birth_year, bodyFat: data[0].body_fat, verticalJump: data[0].vertical_jump, halfSquat: data[0].half_squat, quarterSquat: data[0].quarter_squat }; setAthletes([addedAthlete, ...athletes]); setSelectedAthleteId(addedAthlete.id); setNewAthleteData({ name: '', birthYear: '', weight: '' }); setShowAddAthleteModal(false); } } };
+  const handleAddAthlete = async () => { if(newAthleteData.name.trim()) { const newAthlete = { name: newAthleteData.name, birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null }; const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); if (data && data.length > 0) { const addedAthlete = { ...data[0], birthYear: data[0].birth_year, bodyFat: data[0].body_fat, verticalJump: data[0].vertical_jump, halfSquat: data[0].half_squat, quarterSquat: data[0].quarter_squat }; const updatedAthletes = [addedAthlete, ...athletes]; setAthletes(updatedAthletes); const newOrderIds = updatedAthletes.map(a => a.id); localStorage.setItem('forcepeak_athlete_order', JSON.stringify(newOrderIds)); setSelectedAthleteId(addedAthlete.id); setNewAthleteData({ name: '', birthYear: '', weight: '' }); setShowAddAthleteModal(false); } } };
   const handleSaveProfile = async (updatedProfile) => { const { error } = await supabase.from('agilitylap_athletes').update({ name: updatedProfile.name, birth_year: updatedProfile.birthYear ? parseInt(updatedProfile.birthYear) : null, weight: updatedProfile.weight ? parseFloat(updatedProfile.weight) : null, height: updatedProfile.height ? parseFloat(updatedProfile.height) : null, body_fat: updatedProfile.bodyFat ? parseFloat(updatedProfile.bodyFat) : null, vertical_jump: updatedProfile.verticalJump ? parseFloat(updatedProfile.verticalJump) : null, standing_long_jump: updatedProfile.standingLongJump ? parseFloat(updatedProfile.standingLongJump) : null, squat_jump: updatedProfile.squatJump ? parseFloat(updatedProfile.squatJump) : null, clean: updatedProfile.clean ? parseFloat(updatedProfile.clean) : null, half_squat: updatedProfile.halfSquat ? parseFloat(updatedProfile.halfSquat) : null, quarter_squat: updatedProfile.quarterSquat ? parseFloat(updatedProfile.quarterSquat) : null, full_squat: updatedProfile.fullSquat ? parseFloat(updatedProfile.fullSquat) : null, bench: updatedProfile.bench ? parseFloat(updatedProfile.bench) : null, deadlift: updatedProfile.deadlift ? parseFloat(updatedProfile.deadlift) : null, }).eq('id', updatedProfile.id); if (!error) { setAthletes(prev => prev.map(a => a.id === updatedProfile.id ? updatedProfile : a)); setShowProfileModal(false); handleToast('Profile updated'); } };
 
   const handleDeleteAthlete = async (athleteId) => {
@@ -1590,6 +1618,7 @@ export default function WeeklyPlanner() {
         setShowAddAthleteModal={setShowAddAthleteModal} setShowProfileModal={setShowProfileModal} isMobileView={isMobileView} setIsMobileView={setIsMobileView} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal} weeklyStats={weeklyStats}
         isOnline={isOnline} syncStatus={syncStatus} onDelete={handleDeleteAthlete}
+        onMoveAthlete={handleMoveAthlete}
       />
 
       {/* ⚠️ Layout Control Panel */}

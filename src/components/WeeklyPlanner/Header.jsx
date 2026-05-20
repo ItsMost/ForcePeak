@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  ChevronDown, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity
+  ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity
 } from 'lucide-react';
 
 export default function Header({
@@ -12,7 +12,8 @@ export default function Header({
   isMobileView, setIsMobileView, isDarkMode, setIsDarkMode,
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal,
   weeklyStats,
-  isOnline, syncStatus
+  isOnline, syncStatus, onDelete,
+  onMoveAthlete
 }) {
   
   const [athleteSearch, setAthleteSearch] = useState('');
@@ -157,11 +158,57 @@ export default function Header({
                 </div>
                 <div className="max-h-60 overflow-y-auto">
                   {filteredAthletes.length > 0 ? (
-                    filteredAthletes.map(athlete => (
-                      <button key={athlete.id} onClick={() => { setSelectedAthleteId(athlete.id); setIsAthleteDropdownOpen(false); setAthleteSearch(''); handleToast(`Selected ${athlete.name}`); }} className={`w-full text-left px-4 py-2 text-xs font-black uppercase hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors dark:text-slate-250 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-bold bg-orange-50/50 dark:bg-orange-500/10' : ''}`}>
-                        {athlete.name}
-                      </button>
-                    ))
+                    filteredAthletes.map(athlete => {
+                      const isFirst = athletes.findIndex(a => a.id === athlete.id) === 0;
+                      const isLast = athletes.findIndex(a => a.id === athlete.id) === athletes.length - 1;
+                      return (
+                        <div 
+                          key={athlete.id} 
+                          className={`flex items-center justify-between px-4 py-1.5 group/row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedAthlete?.id === athlete.id ? 'bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
+                        >
+                          <button 
+                            type="button"
+                            onClick={() => { 
+                              setSelectedAthleteId(athlete.id); 
+                              setIsAthleteDropdownOpen(false); 
+                              setAthleteSearch(''); 
+                              handleToast(`Selected ${athlete.name}`); 
+                            }} 
+                            className={`flex-1 text-left text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
+                          >
+                            {athlete.name}
+                          </button>
+                          
+                          {/* Reordering Controls */}
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              type="button"
+                              disabled={isFirst}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMoveAthlete(athlete.id, 'up');
+                              }}
+                              className={`p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isFirst ? 'text-slate-200 dark:text-slate-800 cursor-not-allowed' : 'text-slate-400 hover:text-orange-500'}`}
+                              title="Move Up"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isLast}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMoveAthlete(athlete.id, 'down');
+                              }}
+                              className={`p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ${isLast ? 'text-slate-200 dark:text-slate-800 cursor-not-allowed' : 'text-slate-400 hover:text-orange-500'}`}
+                              title="Move Down"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
                   ) : (
                     <div className="px-4 py-3 text-xs text-center text-slate-500">No athletes found</div>
                   )}
