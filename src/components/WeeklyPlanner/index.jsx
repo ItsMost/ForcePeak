@@ -230,6 +230,7 @@ export default function WeeklyPlanner() {
     DAYS_OF_WEEK.forEach(day => autoSaveDay(day, newSchedule[day], newTitles[day])); handleToast('Full week pasted successfully');
   };
 
+  // GYM SPECIFIC LOAD CALCULATOR WITH CNS/STRUCTURAL BALANCE AND JUMPS COUNTER
   const calculateDayVolume = (dayDrills) => { 
     let totalExercises = dayDrills.length; 
     let totalVolumeScore = 0; 
@@ -241,8 +242,8 @@ export default function WeeklyPlanner() {
     
     dayDrills.forEach(drill => { 
       const type = (drill.type || '').toLowerCase();
-      let s = 0; let r = 0;
       
+      let s = 0; let r = 0;
       if (drill.sets || drill.reps) {
          s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
          r = parseInt(String(drill.reps).replace(/\D/g,'')) || 0;
@@ -273,13 +274,25 @@ export default function WeeklyPlanner() {
         totalVolumeScore += drillLoad; 
       }
     }); 
+    
     const avgIntensity = validIntensityCount > 0 ? Math.round(sumIntensity / validIntensityCount) : 0; 
-    return { totalExercises, totalVolumeScore: Math.round(totalVolumeScore), avgIntensity, jumpsVolume, cnsLoad: Math.round(cnsLoad), structuralLoad: Math.round(structuralLoad) }; 
+    return { 
+      totalExercises, 
+      totalVolumeScore: Math.round(totalVolumeScore), 
+      avgIntensity,
+      jumpsVolume,
+      cnsLoad: Math.round(cnsLoad),
+      structuralLoad: Math.round(structuralLoad)
+    }; 
   };
 
   const weeklyStats = useMemo(() => {
-    let totalLoad = 0; let sumIntensities = 0; let countIntDays = 0; 
-    let totalJumps = 0; let totalCnsLoad = 0; let totalStructuralLoad = 0;
+    let totalLoad = 0; 
+    let sumIntensities = 0; 
+    let countIntDays = 0; 
+    let totalJumps = 0;
+    let totalCnsLoad = 0;
+    let totalStructuralLoad = 0;
     const dailyData = [];
 
     DAYS_OF_WEEK.forEach(day => {
@@ -290,7 +303,14 @@ export default function WeeklyPlanner() {
       totalStructuralLoad += stats.structuralLoad;
 
       if (stats.avgIntensity > 0) { sumIntensities += stats.avgIntensity; countIntDays++; }
-      dailyData.push({ day, load: stats.totalVolumeScore, intensity: stats.avgIntensity });
+      dailyData.push({ 
+        day, 
+        load: stats.totalVolumeScore, 
+        intensity: stats.avgIntensity,
+        jumps: stats.jumpsVolume,
+        cnsLoad: stats.cnsLoad,
+        structuralLoad: stats.structuralLoad
+      });
     });
     
     const avgIntensity = countIntDays > 0 ? Math.round(sumIntensities / countIntDays) : 0;
@@ -305,7 +325,16 @@ export default function WeeklyPlanner() {
     const cnsPercentage = combinedLoad > 0 ? Math.round((totalCnsLoad / combinedLoad) * 100) : 0;
     const structuralPercentage = combinedLoad > 0 ? Math.round((totalStructuralLoad / combinedLoad) * 100) : 0;
 
-    return { load: totalLoad, intensity: avgIntensity, loadLabel, loadColor, dailyData, totalJumps, cnsPercentage, structuralPercentage };
+    return { 
+      load: totalLoad, 
+      intensity: avgIntensity, 
+      loadLabel, 
+      loadColor, 
+      dailyData,
+      totalJumps,
+      cnsPercentage,
+      structuralPercentage
+    };
   }, [schedule]);
 
   const handleSaveProgramBlock = async () => {
@@ -316,7 +345,7 @@ export default function WeeklyPlanner() {
       return found ? { title: found.title, drills: found.drills } : null;
     }).filter(Boolean);
 
-    if (compiledWeeks.length === 0) { handleToast('Please map valid week templates into the structural track chain'); return; }
+    if (compiledWeeks.length === 0) { handleToast('Please map valid week templates into the block array'); return; }
 
     const payload = {
       program_name: createProgramModal.name,
@@ -328,7 +357,7 @@ export default function WeeklyPlanner() {
     if (!error) {
       setCreateProgramModal({ isOpen: false, name: '', tags: '', weeksChain: [''] });
       fetchLibraryData();
-      handleToast('Multi-week block created successfully!');
+      handleToast('Multi-week macro block saved!');
     }
   };
 
@@ -341,7 +370,7 @@ export default function WeeklyPlanner() {
       futureWeekStart.setDate(futureWeekStart.getDate() + (i * 7));
 
       const weekTemplateObject = program.weeks[i].drills || {}; 
-      const targetBlockTitle = program.weeks[i].title || 'Block Workout';
+      const targetBlockTitle = program.weeks[i].title || 'Block Matrix Plan';
 
       for (let j = 0; j < DAYS_OF_WEEK.length; j++) {
         const dayName = DAYS_OF_WEEK[j];
@@ -375,12 +404,12 @@ export default function WeeklyPlanner() {
     }
     setSchedule(newSchedule); setDayTitles(newTitles);
     setIsLoading(false);
-    handleToast(`Successfully deployed all ${program.weeks.length} weeks into database instantly!`);
+    handleToast(`Successfully deployed all ${program.weeks.length} blocks to database context!`);
   };
 
   const handleDeleteProgramBlock = async (id) => {
     const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id);
-    if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program block removed'); }
+    if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program block structural configuration cleared'); }
   };
 
   const renderLargeCalendarDays = () => {
@@ -527,7 +556,7 @@ export default function WeeklyPlanner() {
       {saveTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-1 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> Save Day Template</h3> <p className="text-[11px] text-slate-500 mb-4">Give a name to this day configuration to save it as a routine inside templates tab.</p> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Template Name</label> <input type="text" value={saveTemplateModal.name} onChange={(e) => setSaveTemplateModal({...saveTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveTemplateModal({isOpen: false, day: null, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">Cancel</button> <button onClick={handleSaveTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">Save to Archive</button> </div> </div> </div> )}
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> Save Full Week Block</h3> <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Program Block Name</label> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all dark:text-white mb-6" autoFocus /> <div className="flex justify-end gap-3"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-medium text-sm">Cancel</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-sm transition-colors font-medium text-sm">Save to Library</button> </div> </div> </div> )}
       
-      {/* Upgraded Multi-Week Macro Block Structure Matrix Configuration Overlay */}
+      {/* Dynamic Multi-Week Program Blocks Matrix Modal */}
       {createProgramModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700">
@@ -570,7 +599,7 @@ export default function WeeklyPlanner() {
       {/* Global Exercise Library Form Modal */}
       {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700 p-6"> <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Global Exercise Info' : 'Create Global Exercise Library Item'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Category</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="w-28"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Intensity (%)</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2.5 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all" placeholder="0" /> <Percent className="w-4 h-4 absolute left-2.5 top-3 text-slate-400" /> </div> </div> </div> <div className="flex gap-2 sm:gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Sets</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} placeholder="e.g. 3" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium text-sm" /> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Volume</label> <input type="text" value={addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, reps: e.target.value})} placeholder="Value" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium text-sm" /> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Unit</label> <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-white outline-none focus:ring-2 focus:ring-orange-500 transition-all"> <option value="reps">Reps</option> <option value="sec">Sec</option> <option value="min">Min</option> <option value="jumps">Jumps</option> </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Rest</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} placeholder="e.g. 90s" className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium text-sm" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Exercise Name</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} placeholder="e.g. Barbell Back Squat" className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white font-medium" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1.5 uppercase">Additional Instructions</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} placeholder="Technical cues or structural notes..." className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all dark:text-white h-20 resize-none" /> </div> </div> <div className="flex justify-end gap-3 mt-8"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps'})} className="px-5 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors font-bold text-sm">Cancel</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm">{addExerciseModal.id ? 'Apply Updates' : 'Save to Library'}</button> </div> </div> </div> )}
 
-      {/* Main Day Timeline Drill Manager Form Modal Layout */}
+      {/* Main Day Timeline Drill Parameters Form Manager overlay layout box */}
       {dayDrillModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 dark:border-slate-700">
@@ -736,7 +765,8 @@ export default function WeeklyPlanner() {
         weeklyStats={weeklyStats}
       />
 
-      <div className={`flex flex-col md:flex-row transition-all duration-300 w-full h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible ${isMobileView ? 'max-w-[420px] mx-auto border-x border-slate-200 dark:border-slate-700 shadow-2xl' : ''}`}>
+      {/* ⚠️ تم تعديل الهيكل الرئيسي لحل مشكلة الموبايل (الشاشة البيضاء) */}
+      <div className={`flex flex-col md:flex-row transition-all duration-300 w-full min-h-[calc(100vh-64px)] relative print:h-auto print:overflow-visible ${isMobileView ? 'max-w-[420px] mx-auto border-x border-slate-200 dark:border-slate-700 shadow-2xl pb-20' : 'h-[calc(100vh-64px)] overflow-hidden'}`}>
         
         <Sidebar 
           isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode} 
@@ -759,7 +789,7 @@ export default function WeeklyPlanner() {
              </div>
           )}
 
-          <div className={`flex h-full p-2 md:p-4 gap-2 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full' : 'flex-row w-full'}`}>
+          <div className={`flex h-full p-2 md:p-4 gap-2 print:grid print:grid-cols-2 print:gap-x-12 print:gap-y-6 print:p-4 ${isMobileView ? 'flex-col w-full min-h-max' : 'flex-row w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
@@ -798,7 +828,7 @@ export default function WeeklyPlanner() {
                   </div>
                 </div>
 
-                <div className={`flex-1 px-1 md:px-2 pb-20 ${draggedItem && draggedItem.source !== 'library' && draggedItem.day !== day ? 'bg-slate-100/50 dark:bg-slate-800/30 border-dashed border border-slate-200 dark:border-slate-700 rounded-xl' : ''} print:pb-0`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, day)}>
+                <div className={`flex-1 px-1 md:px-2 pb-10 ${draggedItem && draggedItem.source !== 'library' && draggedItem.day !== day ? 'bg-slate-100/50 dark:bg-slate-800/30 border-dashed border border-slate-200 dark:border-slate-700 rounded-xl' : ''} print:pb-0`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, day)}>
                   {dayDrills.map((drill, drillIndex) => (
                     <TimelineCard 
                       key={drill.id} drill={drill} day={day} index={drillIndex}
@@ -819,6 +849,7 @@ export default function WeeklyPlanner() {
                     </div>
                   )}
 
+                  {/* Upgraded Daily Analytical Summary Box Panel Component Layout */}
                   {schedule[day].length > 0 && !isPreviewMode && (
                     <div className="mt-4 p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-2 print:hidden">
                       <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold">
@@ -847,6 +878,7 @@ export default function WeeklyPlanner() {
                         )}
                       </div>
 
+                      {/* Micro visual progress split bar detailing CNS vs Structural ratio */}
                       {dayTotalCombined > 0 && (
                         <div className="space-y-0.5">
                           <div className="w-full h-1 bg-slate-100 dark:bg-slate-700 rounded-full flex overflow-hidden">
@@ -863,6 +895,7 @@ export default function WeeklyPlanner() {
           </div>
         </div>
         
+        {/* Dropzone Wrapper around ExerciseLibrary for instant drag & drop save functionality */}
         <div className="h-full print:hidden" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
           <ExerciseLibrary 
             showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library}
