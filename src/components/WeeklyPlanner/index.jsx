@@ -156,7 +156,6 @@ export default function WeeklyPlanner() {
     await supabase.from('agilitylap_workouts').upsert({ athlete_id: selectedAthleteId, workout_date: dateStr, workout_title: finalTitle, drills: finalDrills }, { onConflict: 'athlete_id,workout_date' });
   };
 
-  // 1️⃣ ALL REQUIRED FUNCTIONS RESTORED
   const handleUndo = () => { if (historyIndex > 0) { const newIndex = historyIndex - 1; const prevState = history[newIndex]; setSchedule(prevState.schedule); setDayTitles(prevState.titles); setHistoryIndex(newIndex); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, prevState.schedule[day], prevState.titles[day])); handleToast('Undo successful'); } };
   const handleRedo = () => { if (historyIndex < history.length - 1) { const newIndex = historyIndex + 1; const nextState = history[newIndex]; setSchedule(nextState.schedule); setDayTitles(nextState.titles); setHistoryIndex(newIndex); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, nextState.schedule[day], nextState.titles[day])); handleToast('Redo successful'); } };
   const handleCopyExercise = (drill) => { setClipboard({ type: 'exercise', data: drill }); handleToast('Exercise copied'); };
@@ -182,7 +181,6 @@ export default function WeeklyPlanner() {
     DAYS_OF_WEEK.forEach(day => autoSaveDay(day, newSchedule[day], newTitles[day])); handleToast('Full week pasted');
   };
 
-  // GYM LOAD ENGINE
   const calculateDayVolume = (dayDrills) => { 
     let totalExercises = dayDrills.length; let totalVolumeScore = 0; let validIntensityCount = 0; let sumIntensity = 0; 
     let jumpsVolume = 0; let cnsLoad = 0; let structuralLoad = 0;
@@ -268,7 +266,6 @@ export default function WeeklyPlanner() {
   };
 
   const handleDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program block cleared'); } };
-  
   const handleLibraryDragStart = (e, item, isTemplate = false) => { setDraggedItem({ source: 'library', item, isTemplate }); e.dataTransfer.effectAllowed = 'copy'; };
   const handleDragStartWrapper = (e, day, drill, index) => { setDraggedItem({ source: 'timeline', day, drill, index }); e.dataTransfer.effectAllowed = 'move'; };
   const handleDragOver = (e) => e.preventDefault();
@@ -313,7 +310,7 @@ export default function WeeklyPlanner() {
     const { drill } = draggedItem;
     const drillData = { title: drill.title, details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage ? parseFloat(drill.percentage) : null, sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps' };
     const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-    if (!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); handleToast('Exercise saved to library!'); }
+    if (!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); handleToast('Exercise saved to library sidebar!'); }
     setDraggedItem(null);
   };
 
@@ -493,12 +490,22 @@ export default function WeeklyPlanner() {
                   <p className="text-xl font-black text-blue-500">{weeklyStats.structuralPercentage}%</p>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <div className="w-full h-4 bg-slate-100 rounded-full flex overflow-hidden">
-                  <div className="h-full bg-amber-500" style={{ width: `${weeklyStats.cnsPercentage}%` }} />
-                  <div className="h-full bg-blue-500" style={{ width: `${weeklyStats.structuralPercentage}%` }} />
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] sm:text-xs font-bold text-slate-500">
+                  <span>CNS / Power Fatigue</span>
+                  <span>Structural Muscle Strain</span>
+                </div>
+                <div className="w-full h-4 bg-slate-100 rounded-full flex overflow-hidden shadow-inner">
+                  <div className="h-full bg-amber-500 transition-all" style={{ width: `${weeklyStats.cnsPercentage}%` }} />
+                  <div className="h-full bg-blue-500 transition-all" style={{ width: `${weeklyStats.structuralPercentage}%` }} />
+                </div>
+                <div className="flex justify-between text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                  <span>{weeklyStats.cnsPercentage}% CNS (Orange)</span>
+                  <span>{weeklyStats.structuralPercentage}% Struct (Blue)</span>
                 </div>
               </div>
+
               <div className="flex items-end justify-between gap-2 h-36 border-b pb-2">
                   {weeklyStats.dailyData.map((data, i) => {
                     const maxLoad = Math.max(...weeklyStats.dailyData.map(d => d.load), 1000); 
@@ -528,7 +535,7 @@ export default function WeeklyPlanner() {
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal} weeklyStats={weeklyStats}
       />
 
-      {/* ⚠️ الهيكل المثالي اللي بيمنع الشاشة البيضاء في الموبايل */}
+      {/* ⚠️ Layout Control Panel */}
       <div className="flex flex-col md:flex-row w-full h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible bg-[#F4F5F7] dark:bg-slate-900">
         
         <Sidebar 
@@ -542,7 +549,7 @@ export default function WeeklyPlanner() {
         />
 
         <div className="flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full">
-          <div className={`flex ${isMobileView ? 'flex-col w-full' : 'max-md:flex-col md:flex-row w-full md:w-max min-w-full'} min-h-full p-2 md:p-4 gap-4 print:grid print:grid-cols-2`}>
+          <div className={`p-2 md:p-4 gap-2 md:gap-4 print:grid print:grid-cols-7 ${isMobileView ? 'flex flex-col w-full' : 'grid grid-cols-7 w-[1100px] xl:w-full min-w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
@@ -550,7 +557,7 @@ export default function WeeklyPlanner() {
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
 
               return (
-              <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6' : 'max-md:w-full max-md:mb-6 md:flex-1 md:min-w-[280px]'} print:break-inside-avoid print:mb-0`}>
+              <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'w-full'} print:break-inside-avoid print:mb-0`}>
                 
                 <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-1 md:px-2">
                   <div className="flex justify-between items-baseline mb-2">
@@ -618,7 +625,6 @@ export default function WeeklyPlanner() {
           </div>
         </div>
 
-        {/* Overlay invisible dropzone wrapper to prevent layout shift */}
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
            <div className="pointer-events-auto h-full absolute right-0" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
              <ExerciseLibrary showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library} handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal} setSaveWeekTemplateModal={setSaveWeekTemplateModal} onDeleteDrill={handleDeleteLibraryDrill} onEditDrill={handleEditLibraryDrill} onDeleteTemplate={handleDeleteLibraryTemplate} onEditTemplate={handleEditTemplate} onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} programs={programs} onDeleteProgram={handleDeleteProgramBlock} onApplyProgram={handleApplyProgramBlock} />
