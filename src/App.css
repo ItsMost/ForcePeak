@@ -1,3 +1,238 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ==========================================
+   COMPREHENSIVE PRINT MEDIA QUERY REFACTORING
+   ========================================== */
+@media print {
+  /* 1. Reset & Global Background / Color Controls */
+  * {
+    background-color: transparent !important;
+    background-image: none !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    transition: none !important;
+  }
+
+  body, html, #root, .App, main, [class*="min-h-screen"] {
+    background-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  /* Layout container normalization to prevent scroll clipping */
+  div.flex.flex-col.md\:flex-row,
+  .flex-1.overflow-x-auto.overflow-y-auto,
+  div[class*="overflow-y-auto"],
+  div[class*="overflow-x-auto"] {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    transform: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* 2. Comprehensive UI Cleanup (Hide Non-Printables) */
+  aside,
+  header,
+  nav,
+  .print\:hidden,
+  .print-hidden,
+  [class*="Sidebar"],
+  [class*="sidebar"],
+  [class*="ExerciseLibrary"],
+  [class*="exercise-library"],
+  button,
+  .btn,
+  input[type="text"],
+  input[placeholder*="Search"],
+  select,
+  .theme-toggle,
+  [class*="theme-selector"],
+  .cursor-pointer.print\:hidden,
+  .timeline-card div.print\:hidden,
+  .timeline-card button,
+  .timeline-card [class*="pointer-events-none"],
+  .toast-message,
+  .modal,
+  .backdrop-blur-sm,
+  .fixed.inset-0,
+  div[class*="fixed"][class*="inset-0"],
+  .absolute.inset-0.pointer-events-none {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* 3. Orientation Optimization (Class-Based Portrait vs Landscape) */
+  /* LANDSCAPE MODE (7-Day Grid Layout) */
+  .print-mode-landscape .print-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(7, 1fr) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    gap: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .print-mode-landscape .print-grid-container > * {
+    width: auto !important;
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    break-inside: avoid !important;
+  }
+
+  /* PORTRAIT MODE (2-Day per Row Grid Layout for Standard Vertical A4) */
+  .print-mode-portrait .print-grid-container {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    width: 100% !important;
+    gap: 16px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  .print-mode-portrait .print-grid-container > * {
+    width: 100% !important;
+    display: block !important;
+    break-inside: avoid !important;
+  }
+
+  /* 4. Text Forcing & Contrast integrity */
+  h1, h2, h3, h4, h5, h6, span, div, strong, b {
+    color: #000000 !important;
+    font-weight: bold !important;
+  }
+  
+  .day-header input,
+  .day-header span {
+    color: #000000 !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+    border: none !important;
+  }
+  
+  /* Specific styling for notes/details - #475569 with high contrast */
+  .timeline-card p,
+  .timeline-card .text-slate-500,
+  .timeline-card .dark\:text-slate-400 {
+    color: #475569 !important;
+    font-weight: 500 !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+    margin-top: 4px !important;
+  }
+
+  /* Accent parameters like sets, reps, weight */
+  .timeline-card span[class*="bg-slate-100"],
+  .timeline-card span[class*="bg-blue-50"],
+  .timeline-card span[class*="bg-orange-100"],
+  .timeline-card span[class*="bg-blue-100"] {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    font-weight: bold !important;
+  }
+
+  /* Category icon wrapper normalization */
+  .timeline-card div[class*="rounded-full"] {
+    background-color: #ffffff !important;
+    border: 2.5px solid #475569 !important;
+    color: #000000 !important;
+  }
+
+  /* 5. Desaturated left accent borders for exercises */
+  .print-accent-mobility {
+    border-left: 4px solid #fca5a5 !important; /* Desaturated red */
+    background-color: #fff5f5 !important;
+    padding-left: 10px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .print-accent-core {
+    border-left: 4px solid #d8b4fe !important; /* Desaturated purple */
+    background-color: #faf5ff !important;
+    padding-left: 10px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .print-accent-isometric {
+    border-left: 4px solid #fdbb2d !important; /* Desaturated orange */
+    background-color: #fffbeb !important;
+    padding-left: 10px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .print-accent-power {
+    border-left: 4px solid #fef08a !important; /* Desaturated yellow */
+    background-color: #fefce8 !important;
+    padding-left: 10px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .print-accent-strength {
+    border-left: 4px solid #cbd5e1 !important; /* Desaturated slate */
+    background-color: #f8fafc !important;
+    padding-left: 10px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .print-accent-physical {
+    border-left: 4px solid #93c5fd !important; /* Desaturated blue */
+    background-color: #f0f7ff !important;
+    padding-left: 10px !important;
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* 6. Advanced Page-Break Engine */
+  .timeline-card,
+  .daily-summary {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .day-header {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Dynamic CSS Page Counter logic for printed document footers */
+  .print-page-number::after {
+    content: counter(page) !important;
+  }
+}
+

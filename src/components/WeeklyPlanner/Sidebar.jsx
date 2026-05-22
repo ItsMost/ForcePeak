@@ -39,8 +39,13 @@ export default function Sidebar({
 
       {/* Bottom/Right Danger Controls */}
       <div className="flex flex-row md:flex-col items-center gap-1 sm:gap-3 ml-auto md:ml-0">
-        <button onClick={onPrint} className="p-2 md:p-3 text-slate-400 hover:text-slate-700 rounded-xl transition-all" title="Print Sheet">
+        <button onClick={() => onPrint('landscape')} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all relative" title="Print Landscape (7-Day Grid)">
           <Printer className="w-5 h-5" />
+          <span className="absolute bottom-1 right-1 text-[8px] font-extrabold bg-orange-500 text-white rounded px-0.5 scale-90">L</span>
+        </button>
+        <button onClick={() => onPrint('portrait')} className="p-2 md:p-3 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-xl transition-all relative" title="Print Portrait (Stacked Timeline)">
+          <Printer className="w-5 h-5" />
+          <span className="absolute bottom-1 right-1 text-[8px] font-extrabold bg-blue-500 text-white rounded px-0.5 scale-90">P</span>
         </button>
         <button onClick={onClearWeek} className="p-2 md:p-3 text-slate-300 hover:text-red-500 rounded-xl transition-all" title="Clear Week">
           <Trash2 className="w-5 h-5" />

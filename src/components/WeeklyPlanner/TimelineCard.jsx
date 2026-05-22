@@ -24,7 +24,7 @@ export default function TimelineCard({
     const title = (drill.title || '').toLowerCase();
     const percent = parseFloat(drill.percentage);
     let maxWeight = null;
-
+ 
     if (title.includes('clean')) maxWeight = athlete.clean;
     else if (title.includes('bench')) maxWeight = athlete.bench;
     else if (title.includes('deadlift')) maxWeight = athlete.deadlift;
@@ -37,19 +37,22 @@ export default function TimelineCard({
     }
   }
 
-  // Format unit text safely for Reps / Sec / Min / Jumps
+  // Format unit text safely for Reps / Sec / Min / Jumps / Meters
   const formatUnit = (unit) => {
     if (!unit) return 'Reps';
     if (unit.toLowerCase() === 'reps') return 'Reps';
     if (unit.toLowerCase() === 'sec') return 'Sec';
     if (unit.toLowerCase() === 'min') return 'Min';
     if (unit.toLowerCase() === 'jumps') return 'Jumps';
+    if (unit.toLowerCase() === 'meters') return 'Meters';
     return unit.charAt(0).toUpperCase() + unit.slice(1);
   };
 
+  const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
+
   return (
     <div 
-      className="relative flex gap-2 sm:gap-3 group pb-3 cursor-grab active:cursor-grabbing"
+      className={`relative flex gap-2 sm:gap-3 group pb-3 cursor-grab active:cursor-grabbing timeline-card print-accent-${safeType}`}
       draggable={!isPreviewMode}
       onDragStart={(e) => onDragStart && onDragStart(e, day, drill, index)}
       onDragOver={onDragOver}
@@ -86,16 +89,16 @@ export default function TimelineCard({
         </div>
 
         {/* Prescription Volume Parameters Display Row Block */}
-        {(drill.sets || drill.reps || drill.rest) && (
+        {(drill.sets || (isMeters ? drill.distance : drill.reps) || drill.rest) && (
           <div className="flex items-center gap-1 mt-1 mb-1 flex-wrap">
-            {(drill.sets || drill.reps) && (
+            {(drill.sets || (isMeters ? drill.distance : drill.reps)) && (
               <>
                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded font-bold text-[11px] tracking-widest">
                   {drill.sets || '-'} Sets
                 </span>
                 <span className="text-slate-400 text-[10px] font-bold">x</span>
                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded font-bold text-[11px] tracking-widest">
-                  {drill.reps || '-'} {formatUnit(drill.unit)}
+                  {(isMeters ? drill.distance : drill.reps) || '-'} {formatUnit(drill.unit)}
                 </span>
               </>
             )}

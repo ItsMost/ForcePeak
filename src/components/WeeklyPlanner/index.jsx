@@ -53,9 +53,17 @@ export default function WeeklyPlanner() {
   const [draggedItem, setDraggedItem] = useState(null);
   const [createProgramModal, setCreateProgramModal] = useState({ isOpen: false, name: '', tags: '', weeksChain: [''] });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [printMode, setPrintMode] = useState('landscape');
+
+  const handlePrint = (mode) => {
+    setPrintMode(mode);
+    setTimeout(() => {
+      window.print();
+    }, 150);
+  };
 
   const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
 
@@ -184,42 +192,71 @@ export default function WeeklyPlanner() {
   const calculateDayVolume = (dayDrills) => { 
     let totalExercises = dayDrills.length; let totalVolumeScore = 0; let validIntensityCount = 0; let sumIntensity = 0; 
     let jumpsVolume = 0; let cnsLoad = 0; let structuralLoad = 0;
+    let totalMeters = 0;
     
     dayDrills.forEach(drill => { 
       const type = (drill.type || '').toLowerCase();
-      let s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
-      let r = parseInt(String(drill.reps).replace(/\D/g,'')) || 0;
-      if (s > 0 && r === 0) r = 1; if (r > 0 && s === 0) s = 1;
-      let repsMultiplier = s * r;
+      const unit = (drill.unit || '').toLowerCase();
+      const intensity = parseInt(drill.percentage) || 0; 
 
-      if (type === 'power' && (drill.unit || '').toLowerCase() === 'jumps') jumpsVolume += repsMultiplier;
+      if (unit === 'meters') {
+        let s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
+        let d = parseInt(String(drill.distance).replace(/\D/g,'')) || 0;
+        if (s > 0 && d === 0) d = 10;
+        let sprintsVolume = s * d;
+        totalMeters += sprintsVolume;
 
-      if (type === 'power' || type === 'strength') {
-        let categoryMultiplier = type === 'power' ? 2.0 : 1.5; 
-        const intensity = parseInt(drill.percentage) || 0; 
+        let drillLoad = sprintsVolume * (intensity > 0 ? intensity / 100 : 1);
+        if ((drill.title || '').toLowerCase().includes('recovery') || sprintsVolume === 0) {
+          drillLoad = 0;
+        }
+
         if (intensity > 0) { validIntensityCount++; sumIntensity += intensity; } 
-        let drillLoad = repsMultiplier * categoryMultiplier * (intensity > 0 ? (intensity/100) : 1) * 10; 
-        if ((drill.title || '').toLowerCase().includes('recovery') || repsMultiplier === 0) drillLoad = 0;
 
-        if (type === 'power') cnsLoad += drillLoad;
-        if (type === 'strength') structuralLoad += drillLoad;
-        totalVolumeScore += drillLoad; 
+        if (type === 'power') {
+          drillLoad = drillLoad * 2.5;
+          cnsLoad += drillLoad;
+        } else if (type === 'strength' || type === 'physical') {
+          drillLoad = drillLoad * 0.8;
+          structuralLoad += drillLoad;
+        }
+        totalVolumeScore += drillLoad;
+      } else {
+        let s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
+        let r = parseInt(String(drill.reps).replace(/\D/g,'')) || 0;
+        if (s > 0 && r === 0) r = 1; if (r > 0 && s === 0) s = 1;
+        let repsMultiplier = s * r;
+
+        if (type === 'power' && unit === 'jumps') jumpsVolume += repsMultiplier;
+
+        if (type === 'power' || type === 'strength') {
+          let categoryMultiplier = type === 'power' ? 2.0 : 1.5; 
+          if (intensity > 0) { validIntensityCount++; sumIntensity += intensity; } 
+          let drillLoad = repsMultiplier * categoryMultiplier * (intensity > 0 ? (intensity/100) : 1) * 10; 
+          if ((drill.title || '').toLowerCase().includes('recovery') || repsMultiplier === 0) drillLoad = 0;
+
+          if (type === 'power') cnsLoad += drillLoad;
+          if (type === 'strength') structuralLoad += drillLoad;
+          totalVolumeScore += drillLoad; 
+        }
       }
     }); 
     const avgIntensity = validIntensityCount > 0 ? Math.round(sumIntensity / validIntensityCount) : 0; 
-    return { totalExercises, totalVolumeScore: Math.round(totalVolumeScore), avgIntensity, jumpsVolume, cnsLoad: Math.round(cnsLoad), structuralLoad: Math.round(structuralLoad) }; 
+    return { totalExercises, totalVolumeScore: Math.round(totalVolumeScore), avgIntensity, jumpsVolume, cnsLoad: Math.round(cnsLoad), structuralLoad: Math.round(structuralLoad), totalMeters }; 
   };
 
   const weeklyStats = useMemo(() => {
     let totalLoad = 0; let sumIntensities = 0; let countIntDays = 0; 
     let totalJumps = 0; let totalCnsLoad = 0; let totalStructuralLoad = 0;
+    let totalMeters = 0;
     const dailyData = [];
 
     DAYS_OF_WEEK.forEach(day => {
       const stats = calculateDayVolume(schedule[day] || []); 
       totalLoad += stats.totalVolumeScore; totalJumps += stats.jumpsVolume; totalCnsLoad += stats.cnsLoad; totalStructuralLoad += stats.structuralLoad;
+      totalMeters += stats.totalMeters;
       if (stats.avgIntensity > 0) { sumIntensities += stats.avgIntensity; countIntDays++; }
-      dailyData.push({ day, load: stats.totalVolumeScore, intensity: stats.avgIntensity });
+      dailyData.push({ day, load: stats.totalVolumeScore, intensity: stats.avgIntensity, meters: stats.totalMeters });
     });
     
     const avgIntensity = countIntDays > 0 ? Math.round(sumIntensities / countIntDays) : 0;
@@ -232,7 +269,7 @@ export default function WeeklyPlanner() {
     const cnsPercentage = combinedLoad > 0 ? Math.round((totalCnsLoad / combinedLoad) * 100) : 0;
     const structuralPercentage = combinedLoad > 0 ? Math.round((totalStructuralLoad / combinedLoad) * 100) : 0;
 
-    return { load: totalLoad, intensity: avgIntensity, loadLabel, loadColor, dailyData, totalJumps, cnsPercentage, structuralPercentage };
+    return { load: totalLoad, intensity: avgIntensity, loadLabel, loadColor, dailyData, totalJumps, cnsPercentage, structuralPercentage, totalMeters };
   }, [schedule]);
 
   const handleSaveProgramBlock = async () => {
@@ -308,7 +345,17 @@ export default function WeeklyPlanner() {
   const handleLibraryDropzone = async (e) => {
     e.preventDefault(); if (!draggedItem || draggedItem.source !== 'timeline') return;
     const { drill } = draggedItem;
-    const drillData = { title: drill.title, details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage ? parseFloat(drill.percentage) : null, sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps' };
+    const drillData = { 
+      title: drill.title, 
+      details: drill.details || '', 
+      type: drill.type || 'strength', 
+      percentage: drill.percentage ? parseFloat(drill.percentage) : null, 
+      sets: drill.sets || '', 
+      reps: drill.reps || '', 
+      rest: drill.rest || '', 
+      unit: drill.unit || 'reps',
+      distance: drill.distance ? parseFloat(drill.distance) : null
+    };
     const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
     if (!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); handleToast('Exercise saved to library sidebar!'); }
     setDraggedItem(null);
@@ -317,8 +364,8 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', sets: '', reps: '', rest: '', unit: 'reps' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, unit: drill.unit || 'reps' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, unit: drill.unit || 'reps', distance: drill.distance || '' }, isNew: false }); };
 
   const handleSaveDayDrillModal = () => {
     const { day, drill, isNew } = dayDrillModal;
@@ -337,19 +384,29 @@ export default function WeeklyPlanner() {
   const handleAddAthlete = async () => { if(newAthleteData.name.trim()) { const newAthlete = { name: newAthleteData.name, birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null }; const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); if (data && data.length > 0) { const addedAthlete = { ...data[0], birthYear: data[0].birth_year, bodyFat: data[0].body_fat, verticalJump: data[0].vertical_jump, halfSquat: data[0].half_squat, quarterSquat: data[0].quarter_squat }; setAthletes([addedAthlete, ...athletes]); setSelectedAthleteId(addedAthlete.id); setNewAthleteData({ name: '', birthYear: '', weight: '' }); setShowAddAthleteModal(false); } } };
   const handleSaveProfile = async (updatedProfile) => { const { error } = await supabase.from('agilitylap_athletes').update({ name: updatedProfile.name, birth_year: updatedProfile.birthYear ? parseInt(updatedProfile.birthYear) : null, weight: updatedProfile.weight ? parseFloat(updatedProfile.weight) : null, height: updatedProfile.height ? parseFloat(updatedProfile.height) : null, body_fat: updatedProfile.bodyFat ? parseFloat(updatedProfile.bodyFat) : null, vertical_jump: updatedProfile.verticalJump ? parseFloat(updatedProfile.verticalJump) : null, standing_long_jump: updatedProfile.standingLongJump ? parseFloat(updatedProfile.standingLongJump) : null, squat_jump: updatedProfile.squatJump ? parseFloat(updatedProfile.squatJump) : null, clean: updatedProfile.clean ? parseFloat(updatedProfile.clean) : null, half_squat: updatedProfile.halfSquat ? parseFloat(updatedProfile.halfSquat) : null, quarter_squat: updatedProfile.quarterSquat ? parseFloat(updatedProfile.quarterSquat) : null, full_squat: updatedProfile.fullSquat ? parseFloat(updatedProfile.fullSquat) : null, bench: updatedProfile.bench ? parseFloat(updatedProfile.bench) : null, deadlift: updatedProfile.deadlift ? parseFloat(updatedProfile.deadlift) : null, }).eq('id', updatedProfile.id); if (!error) { setAthletes(prev => prev.map(a => a.id === updatedProfile.id ? updatedProfile : a)); setShowProfileModal(false); handleToast('Profile updated'); } };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
   const handleSaveLibraryExercise = async () => { 
     if(!addExerciseModal.title.trim()) return; 
-    const drillData = { title: addExerciseModal.title, details: addExerciseModal.details, type: addExerciseModal.type, percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null, sets: addExerciseModal.sets, reps: addExerciseModal.reps, rest: addExerciseModal.rest, unit: addExerciseModal.unit }; 
+    const drillData = { 
+      title: addExerciseModal.title, 
+      details: addExerciseModal.details, 
+      type: addExerciseModal.type, 
+      percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null, 
+      sets: addExerciseModal.sets, 
+      reps: addExerciseModal.reps, 
+      rest: addExerciseModal.rest, 
+      unit: addExerciseModal.unit,
+      distance: addExerciseModal.distance ? parseFloat(addExerciseModal.distance) : null
+    }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps' }); handleToast('Exercise updated'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise updated'); }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps' }); handleToast('Exercise added'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise added'); }
     }
   };
 
@@ -372,7 +429,7 @@ export default function WeeklyPlanner() {
   };
 
   return (
-    <div className={`min-h-screen font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black pb-16 md:pb-0`}>
+    <div className={`min-h-screen font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black pb-16 md:pb-0 ${printMode === 'landscape' ? 'print-mode-landscape' : 'print-mode-portrait'}`}>
       
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} /> )}
@@ -412,7 +469,7 @@ export default function WeeklyPlanner() {
         </div>
       )}
 
-      {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6"> <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Category</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="w-28"> <label className="block text-xs font-bold text-slate-500 mb-1">Intensity %</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-8 pr-3 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" /> <Percent className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /> </div> </div> </div> <div className="flex gap-2"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Sets</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Volume</label> <input type="text" value={addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, reps: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Unit</label> <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"> <option value="reps">Reps</option> <option value="sec">Sec</option> <option value="min">Min</option> <option value="jumps">Jumps</option> </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Rest</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" /> </div> </div> <div className="flex justify-end gap-3 mt-6"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps'})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button> </div> </div> </div> )}
+      {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6"> <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Category</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="w-28"> <label className="block text-xs font-bold text-slate-500 mb-1">Intensity %</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-8 pr-3 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" /> <Percent className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /> </div> </div> </div> <div className="flex gap-2"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Sets</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">{addExerciseModal.unit === 'meters' ? 'Distance (m)' : 'Volume'}</label> <input type="text" value={addExerciseModal.unit === 'meters' ? (addExerciseModal.distance || '') : addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, [addExerciseModal.unit === 'meters' ? 'distance' : 'reps']: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Unit</label> <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"> <option value="reps">Reps</option> <option value="sec">Sec</option> <option value="min">Min</option> <option value="jumps">Jumps</option> <option value="meters">Meters</option> </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Rest</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" /> </div> </div> <div className="flex justify-end gap-3 mt-6"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button> </div> </div> </div> )}
 
       {dayDrillModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -439,8 +496,8 @@ export default function WeeklyPlanner() {
               </div>
               <div className="flex gap-2">
                 <div className="flex-1"><label className="block text-xs font-bold text-slate-500 mb-1">Sets</label><input type="text" value={dayDrillModal.drill.sets || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, sets: e.target.value}})} className="w-full px-3 py-2 border rounded-xl outline-none" /></div>
-                <div className="flex-1"><label className="block text-xs font-bold text-slate-500 mb-1">Volume</label><input type="text" value={dayDrillModal.drill.reps || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, reps: e.target.value}})} className="w-full px-3 py-2 border rounded-xl outline-none" /></div>
-                <div className="w-24"><label className="block text-xs font-bold text-slate-500 mb-1">Unit</label><select value={dayDrillModal.drill.unit || 'reps'} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, unit: e.target.value}})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"><option value="reps">Reps</option><option value="sec">Sec</option><option value="min">Min</option><option value="jumps">Jumps</option></select></div>
+                <div className="flex-1"><label className="block text-xs font-bold text-slate-500 mb-1">{dayDrillModal.drill.unit === 'meters' ? 'Distance (m)' : 'Volume'}</label><input type="text" value={dayDrillModal.drill.unit === 'meters' ? (dayDrillModal.drill.distance || '') : (dayDrillModal.drill.reps || '')} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, [dayDrillModal.drill.unit === 'meters' ? 'distance' : 'reps']: e.target.value}})} className="w-full px-3 py-2 border rounded-xl outline-none" /></div>
+                <div className="w-24"><label className="block text-xs font-bold text-slate-500 mb-1">Unit</label><select value={dayDrillModal.drill.unit || 'reps'} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, unit: e.target.value}})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"><option value="reps">Reps</option><option value="sec">Sec</option><option value="min">Min</option><option value="jumps">Jumps</option><option value="meters">Meters</option></select></div>
                 <div className="flex-1"><label className="block text-xs font-bold text-slate-500 mb-1">Rest</label><input type="text" value={dayDrillModal.drill.rest || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, rest: e.target.value}})} className="w-full px-3 py-2 border rounded-xl outline-none" /></div>
               </div>
               <div><label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label><input type="text" value={dayDrillModal.drill.title} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, title: e.target.value}})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" autoFocus /></div>
@@ -476,7 +533,7 @@ export default function WeeklyPlanner() {
                   <p className="text-3xl font-black">{weeklyStats.intensity}%</p>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-4 gap-3">
                 <div className="p-3 bg-slate-50 border rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Total Jumps</p>
                   <p className="text-xl font-black text-orange-500">{weeklyStats.totalJumps}</p>
@@ -488,6 +545,10 @@ export default function WeeklyPlanner() {
                 <div className="p-3 bg-slate-50 border rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Structural</p>
                   <p className="text-xl font-black text-blue-500">{weeklyStats.structuralPercentage}%</p>
+                </div>
+                <div className="p-3 bg-slate-50 border rounded-xl text-center">
+                  <p className="text-[10px] font-bold uppercase text-slate-400">Total Run</p>
+                  <p className="text-lg sm:text-xl font-black text-indigo-600">{weeklyStats.totalMeters}m</p>
                 </div>
               </div>
               
@@ -545,11 +606,49 @@ export default function WeeklyPlanner() {
           canUndo={historyIndex > 0} canRedo={historyIndex < history.length - 1}
           onShowStats={() => setShowStatsModal(true)}
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
-          onPrint={() => window.print()} 
-        />
+          onPrint={handlePrint} 
+        />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
+          
+          {/* Premium Printed Report Header */}
+          <div className="hidden print:flex flex-col border-b-2 border-slate-900 pb-4 mb-6 pt-4 px-4">
+            <div className="flex justify-between items-end">
+              <div>
+                <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">TRAINING PERFORMANCE REPORT</h1>
+                <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-1">ForcePeak Lab Performance Athlete Passport | Meso-Block Blueprint</p>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Date Range</span>
+                <span className="text-sm font-bold text-slate-800">
+                  {currentWeekStart.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - {new Date(new Date(currentWeekStart).setDate(currentWeekStart.getDate() + 6)).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+              </div>
+            </div>
+            
+            {selectedAthlete && (
+              <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-200">
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Athlete Name</span>
+                  <span className="text-xs font-bold text-slate-800">{selectedAthlete.name}</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Birth Year / Weight</span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {selectedAthlete.birthYear || 'N/A'} / {selectedAthlete.weight ? `${selectedAthlete.weight} kg` : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">CNS Split</span>
+                  <span className="text-xs font-bold text-slate-800">{weeklyStats.cnsPercentage}% CNS Load</span>
+                </div>
+                <div>
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Structural Split</span>
+                  <span className="text-xs font-bold text-slate-800">{weeklyStats.structuralPercentage}% Structural Load</span>
+                </div>
+              </div>
+            )}
+          </div>
 
-        <div className="flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full">
-          <div className={`p-2 md:p-4 gap-2 md:gap-4 print:grid print:grid-cols-7 ${isMobileView ? 'flex flex-col w-full' : 'grid grid-cols-7 w-[1100px] xl:w-full min-w-full'}`}>
+          <div className={`p-2 md:p-4 gap-2 md:gap-4 print-grid-container ${isMobileView ? 'flex flex-col w-full' : 'grid grid-cols-7 w-[1100px] xl:w-full min-w-full'}`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
@@ -559,7 +658,7 @@ export default function WeeklyPlanner() {
               return (
               <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'w-full'} print:break-inside-avoid print:mb-0`}>
                 
-                <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-1 md:px-2">
+                <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-1 md:px-2 day-header">
                   <div className="flex justify-between items-baseline mb-2">
                     <span className="text-[10px] md:text-xs font-semibold tracking-wider text-slate-400 uppercase">{day}</span>
                     <span className="text-[9px] md:text-[10px] font-medium text-slate-400/80">{fullDateStr}</span>
@@ -597,8 +696,8 @@ export default function WeeklyPlanner() {
                   )}
 
                   {schedule[day].length > 0 && !isPreviewMode && (
-                    <div className="mt-4 p-2 bg-white dark:bg-slate-800 rounded-xl border shadow-sm space-y-2 print:hidden">
-                      <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold">
+                    <div className="mt-4 p-2 bg-white dark:bg-slate-800 rounded-xl border shadow-sm space-y-2 daily-summary">
+                      <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold flex-wrap gap-y-1">
                         <div className="flex flex-col items-center text-slate-400"><span className="text-[8px] uppercase">Drills</span><span>{dayStats.totalExercises}</span></div>
                         <div className="w-px h-5 bg-slate-200"></div>
                         <div className="flex flex-col items-center text-blue-500"><span className="text-blue-400 text-[8px] uppercase">Intensity</span><span>{dayStats.avgIntensity}%</span></div>
@@ -608,6 +707,12 @@ export default function WeeklyPlanner() {
                           <>
                             <div className="w-px h-5 bg-slate-200"></div>
                             <div className="flex flex-col items-center text-amber-500"><span className="text-amber-400 text-[8px] uppercase">Jumps</span><span>{dayStats.jumpsVolume}</span></div>
+                          </>
+                        )}
+                        {dayStats.totalMeters > 0 && (
+                          <>
+                            <div className="w-px h-5 bg-slate-200"></div>
+                            <div className="flex flex-col items-center text-indigo-600"><span className="text-indigo-400 text-[8px] uppercase">Run</span><span>{dayStats.totalMeters}m</span></div>
                           </>
                         )}
                       </div>
@@ -622,6 +727,17 @@ export default function WeeklyPlanner() {
                 </div>
               </div>
             )})}
+          </div>
+
+          {/* Premium Printed Report Footer */}
+          <div className="hidden print:block fixed bottom-0 left-0 right-0 border-t border-slate-300 pt-3 pb-2 bg-white text-center text-[9px] font-semibold text-slate-400 uppercase tracking-widest">
+            <div className="flex justify-between items-center px-4">
+              <span>Page <span className="print-page-number"></span> | Generated by ForcePeak Lab</span>
+              {selectedAthlete && (
+                <span>Athlete: {selectedAthlete.name} | CNS: {weeklyStats.cnsPercentage}% | Structural: {weeklyStats.structuralPercentage}%</span>
+              )}
+              <span>CONFIDENTIAL - TRAINING PERFORMANCE REPORT</span>
+            </div>
           </div>
         </div>
 

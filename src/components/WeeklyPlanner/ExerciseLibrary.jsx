@@ -70,7 +70,7 @@ export default function ExerciseLibrary({
         {/* Tab 1: Exercises Module Archive */}
         {activeTab === 'exercises' && (
           <>
-            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
+            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
               <Plus className="w-4 h-4" /> Add Global Exercise
             </button>
             
