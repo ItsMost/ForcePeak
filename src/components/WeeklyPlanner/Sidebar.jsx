@@ -1,9 +1,9 @@
 import React from 'react';
-import { Copy, ClipboardPaste, Undo2, Redo2, BarChart3, Trash2, Printer, Eye, EyeOff } from 'lucide-react';
+import { Copy, ClipboardPaste, Undo2, Redo2, BarChart3, Trash2, Printer, Eye, EyeOff, Calendar } from 'lucide-react';
 
 export default function Sidebar({
   isPreviewMode, setIsPreviewMode, onCopyWeek, onPasteWeek,
-  onUndo, onRedo, canUndo, canRedo, onShowStats, onClearWeek, onPrint
+  onUndo, onRedo, canUndo, canRedo, onShowStats, onClearWeek, onPrint, onBulkSave
 }) {
   return (
     <aside className="fixed bottom-0 left-0 w-full h-16 md:relative md:w-16 md:h-full bg-white dark:bg-slate-800 border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-row md:flex-col items-center justify-between px-2 sm:px-4 md:py-4 md:px-0 z-[100] shrink-0 print:hidden overflow-x-auto md:overflow-visible transition-colors duration-200">
@@ -30,6 +30,10 @@ export default function Sidebar({
 
         <button onClick={onShowStats} className="p-2 md:p-3 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all" title="Analytics Dashboard">
           <BarChart3 className="w-5 h-5" />
+        </button>
+
+        <button onClick={onBulkSave} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="Bulk Save Routine / تكرار مجدول">
+          <Calendar className="w-5 h-5" />
         </button>
 
         <button onClick={() => setIsPreviewMode(!isPreviewMode)} className={`p-2 md:p-3 rounded-xl transition-all ${isPreviewMode ? 'text-orange-500 bg-orange-50' : 'text-slate-400 hover:text-orange-500'}`} title="Toggle View">

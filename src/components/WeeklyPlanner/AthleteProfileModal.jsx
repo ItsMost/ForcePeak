@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { User, Activity, Dumbbell, Zap, X, Save, Scale, Ruler } from 'lucide-react';
+import { User, Activity, Dumbbell, Zap, X, Save, Scale, Ruler, Trash2 } from 'lucide-react';
 
-export default function AthleteProfileModal({ athlete, onClose, onSave }) {
+export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete }) {
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [formData, setFormData] = useState({
     id: athlete.id,
     name: athlete.name || '',
@@ -147,16 +148,43 @@ export default function AthleteProfileModal({ athlete, onClose, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-bold text-sm">
-            إلغاء
+        <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+          <button type="button" onClick={() => setShowConfirmDelete(true)} className="px-4 py-2.5 bg-red-50 dark:bg-red-950/20 hover:bg-red-600 hover:text-white border border-red-200 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 font-bold text-sm flex items-center gap-2 transition-all">
+            <Trash2 className="w-4 h-4"/> حذف اللاعب / Delete
           </button>
-          <button onClick={handleSaveClick} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center gap-2">
-            <Save className="w-4 h-4"/> حفظ البيانات
-          </button>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-bold text-sm">
+              إلغاء
+            </button>
+            <button onClick={handleSaveClick} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center gap-2">
+              <Save className="w-4 h-4"/> حفظ البيانات
+            </button>
+          </div>
         </div>
 
       </div>
+
+      {showConfirmDelete && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center border border-slate-200 dark:border-slate-700">
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white">هل أنت متأكد من الحذف؟</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+              سيتم حذف اللاعب <span className="font-bold text-slate-800 dark:text-white">"{formData.name}"</span> وكل سجّلاته وتدريباته وتواريخه بالكامل من خوادم النظام. لا يمكن التراجع عن هذا الإجراء مطلقًا!
+            </p>
+            <div className="flex gap-3 flex-row-reverse">
+              <button onClick={() => { setShowConfirmDelete(false); onDelete(formData.id); }} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all">
+                تأكيد الحذف
+              </button>
+              <button onClick={() => setShowConfirmDelete(false)} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all">
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

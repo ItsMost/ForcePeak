@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Tag } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Tag, Sparkles } from 'lucide-react';
 
 export default function ExerciseLibrary({ 
   showLibrary, setShowLibrary, library, handleLibraryDragStart, 
   setAddExerciseModal, onDeleteDrill, onEditDrill, onDeleteTemplate,
-  onOpenCreateProgram, programs = [], onDeleteProgram, onApplyProgram
+  onOpenCreateProgram, programs = [], onDeleteProgram, onApplyProgram,
+  onApplyWeekTemplate
 }) {
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
@@ -102,11 +103,17 @@ export default function ExerciseLibrary({
             <p className="text-center text-xs text-slate-400 py-4">No week routines saved yet</p>
           ) : (
             filteredTemplates.map(tpl => (
-              <div key={tpl.id} draggable onDragStart={(e) => handleLibraryDragStart(e, tpl, true)} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-orange-500/40 cursor-grab active:cursor-grabbing group flex justify-between items-center transition-all">
-                <div className="min-w-0 flex-1 pr-2">
+              <div key={tpl.id} draggable={tpl.type !== 'week'} onDragStart={(e) => handleLibraryDragStart(e, tpl, true)} className={`p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex justify-between items-center transition-all ${tpl.type !== 'week' ? 'cursor-grab active:cursor-grabbing hover:border-orange-500/40' : 'hover:border-blue-500/30'}`}>
+                <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5 min-w-0">
+                  {tpl.type === 'week' && <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded shrink-0">Week</span>}
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate">{tpl.title}</span>
                 </div>
-                <button onClick={() => onDeleteTemplate(tpl.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500 shrink-0"><Trash2 className="w-3 h-3" /></button>
+                <div className="flex items-center gap-1 shrink-0">
+                  {tpl.type === 'week' && onApplyWeekTemplate && (
+                    <button onClick={() => onApplyWeekTemplate(tpl)} className="px-2 py-1 text-[10px] font-black bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm transition-colors uppercase">Apply</button>
+                  )}
+                  <button onClick={() => onDeleteTemplate(tpl.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500 shrink-0"><Trash2 className="w-3 h-3" /></button>
+                </div>
               </div>
             ))
           )
@@ -118,6 +125,19 @@ export default function ExerciseLibrary({
             <button onClick={onOpenCreateProgram} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
               <Plus className="w-4 h-4" /> Create Multi-Week Block
             </button>
+
+            <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 dark:from-amber-500/20 dark:to-orange-500/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3.5 mb-4 text-slate-700 dark:text-slate-200 text-xs shadow-sm flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="text-[10px] uppercase tracking-wider font-bold">دليل كتل التدريب / Meso-Blocks Guide</span>
+              </div>
+              <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium text-right" dir="rtl">
+                <span className="block font-bold text-amber-700 dark:text-amber-400 mb-1">
+                  💡 ما هي كتل التدريب (Meso-Blocks)؟
+                </span>
+                هي دورة تدريبية متكاملة لعدة أسابيع متتالية (مثلًا 4 أسابيع). تتيح لك دمج وتوصيل عدة مخططات أسبوعية معًا (أسبوع قوة، أسبوع سرعة، أسبوع استشفاء...) لتطبيق برنامج تدريبي تصاعدي ومنظم للرياضي دفعة واحدة بدءًا من هذا الأسبوع.
+              </div>
+            </div>
             
             {filteredPrograms.length === 0 ? (
               <p className="text-center text-xs text-slate-400 py-4">No custom macro blocks stored</p>

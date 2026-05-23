@@ -52,11 +52,63 @@ export default function WeeklyPlanner() {
 
   const [draggedItem, setDraggedItem] = useState(null);
   const [createProgramModal, setCreateProgramModal] = useState({ isOpen: false, name: '', tags: '', weeksChain: [''] });
+  const [blockConfirmModal, setBlockConfirmModal] = useState({ isOpen: false, program: null });
 
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
+
+  const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '' });
+  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
+  const [syncStatus, setSyncStatus] = useState('synced');
+  const [activeMobileDay, setActiveMobileDay] = useState(() => {
+    const todayName = JS_DAYS[new Date().getDay()];
+    return DAYS_OF_WEEK.includes(todayName) ? todayName : 'Saturday';
+  });
+
+  const syncOfflineQueue = async () => {
+    const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
+    if (queue.length === 0) {
+      setSyncStatus('synced');
+      return;
+    }
+    setSyncStatus('syncing');
+    let hasError = false;
+    for (const item of queue) {
+      try {
+        const { error } = await supabase.from('agilitylap_workouts').upsert({
+          athlete_id: item.athlete_id,
+          workout_date: item.workout_date,
+          workout_title: item.workout_title,
+          drills: item.drills
+        }, { onConflict: 'athlete_id,workout_date' });
+        if (error) hasError = true;
+      } catch (err) {
+        hasError = true;
+      }
+    }
+    if (!hasError) {
+      localStorage.setItem('agilitylap_offline_queue', '[]');
+      setSyncStatus('synced');
+      handleToast('تمت مزامنة البيانات المخزنة محلياً بنجاح! / Offline changes synced!');
+    } else {
+      setSyncStatus('offline');
+    }
+  };
+
+  useEffect(() => {
+    const handleOnline = () => { setIsOnline(true); syncOfflineQueue(); };
+    const handleOffline = () => { setIsOnline(false); setSyncStatus('offline'); };
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    if (navigator.onLine) syncOfflineQueue();
+    else setSyncStatus('offline');
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handlePrint = (mode) => {
     setPrintMode(mode);
@@ -161,7 +213,37 @@ export default function WeeklyPlanner() {
     const dateStr = getDbDateStr(weekDatesFull[DAYS_OF_WEEK.indexOf(day)]);
     const finalTitle = titleToSave !== undefined ? titleToSave : (dayTitles[day] || '');
     const finalDrills = drillsToSave !== undefined ? drillsToSave : (schedule[day] || []);
-    await supabase.from('agilitylap_workouts').upsert({ athlete_id: selectedAthleteId, workout_date: dateStr, workout_title: finalTitle, drills: finalDrills }, { onConflict: 'athlete_id,workout_date' });
+    
+    const payload = { 
+      athlete_id: selectedAthleteId, 
+      workout_date: dateStr, 
+      workout_title: finalTitle, 
+      drills: finalDrills 
+    };
+
+    if (!isOnline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
+      const filteredQueue = queue.filter(item => !(item.athlete_id === selectedAthleteId && item.workout_date === dateStr));
+      filteredQueue.push(payload);
+      localStorage.setItem('agilitylap_offline_queue', JSON.stringify(filteredQueue));
+      setSyncStatus('offline');
+      handleToast('تم حفظ التغييرات محلياً! سنقوم بالمزامنة عند عودة الاتصال. / Saved offline locally!');
+      return;
+    }
+
+    try {
+      setSyncStatus('syncing');
+      const { error } = await supabase.from('agilitylap_workouts').upsert(payload, { onConflict: 'athlete_id,workout_date' });
+      if (error) throw error;
+      setSyncStatus('synced');
+    } catch (err) {
+      const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
+      const filteredQueue = queue.filter(item => !(item.athlete_id === selectedAthleteId && item.workout_date === dateStr));
+      filteredQueue.push(payload);
+      localStorage.setItem('agilitylap_offline_queue', JSON.stringify(filteredQueue));
+      setSyncStatus('offline');
+      handleToast('فشل الاتصال بالخادم، تم الحفظ محلياً / Network failure, saved offline');
+    }
   };
 
   const handleUndo = () => { if (historyIndex > 0) { const newIndex = historyIndex - 1; const prevState = history[newIndex]; setSchedule(prevState.schedule); setDayTitles(prevState.titles); setHistoryIndex(newIndex); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, prevState.schedule[day], prevState.titles[day])); handleToast('Undo successful'); } };
@@ -284,22 +366,48 @@ export default function WeeklyPlanner() {
     if (!error) { setCreateProgramModal({ isOpen: false, name: '', tags: '', weeksChain: [''] }); fetchLibraryData(); handleToast('Multi-week block saved!'); }
   };
 
-  const handleApplyProgramBlock = async (program) => {
+  const handleApplyProgramBlock = (program) => {
     if (!selectedAthleteId || !program.weeks || program.weeks.length === 0) return;
+    setBlockConfirmModal({ isOpen: true, program });
+  };
+
+  const executeApplyProgramBlock = async () => {
+    const { program } = blockConfirmModal;
+    if (!program) return;
+    setBlockConfirmModal({ isOpen: false, program: null });
     setIsLoading(true);
+    
     for (let i = 0; i < program.weeks.length; i++) {
-      const futureWeekStart = new Date(currentWeekStart); futureWeekStart.setDate(futureWeekStart.getDate() + (i * 7));
-      const weekTemplateObject = program.weeks[i].drills || {}; const targetBlockTitle = program.weeks[i].title || 'Block Workout';
+      const futureWeekStart = new Date(currentWeekStart);
+      futureWeekStart.setDate(futureWeekStart.getDate() + (i * 7));
+      const weekTemplateObject = program.weeks[i].drills || {};
+      const targetBlockTitle = program.weeks[i].title || 'Block Workout';
+      
       for (let j = 0; j < DAYS_OF_WEEK.length; j++) {
-        const dayDate = new Date(futureWeekStart); dayDate.setDate(dayDate.getDate() + j);
-        const clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ ...drill, id: `block-${Date.now()}-${i}-${j}-${idx}` }));
-        await supabase.from('agilitylap_workouts').upsert({ athlete_id: selectedAthleteId, workout_date: getDbDateStr(dayDate), workout_title: targetBlockTitle, drills: clonedDrills }, { onConflict: 'athlete_id,workout_date' });
+        const dayDate = new Date(futureWeekStart);
+        dayDate.setDate(dayDate.getDate() + j);
+        
+        let clonedDrills = [];
+        if (weekTemplateObject && !Array.isArray(weekTemplateObject)) {
+          clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ ...drill, id: `block-${Date.now()}-${i}-${j}-${idx}` }));
+        } else if (Array.isArray(weekTemplateObject)) {
+          clonedDrills = weekTemplateObject.map((drill, idx) => ({ ...drill, id: `block-${Date.now()}-${i}-${j}-${idx}` }));
+        }
+        
+        await supabase.from('agilitylap_workouts').upsert({ 
+          athlete_id: selectedAthleteId, 
+          workout_date: getDbDateStr(dayDate), 
+          workout_title: targetBlockTitle, 
+          drills: clonedDrills 
+        }, { onConflict: 'athlete_id,workout_date' });
       }
     }
+    
     const { data } = await supabase.from('agilitylap_workouts').select('*').eq('athlete_id', selectedAthleteId).gte('workout_date', weekStartDateStr).lte('workout_date', getDbDateStr(weekDatesFull[6]));
     const newSchedule = {}; const newTitles = {}; DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; });
     if (data) { data.forEach(record => { const dayName = JS_DAYS[new Date(record.workout_date).getDay()]; if (dayName) { newSchedule[dayName] = record.drills || []; newTitles[dayName] = record.workout_title || ''; } }); }
-    setSchedule(newSchedule); setDayTitles(newTitles); setIsLoading(false); handleToast('Block deployed successfully!');
+    setSchedule(newSchedule); setDayTitles(newTitles); setIsLoading(false); 
+    handleToast(`Meso-Block "${program.program_name}" deployed successfully!`);
   };
 
   const handleDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program block cleared'); } };
@@ -380,9 +488,143 @@ export default function WeeklyPlanner() {
   const handleDayTitleChange = (day, newTitle) => { const newTitles = { ...dayTitles, [day]: newTitle }; setDayTitles(newTitles); pushToHistory(schedule, newTitles); autoSaveDay(day, schedule[day], newTitle); };
   const confirmDelete = () => { if (deleteConfirmation.type === 'week') { const emptySchedule = DAYS_OF_WEEK.reduce((acc, day) => ({...acc, [day]: []}), {}); setSchedule(emptySchedule); setDayTitles({}); pushToHistory(emptySchedule, {}); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, [], '')); handleToast('Week cleared successfully'); } else if (deleteConfirmation.type === 'day' && deleteConfirmation.targetDay) { const tDay = deleteConfirmation.targetDay; const newSchedule = { ...schedule, [tDay]: [] }; const newTitles = { ...dayTitles, [tDay]: '' }; setSchedule(newSchedule); setDayTitles(newTitles); pushToHistory(newSchedule, newTitles); autoSaveDay(tDay, [], ''); handleToast(`${tDay} cleared`); } setDeleteConfirmation({ isOpen: false, type: null, targetDay: null }); };
   const handleSaveTemplate = async () => { if(!saveTemplateModal.name.trim()) return; const drillsToSave = schedule[saveTemplateModal.day].map(d => ({...d})); const newTemplate = { template_name: saveTemplateModal.name, template_type: 'day', drills: drillsToSave }; const { data, error } = await supabase.from('agilitylap_templates').insert([newTemplate]).select(); if(!error && data) { const formatted = { id: data[0].id, title: data[0].template_name, type: data[0].template_type, drills: data[0].drills }; setLibrary(prev => ({ ...prev, templates: [formatted, ...prev.templates] })); setSaveTemplateModal({ isOpen: false, day: null, name: '' }); handleToast(`Saved Template`); } };
-  const handleSaveWeekTemplate = async () => { if(!saveWeekTemplateModal.name.trim()) return; const allDrills = []; DAYS_OF_WEEK.forEach(day => { schedule[day].forEach(drill => allDrills.push({...drill})); }); if(allDrills.length === 0) return; const newTemplate = { template_name: saveWeekTemplateModal.name, template_type: 'week', drills: allDrills }; const { data, error } = await supabase.from('agilitylap_templates').insert([newTemplate]).select(); if(!error && data) { const formatted = { id: data[0].id, title: data[0].template_name, type: data[0].template_type, drills: data[0].drills }; setLibrary(prev => ({ ...prev, templates: [formatted, ...prev.templates] })); setSaveWeekTemplateModal({ isOpen: false, name: '' }); handleToast(`Saved Week Template`); } };
+  const handleSaveWeekTemplate = async () => {
+    if (!saveWeekTemplateModal.name.trim()) return;
+
+    const weekDrills = {};
+    DAYS_OF_WEEK.forEach(day => {
+      weekDrills[day] = (schedule[day] || []).map(drill => ({ ...drill }));
+    });
+
+    const hasExercises = Object.values(weekDrills).some(drills => drills.length > 0);
+    if (!hasExercises) {
+      handleToast('Cannot save an empty week!');
+      return;
+    }
+
+    const newTemplate = {
+      template_name: saveWeekTemplateModal.name,
+      template_type: 'week',
+      drills: weekDrills
+    };
+
+    const { data, error } = await supabase.from('agilitylap_templates').insert([newTemplate]).select();
+    if (!error && data) {
+      const formatted = {
+        id: data[0].id,
+        title: data[0].template_name,
+        type: data[0].template_type,
+        drills: data[0].drills
+      };
+      setLibrary(prev => ({ ...prev, templates: [formatted, ...prev.templates] }));
+      setSaveWeekTemplateModal({ isOpen: false, name: '' });
+      handleToast('Saved Week Template');
+    } else {
+      handleToast('Error saving week template');
+    }
+  };
+
+  const handleApplyWeekTemplate = async (template) => {
+    if (!selectedAthleteId) return;
+    setIsLoading(true);
+    const newSchedule = {};
+    const newTitles = {};
+
+    DAYS_OF_WEEK.forEach(day => {
+      let dayDrills = [];
+      if (template.drills && !Array.isArray(template.drills)) {
+        // Structured week mapping: { Saturday: [...], Sunday: [...] }
+        dayDrills = (template.drills[day] || []).map((drill, idx) => ({ 
+          ...drill, 
+          id: `tpl-${Date.now()}-${day}-${idx}` 
+        }));
+      } else if (Array.isArray(template.drills)) {
+        // Legacy flat array fallback: put all drills on Saturday, or distribute if they contain metadata (fallback)
+        dayDrills = template.drills.map((drill, idx) => ({ 
+          ...drill, 
+          id: `tpl-${Date.now()}-${day}-${idx}` 
+        }));
+      }
+      newSchedule[day] = dayDrills;
+      newTitles[day] = template.title || '';
+    });
+
+    setSchedule(newSchedule);
+    setDayTitles(newTitles);
+    pushToHistory(newSchedule, newTitles);
+
+    // Save each day to database
+    for (let day of DAYS_OF_WEEK) {
+      await autoSaveDay(day, newSchedule[day], newTitles[day]);
+    }
+
+    setIsLoading(false);
+    handleToast(`Week routine "${template.title}" applied!`);
+  };
+
+  const handleBulkSaveWeek = async () => {
+    if (!selectedAthleteId) return;
+    const { startDate, endDate } = bulkSaveModal;
+    if (!startDate || !endDate) { handleToast('Please select both dates!'); return; }
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (end < start) { handleToast('End date must be after Start date!'); return; }
+    
+    setIsLoading(true);
+    setBulkSaveModal({ isOpen: false, startDate: '', endDate: '' });
+    
+    const upserts = [];
+    const current = new Date(start);
+    while (current <= end) {
+      const dateStr = getDbDateStr(current);
+      const dayName = JS_DAYS[current.getDay()];
+      if (DAYS_OF_WEEK.includes(dayName)) {
+        const dayDrills = (schedule[dayName] || []).map((drill, idx) => ({
+          ...drill,
+          id: `bulk-${Date.now()}-${dayName}-${idx}-${Math.random()}`
+        }));
+        upserts.push({
+          athlete_id: selectedAthleteId,
+          workout_date: dateStr,
+          workout_title: dayTitles[dayName] || '',
+          drills: dayDrills
+        });
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    
+    if (upserts.length === 0) { setIsLoading(false); handleToast('No valid dates in range!'); return; }
+    const { error } = await supabase.from('agilitylap_workouts').upsert(upserts, { onConflict: 'athlete_id,workout_date' });
+    setIsLoading(false);
+    if (!error) {
+      handleToast(`تم نسخ وتكرار الجدول التدريبي بنجاح عبر ${upserts.length} أيام!`);
+    } else {
+      handleToast('Error duplicating routine');
+    }
+  };
+
   const handleAddAthlete = async () => { if(newAthleteData.name.trim()) { const newAthlete = { name: newAthleteData.name, birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null }; const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); if (data && data.length > 0) { const addedAthlete = { ...data[0], birthYear: data[0].birth_year, bodyFat: data[0].body_fat, verticalJump: data[0].vertical_jump, halfSquat: data[0].half_squat, quarterSquat: data[0].quarter_squat }; setAthletes([addedAthlete, ...athletes]); setSelectedAthleteId(addedAthlete.id); setNewAthleteData({ name: '', birthYear: '', weight: '' }); setShowAddAthleteModal(false); } } };
   const handleSaveProfile = async (updatedProfile) => { const { error } = await supabase.from('agilitylap_athletes').update({ name: updatedProfile.name, birth_year: updatedProfile.birthYear ? parseInt(updatedProfile.birthYear) : null, weight: updatedProfile.weight ? parseFloat(updatedProfile.weight) : null, height: updatedProfile.height ? parseFloat(updatedProfile.height) : null, body_fat: updatedProfile.bodyFat ? parseFloat(updatedProfile.bodyFat) : null, vertical_jump: updatedProfile.verticalJump ? parseFloat(updatedProfile.verticalJump) : null, standing_long_jump: updatedProfile.standingLongJump ? parseFloat(updatedProfile.standingLongJump) : null, squat_jump: updatedProfile.squatJump ? parseFloat(updatedProfile.squatJump) : null, clean: updatedProfile.clean ? parseFloat(updatedProfile.clean) : null, half_squat: updatedProfile.halfSquat ? parseFloat(updatedProfile.halfSquat) : null, quarter_squat: updatedProfile.quarterSquat ? parseFloat(updatedProfile.quarterSquat) : null, full_squat: updatedProfile.fullSquat ? parseFloat(updatedProfile.fullSquat) : null, bench: updatedProfile.bench ? parseFloat(updatedProfile.bench) : null, deadlift: updatedProfile.deadlift ? parseFloat(updatedProfile.deadlift) : null, }).eq('id', updatedProfile.id); if (!error) { setAthletes(prev => prev.map(a => a.id === updatedProfile.id ? updatedProfile : a)); setShowProfileModal(false); handleToast('Profile updated'); } };
+
+  const handleDeleteAthlete = async (athleteId) => {
+    if (!athleteId) return;
+    const { error } = await supabase.from('agilitylap_athletes').delete().eq('id', athleteId);
+    if (!error) {
+      const remainingAthletes = athletes.filter(a => a.id !== athleteId);
+      setAthletes(remainingAthletes);
+      if (remainingAthletes.length > 0) {
+        setSelectedAthleteId(remainingAthletes[0].id);
+        localStorage.setItem('lastSelectedAthlete', remainingAthletes[0].id);
+      } else {
+        setSelectedAthleteId(null);
+        localStorage.removeItem('lastSelectedAthlete');
+      }
+      setShowProfileModal(false);
+      handleToast('تم حذف بروفايل اللاعب بنجاح! / Profile deleted!');
+    } else {
+      handleToast('خطأ أثناء حذف اللاعب / Error deleting profile');
+    }
+  };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
   const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
@@ -432,7 +674,7 @@ export default function WeeklyPlanner() {
     <div className={`min-h-screen font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black pb-16 md:pb-0 ${printMode === 'landscape' ? 'print-mode-landscape' : 'print-mode-portrait'}`}>
       
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
-      {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} /> )}
+      {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
 
       {showMonthCalendar && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 print:hidden" onClick={() => setShowMonthCalendar(false)}> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4"> <h3 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><CalendarIcon className="w-6 h-6 text-orange-500" />{monthYearString}</h3> <button onClick={() => setShowMonthCalendar(false)} className="p-2 bg-slate-100 rounded-full"><X className="w-5 h-5"/></button> </div> <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2"> {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => ( <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase">{d}</div> ))} </div> <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div> </div> </div> )}
       
@@ -440,6 +682,28 @@ export default function WeeklyPlanner() {
       
       {saveTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4"> <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> Save Day Template</h3> <input type="text" value={saveTemplateModal.name} onChange={(e) => setSaveTemplateModal({...saveTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-900 mb-6 outline-none focus:ring-2 focus:ring-orange-500" autoFocus /> <div className="flex justify-end gap-2"> <button onClick={() => setSaveTemplateModal({isOpen: false, day: null, name: ''})} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold">Cancel</button> <button onClick={handleSaveTemplate} className="px-6 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold">Save</button> </div> </div> </div> )}
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4"> <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> Save Week Block</h3> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-900 mb-6 outline-none focus:ring-2 focus:ring-orange-500" autoFocus /> <div className="flex justify-end gap-2"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold">Cancel</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold">Save</button> </div> </div> </div> )}
+
+      {bulkSaveModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-right">
+            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white">تكرار وتوزيع الجدول التدريبي</h3>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">تاريخ البدء / Start Date</label>
+                <input type="date" value={bulkSaveModal.startDate} onChange={(e) => setBulkSaveModal({...bulkSaveModal, startDate: e.target.value})} className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 text-sm" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">تاريخ الانتهاء / End Date</label>
+                <input type="date" value={bulkSaveModal.endDate} onChange={(e) => setBulkSaveModal({...bulkSaveModal, endDate: e.target.value})} className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 text-sm" />
+              </div>
+            </div>
+            <div className="flex gap-3 flex-row-reverse">
+              <button onClick={handleBulkSaveWeek} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all">توزيع التمارين</button>
+              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">إلغاء</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {createProgramModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
@@ -449,21 +713,51 @@ export default function WeeklyPlanner() {
               <input type="text" value={createProgramModal.name} onChange={(e) => setCreateProgramModal({...createProgramModal, name: e.target.value})} placeholder="Program Block Name" className="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500" />
               <input type="text" value={createProgramModal.tags || ''} onChange={(e) => setCreateProgramModal({...createProgramModal, tags: e.target.value})} placeholder="Custom Tags (#ReturnToPlay)" className="w-full px-4 py-2 bg-slate-50 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-orange-500" />
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {createProgramModal.weeksChain.map((selectedTplId, idx) => (
-                  <div key={idx} className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-400 w-16">Week {idx + 1}:</span>
-                    <select value={selectedTplId} onChange={(e) => { const updated = [...createProgramModal.weeksChain]; updated[idx] = e.target.value; setCreateProgramModal({...createProgramModal, weeksChain: updated}); }} className="flex-1 text-sm bg-slate-50 border p-2 rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
-                      <option value="">-- Choose Week --</option>
-                      {library.templates.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
-                    </select>
+                {library.templates.filter(t => t.type === 'week').length === 0 ? (
+                  <div className="text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/30 text-right leading-relaxed" dir="rtl">
+                    ⚠️ لا يوجد أي مخططات أسبوعية محفوظة حاليًا!
+                    <span className="block mt-1 font-normal text-slate-500 dark:text-slate-400">يرجى حفظ أسبوع أولاً باستخدام زر "Save Week" المتواجد في الهيدر الرئيسي لتتمكن من إنشاء الكتل التدريبية.</span>
                   </div>
-                ))}
+                ) : (
+                  createProgramModal.weeksChain.map((selectedTplId, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-slate-400 w-16">Week {idx + 1}:</span>
+                      <select value={selectedTplId} onChange={(e) => { const updated = [...createProgramModal.weeksChain]; updated[idx] = e.target.value; setCreateProgramModal({...createProgramModal, weeksChain: updated}); }} className="flex-1 text-sm bg-slate-50 border p-2 rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+                        <option value="">-- Choose Week --</option>
+                        {library.templates.filter(t => t.type === 'week').map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
+                      </select>
+                    </div>
+                  ))
+                )}
               </div>
               <button onClick={() => setCreateProgramModal({...createProgramModal, weeksChain: [...createProgramModal.weeksChain, '']})} className="text-xs font-bold text-orange-500">+ Add Week</button>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button onClick={() => setCreateProgramModal({ isOpen: false, name: '', tags: '', weeksChain: [''] })} className="px-4 py-2 text-sm font-bold bg-slate-100 rounded-xl">Cancel</button>
               <button onClick={handleSaveProgramBlock} className="px-5 py-2 text-sm font-bold bg-orange-500 text-white rounded-xl shadow-md">Save Block</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {blockConfirmModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-100 dark:border-slate-700/50">
+            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-950/40 rounded-full flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6 text-amber-500" />
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-slate-100 text-right">تأكيد تطبيق الكتلة التدريبية (Meso-Block)</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 text-right leading-relaxed">
+              سيتم تطبيق الكتلة التدريبية <span className="font-bold text-slate-800 dark:text-white">"{blockConfirmModal.program?.program_name}"</span> المكونة من <span className="font-bold text-slate-800 dark:text-white">{blockConfirmModal.program?.weeks?.length || 0} أسابيع</span> على اللاعب المحدد. 
+              <span className="block mt-2 text-amber-600 dark:text-amber-400 font-medium">⚠️ تنبيه: هذا الإجراء سيقوم باستبدال التمارين المجدولة الحالية في تلك الأسابيع ولا يمكن التراجع عنه.</span>
+            </p>
+            <div className="flex gap-3 flex-row-reverse">
+              <button onClick={executeApplyProgramBlock} className="flex-1 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all">
+                تأكيد وتطبيق
+              </button>
+              <button onClick={() => setBlockConfirmModal({ isOpen: false, program: null })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl font-bold text-sm transition-all">
+                إلغاء
+              </button>
             </div>
           </div>
         </div>
@@ -594,6 +888,7 @@ export default function WeeklyPlanner() {
         selectedAthlete={selectedAthlete} setSelectedAthleteId={setSelectedAthleteId} athletes={athletes} isAthleteDropdownOpen={isAthleteDropdownOpen} setIsAthleteDropdownOpen={setIsAthleteDropdownOpen}
         setShowAddAthleteModal={setShowAddAthleteModal} setShowProfileModal={setShowProfileModal} isMobileView={isMobileView} setIsMobileView={setIsMobileView} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal} weeklyStats={weeklyStats}
+        isOnline={isOnline} syncStatus={syncStatus} onDelete={handleDeleteAthlete}
       />
 
       {/* ⚠️ Layout Control Panel */}
@@ -607,6 +902,7 @@ export default function WeeklyPlanner() {
           onShowStats={() => setShowStatsModal(true)}
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
           onPrint={handlePrint} 
+          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '' })}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
           
           {/* Premium Printed Report Header */}
@@ -648,7 +944,8 @@ export default function WeeklyPlanner() {
             )}
           </div>
 
-          <div className={`p-2 md:p-4 gap-2 md:gap-4 print-grid-container ${isMobileView ? 'flex flex-col w-full' : 'grid grid-cols-7 w-[1100px] xl:w-full min-w-full'}`}>
+          {/* Desktop/Print Grid Layout */}
+          <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-[1100px] xl:w-full min-w-full`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
@@ -656,7 +953,7 @@ export default function WeeklyPlanner() {
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
 
               return (
-              <div key={day} className={`flex flex-col ${isMobileView ? 'w-full mb-6 border-b border-slate-200 dark:border-slate-700 pb-6' : 'w-full'} print:break-inside-avoid print:mb-0`}>
+              <div key={day} className="flex flex-col w-full print:break-inside-avoid print:mb-0">
                 
                 <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-1 md:px-2 day-header">
                   <div className="flex justify-between items-baseline mb-2">
@@ -729,6 +1026,172 @@ export default function WeeklyPlanner() {
             )})}
           </div>
 
+          {/* Premium Mobile-Native Smart Tabs Interface */}
+          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-4 space-y-4`}>
+            {/* Day Selector Pills */}
+            <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x snap-mandatory">
+              {DAYS_OF_WEEK.map((day, index) => {
+                const isActive = activeMobileDay === day;
+                const dateStr = weekDates[index];
+                const hasExercises = (schedule[day] || []).length > 0;
+                
+                return (
+                  <button
+                    key={day}
+                    onClick={() => setActiveMobileDay(day)}
+                    className={`snap-start shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-2xl border transition-all duration-300 ${isActive ? 'bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-500/30 scale-105' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-350 hover:bg-slate-50'}`}
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-85">
+                      {day.substring(0, 3)}
+                    </span>
+                    <span className="text-xl font-black mt-1">
+                      {dateStr}
+                    </span>
+                    {hasExercises && (
+                      <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${isActive ? 'bg-white' : 'bg-orange-500'}`}></span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Active Day Timeline Content */}
+            {(() => {
+              const day = activeMobileDay;
+              const index = DAYS_OF_WEEK.indexOf(day);
+              const fullDateStr = weekDatesFull[index]?.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
+              const dayDrills = schedule[day] || [];
+              const dayStats = calculateDayVolume(dayDrills);
+              const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
+
+              return (
+                <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700/80 shadow-md space-y-5 animate-fadeIn">
+                  
+                  {/* Header of Active Day */}
+                  <div className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/80">
+                    <div className="flex justify-between items-baseline mb-2">
+                      <span className="text-xs font-black uppercase text-orange-500 tracking-widest">{day}</span>
+                      <span className="text-xs text-slate-400">{fullDateStr}</span>
+                    </div>
+                    
+                    <div className="flex items-center gap-3 justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 shrink-0 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-base font-black text-slate-700 dark:text-slate-250 bg-slate-50 dark:bg-slate-900 shadow-inner">
+                          {weekDates[index]}
+                        </div>
+                        <input 
+                          type="text" 
+                          value={dayTitles[day] || ''} 
+                          onChange={(e) => handleDayTitleChange(day, e.target.value)} 
+                          placeholder="تركيز تدريب اليوم / Add Focus" 
+                          className="text-base font-bold text-slate-800 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400" 
+                          readOnly={isPreviewMode}
+                        />
+                      </div>
+                      {!isPreviewMode && (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => handleCopyDay(day)} className="p-2 text-slate-400 hover:text-blue-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="نسخ اليوم"><Copy className="w-4 h-4" /></button>
+                          {clipboard && (
+                            <button onClick={() => handlePasteIntoDay(day)} className="p-2 text-slate-400 hover:text-green-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="لصق في اليوم"><ClipboardPaste className="w-4 h-4" /></button>
+                          )}
+                          <button onClick={() => setSaveTemplateModal({isOpen: true, day, name: dayTitles[day] || ''})} className="p-2 text-slate-400 hover:text-orange-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="حفظ كقالب"><BookmarkPlus className="w-4 h-4" /></button>
+                          <button onClick={() => setDeleteConfirmation({isOpen: true, type: 'day', targetDay: day})} className="p-2 text-slate-350 hover:text-red-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="مسح اليوم"><Trash2 className="w-4 h-4" /></button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Drills List */}
+                  <div className="space-y-3 min-h-[150px]">
+                    {dayDrills.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 text-slate-400 dark:text-slate-500">
+                        <Activity className="w-12 h-12 stroke-[1.5] mb-2 text-slate-300 dark:text-slate-700" />
+                        <p className="text-sm font-medium">لا توجد تمارين مجدولة اليوم</p>
+                        <p className="text-xs mt-1 text-slate-400/80">قم بإضافة تمارين جديدة للبدء</p>
+                      </div>
+                    ) : (
+                      dayDrills.map((drill, drillIndex) => (
+                        <TimelineCard 
+                          key={drill.id} 
+                          drill={drill} 
+                          day={day} 
+                          index={drillIndex} 
+                          isLast={drillIndex === dayDrills.length - 1} 
+                          isPreviewMode={isPreviewMode} 
+                          athlete={selectedAthlete} 
+                          onEdit={handleEditExerciseBtn} 
+                          onDelete={handleDeleteExercise} 
+                          onCopy={handleCopyExercise} 
+                          onMoveUp={() => moveDrillUp(day, drillIndex)} 
+                          onMoveDown={() => moveDrillDown(day, drillIndex)} 
+                          onDragStart={handleDragStartWrapper} 
+                          onDragOver={handleDragOver} 
+                          onDrop={handleDrop} 
+                        />
+                      ))
+                    )}
+
+                    {!isPreviewMode && (
+                      <button 
+                        onClick={() => handleAddExerciseBtn(day)}
+                        className="flex items-center justify-center gap-2.5 w-full py-4 bg-green-50 hover:bg-green-100 dark:bg-green-950/20 dark:hover:bg-green-950/40 text-green-600 dark:text-green-400 rounded-2xl transition-all duration-300 font-bold text-sm"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>إضافة تمرين جديد / Add Exercise</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Active Day Stats Summary Card */}
+                  {dayDrills.length > 0 && !isPreviewMode && (
+                    <div className="p-4 bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-700/50 rounded-2xl space-y-3">
+                      <h5 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">إحصاءات اليوم / Day Load Summary</h5>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
+                          <span className="text-[9px] uppercase font-black text-slate-400">تمارين / Drills</span>
+                          <span className="text-base font-black text-slate-800 dark:text-white mt-0.5">{dayStats.totalExercises}</span>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
+                          <span className="text-[9px] uppercase font-black text-blue-400">شدة / Intensity</span>
+                          <span className="text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">{dayStats.avgIntensity}%</span>
+                        </div>
+                        <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
+                          <span className="text-[9px] uppercase font-black text-orange-400">حمل / Load</span>
+                          <span className="text-base font-black text-orange-600 dark:text-orange-500 mt-0.5">{dayStats.totalVolumeScore}</span>
+                        </div>
+                        {dayStats.jumpsVolume > 0 && (
+                          <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
+                            <span className="text-[9px] uppercase font-black text-amber-400">قفز / Jumps</span>
+                            <span className="text-base font-black text-amber-600 dark:text-amber-500 mt-0.5">{dayStats.jumpsVolume}</span>
+                          </div>
+                        )}
+                        {dayStats.totalMeters > 0 && (
+                          <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
+                            <span className="text-[9px] uppercase font-black text-indigo-400">جري / Run</span>
+                            <span className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">{dayStats.totalMeters}m</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {dayStats.cnsLoad + dayStats.structuralLoad > 0 && (
+                        <div className="space-y-1">
+                          <div className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full flex overflow-hidden">
+                            <div className="h-full bg-amber-400" style={{ width: `${dayCnsPct}%` }} />
+                            <div className="h-full bg-blue-500" style={{ width: `${100 - dayCnsPct}%` }} />
+                          </div>
+                          <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                            <span>{dayCnsPct}% CNS (عصبي)</span>
+                            <span>{100 - dayCnsPct}% Structural (عضلي)</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
           {/* Premium Printed Report Footer */}
           <div className="hidden print:block fixed bottom-0 left-0 right-0 border-t border-slate-300 pt-3 pb-2 bg-white text-center text-[9px] font-semibold text-slate-400 uppercase tracking-widest">
             <div className="flex justify-between items-center px-4">
@@ -743,7 +1206,7 @@ export default function WeeklyPlanner() {
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
            <div className="pointer-events-auto h-full absolute right-0" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
-             <ExerciseLibrary showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library} handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal} setSaveWeekTemplateModal={setSaveWeekTemplateModal} onDeleteDrill={handleDeleteLibraryDrill} onEditDrill={handleEditLibraryDrill} onDeleteTemplate={handleDeleteLibraryTemplate} onEditTemplate={handleEditTemplate} onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} programs={programs} onDeleteProgram={handleDeleteProgramBlock} onApplyProgram={handleApplyProgramBlock} />
+             <ExerciseLibrary showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library} handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal} setSaveWeekTemplateModal={setSaveWeekTemplateModal} onDeleteDrill={handleDeleteLibraryDrill} onEditDrill={handleEditLibraryDrill} onDeleteTemplate={handleDeleteLibraryTemplate} onEditTemplate={handleEditTemplate} onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} programs={programs} onDeleteProgram={handleDeleteProgramBlock} onApplyProgram={handleApplyProgramBlock} onApplyWeekTemplate={handleApplyWeekTemplate} />
            </div>
         </div>
 

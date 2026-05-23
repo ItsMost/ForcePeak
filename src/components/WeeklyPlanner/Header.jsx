@@ -11,7 +11,8 @@ export default function Header({
   setShowProfileModal, 
   isMobileView, setIsMobileView, isDarkMode, setIsDarkMode,
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal,
-  weeklyStats // استقبلنا الإحصائيات هنا
+  weeklyStats, // استقبلنا الإحصائيات هنا
+  isOnline, syncStatus
 }) {
   
   const [athleteSearch, setAthleteSearch] = useState('');
@@ -73,6 +74,11 @@ export default function Header({
           
           <div className="w-px h-5 sm:h-6 bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
           
+          <button onClick={() => setSaveWeekTemplateModal({ isOpen: true, name: '' })} className="bg-gradient-to-r from-orange-500 to-orange-400 hover:from-orange-600 hover:to-orange-500 text-white border border-transparent rounded-xl font-bold text-sm shadow-md transition-all flex items-center gap-2 p-1.5 sm:px-4 sm:py-2">
+            <BookmarkPlus className="w-4 h-4 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Save Week</span>
+          </button>
+          
           <button onClick={() => setShowLibrary(!showLibrary)} className={`p-1.5 sm:px-4 sm:py-2 rounded-xl font-medium text-sm shadow-sm transition-all flex items-center gap-2 border ${showLibrary ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800 text-orange-600' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}>
             <Library className="w-4 h-4 sm:w-4 sm:h-4" /> 
             <span className="hidden sm:inline">Exercise Library</span>
@@ -82,6 +88,30 @@ export default function Header({
         {/* ================= إدارة اللاعبين ================= */}
         <div className="relative flex items-center gap-1 sm:gap-2 flex-1 justify-center sm:justify-start order-3 sm:order-4 w-full lg:w-auto mt-1 lg:mt-0">
            
+            {/* Sync Status Indicator Pill */}
+            {syncStatus && (
+              <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700/50 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0 bg-slate-50 dark:bg-slate-900/50">
+                {syncStatus === 'synced' && (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    <span className="text-green-600 dark:text-green-400 hidden xs:inline">متصل / Synced</span>
+                  </>
+                )}
+                {syncStatus === 'syncing' && (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                    <span className="text-amber-600 dark:text-amber-400 hidden xs:inline">جاري المزامنة / Syncing</span>
+                  </>
+                )}
+                {syncStatus === 'offline' && (
+                  <>
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                    <span className="text-red-600 dark:text-red-400 hidden xs:inline">أوفلاين / Offline</span>
+                  </>
+                )}
+              </div>
+            )}
+
            <button onClick={() => { setIsAthleteDropdownOpen(!isAthleteDropdownOpen); setAthleteSearch(''); }} className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors group w-full sm:w-auto bg-slate-50 sm:bg-transparent dark:bg-slate-800/50">
             <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-sm shrink-0">
               {selectedAthlete?.name ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
