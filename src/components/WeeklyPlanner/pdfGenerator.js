@@ -2,248 +2,282 @@ import { jsPDF } from 'jspdf';
 
 /**
  * Generate a clean, organized PDF report of the weekly training plan.
- * Exercises are listed vertically under each day — simple and beautiful.
+ * Exercises listed vertically under each day - simple, big, and readable.
  */
 export function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, selectedAthlete, weeklyStats, calculateDayVolume }) {
   const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-  const DAYS_AR = { Saturday: 'السبت', Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة' };
 
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 16;
+  const margin = 14;
   const contentWidth = pageWidth - margin * 2;
   let y = margin;
+  let pageNum = 1;
 
-  const COLORS = {
-    black: [15, 23, 42],
-    dark: [51, 65, 85],
-    medium: [100, 116, 139],
-    light: [148, 163, 184],
-    faint: [226, 232, 240],
+  // Colors
+  const C = {
+    black:  [15, 23, 42],
+    dark:   [51, 65, 85],
+    mid:    [100, 116, 139],
+    light:  [148, 163, 184],
+    faint:  [226, 232, 240],
     orange: [249, 115, 22],
-    blue: [59, 130, 246],
-    white: [255, 255, 255],
-    bgLight: [248, 250, 252],
+    white:  [255, 255, 255],
+    bg:     [248, 250, 252],
   };
 
-  const categoryColors = {
-    strength: { border: [100, 116, 139], bg: [248, 250, 252] },
-    power:    { border: [234, 179, 8],   bg: [254, 252, 232] },
-    core:     { border: [168, 85, 247],  bg: [250, 245, 255] },
-    mobility: { border: [239, 68, 68],   bg: [254, 242, 242] },
-    isometric:{ border: [249, 115, 22],  bg: [255, 247, 237] },
-    physical: { border: [59, 130, 246],  bg: [239, 246, 255] },
+  const catColors = {
+    strength:  { border: [100, 116, 139], bg: [248, 250, 252], label: 'STRENGTH' },
+    power:     { border: [234, 179, 8],   bg: [254, 252, 232], label: 'POWER' },
+    core:      { border: [168, 85, 247],  bg: [250, 245, 255], label: 'CORE' },
+    mobility:  { border: [239, 68, 68],   bg: [254, 242, 242], label: 'MOBILITY' },
+    isometric: { border: [249, 115, 22],  bg: [255, 247, 237], label: 'ISOMETRIC' },
+    physical:  { border: [59, 130, 246],  bg: [239, 246, 255], label: 'PHYSICAL' },
   };
 
-  // Helper: check if we need a new page
-  const checkPageBreak = (neededHeight) => {
-    if (y + neededHeight > pageHeight - 20) {
-      // Footer before page break
-      drawFooter();
+  // Helpers
+  const needsNewPage = (h) => {
+    if (y + h > pageHeight - 18) {
+      addFooter();
       doc.addPage();
+      pageNum++;
       y = margin;
       return true;
     }
     return false;
   };
 
-  // Footer
-  const drawFooter = () => {
+  const addFooter = () => {
     doc.setFontSize(7);
-    doc.setTextColor(...COLORS.light);
-    doc.text('ForcePeak Lab — Training Performance Report', margin, pageHeight - 8);
-    doc.text(`${selectedAthlete?.name || 'Athlete'}`, pageWidth - margin, pageHeight - 8, { align: 'right' });
+    doc.setTextColor(...C.light);
+    doc.setFont('helvetica', 'normal');
+    doc.text('ForcePeak Lab - Training Performance Report', margin, pageHeight - 7);
+    doc.text('Page ' + pageNum, pageWidth - margin, pageHeight - 7, { align: 'right' });
   };
 
-  // ─────────────────────────────────────────────
-  // HEADER SECTION
-  // ─────────────────────────────────────────────
-  // Top accent line
-  doc.setFillColor(...COLORS.orange);
-  doc.rect(margin, y, contentWidth, 1.5, 'F');
-  y += 6;
+  const safeTxt = (val) => {
+    if (val === null || val === undefined) return '';
+    return String(val).replace(/[^\x20-\x7E\n]/g, ' ').trim();
+  };
 
-  // Title
-  doc.setFontSize(18);
-  doc.setTextColor(...COLORS.black);
-  doc.setFont('helvetica', 'bold');
-  doc.text('TRAINING PLAN', margin, y);
-
-  // Date range on the right
-  const dateStart = weekDatesFull[0]?.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) || '';
-  const dateEnd = weekDatesFull[6]?.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) || '';
-  doc.setFontSize(10);
-  doc.setTextColor(...COLORS.medium);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${dateStart}  —  ${dateEnd}`, pageWidth - margin, y, { align: 'right' });
-  y += 7;
-
-  // Athlete info line
-  doc.setFontSize(9);
-  doc.setTextColor(...COLORS.dark);
-  doc.setFont('helvetica', 'bold');
-  const athleteName = selectedAthlete?.name || 'Unknown Athlete';
-  doc.text(`Athlete: ${athleteName}`, margin, y);
-
-  if (weeklyStats) {
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...COLORS.medium);
-    doc.text(`Weekly Load: ${weeklyStats.load}  |  Avg Intensity: ${weeklyStats.intensity}%  |  ${weeklyStats.loadLabel}`, pageWidth - margin, y, { align: 'right' });
-  }
-  y += 4;
-
-  // Separator line
-  doc.setDrawColor(...COLORS.faint);
-  doc.setLineWidth(0.3);
-  doc.line(margin, y, pageWidth - margin, y);
+  // ================================================================
+  //  HEADER
+  // ================================================================
+  doc.setFillColor(...C.orange);
+  doc.rect(margin, y, contentWidth, 2, 'F');
   y += 8;
 
-  // ─────────────────────────────────────────────
-  // DAYS LOOP
-  // ─────────────────────────────────────────────
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...C.black);
+  doc.text('WEEKLY TRAINING PLAN', margin, y);
+  y += 8;
+
+  // Date range
+  const dateStart = weekDatesFull[0] ? weekDatesFull[0].toLocaleDateString('en-US', { day: 'numeric', month: 'long' }) : '';
+  const dateEnd = weekDatesFull[6] ? weekDatesFull[6].toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...C.mid);
+  doc.text(dateStart + '  -  ' + dateEnd, margin, y);
+  y += 7;
+
+  // Athlete
+  const athleteName = selectedAthlete ? safeTxt(selectedAthlete.name) : 'Unknown Athlete';
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...C.dark);
+  doc.text('Athlete: ' + athleteName, margin, y);
+
+  // Weekly stats on the right
+  if (weeklyStats) {
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.mid);
+    const statsStr = 'Load: ' + weeklyStats.load + '  |  Intensity: ' + weeklyStats.intensity + '%  |  ' + safeTxt(weeklyStats.loadLabel);
+    doc.text(statsStr, pageWidth - margin, y, { align: 'right' });
+  }
+  y += 5;
+
+  // Separator
+  doc.setDrawColor(...C.faint);
+  doc.setLineWidth(0.5);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 10;
+
+  // ================================================================
+  //  DAYS
+  // ================================================================
   DAYS_OF_WEEK.forEach((day, dayIndex) => {
     const dayDrills = schedule[day] || [];
-    const fullDateStr = weekDatesFull[dayIndex]?.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) || '';
-    const dayTitle = dayTitles[day] || '';
+    const dateObj = weekDatesFull[dayIndex];
+    const fullDateStr = dateObj ? dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    const dayTitle = safeTxt(dayTitles[day] || '');
     const dayStats = calculateDayVolume(dayDrills);
 
-    // Estimate height needed for this day block
-    const headerHeight = 12;
-    const exerciseHeight = dayDrills.length * 14;
-    const summaryHeight = dayDrills.length > 0 ? 10 : 0;
-    const totalDayHeight = headerHeight + exerciseHeight + summaryHeight + 10;
+    // Estimate minimum height
+    const minH = 18 + (dayDrills.length > 0 ? 20 : 10);
+    needsNewPage(minH);
 
-    // Check for page break before starting a new day
-    checkPageBreak(Math.min(totalDayHeight, 50));
+    // -- Day Header Bar --
+    doc.setFillColor(...C.bg);
+    doc.roundedRect(margin, y, contentWidth, 10, 2, 2, 'F');
 
-    // ── Day Header ──
-    doc.setFillColor(...COLORS.bgLight);
-    doc.roundedRect(margin, y, contentWidth, 9, 2, 2, 'F');
-
-    doc.setFontSize(11);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...COLORS.black);
-    doc.text(`${day}`, margin + 4, y + 6.5);
+    doc.setTextColor(...C.black);
+    doc.text(day.toUpperCase(), margin + 5, y + 7.5);
 
-    doc.setFontSize(8);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...COLORS.medium);
-    doc.text(fullDateStr, pageWidth - margin - 4, y + 6.5, { align: 'right' });
+    doc.setTextColor(...C.mid);
+    doc.text(fullDateStr, pageWidth - margin - 5, y + 7.5, { align: 'right' });
+    y += 13;
 
-    y += 11;
-
-    // Day title if exists
+    // Day workout title
     if (dayTitle) {
-      doc.setFontSize(8.5);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'italic');
-      doc.setTextColor(...COLORS.orange);
-      doc.text(dayTitle, margin + 4, y + 1);
-      y += 5;
+      doc.setTextColor(...C.orange);
+      doc.text(dayTitle, margin + 5, y);
+      y += 6;
     }
 
-    // ── Exercises List ──
+    // -- Exercises --
     if (dayDrills.length === 0) {
-      doc.setFontSize(8);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'italic');
-      doc.setTextColor(...COLORS.light);
-      doc.text('— Rest Day —', margin + 4, y + 2);
-      y += 8;
+      doc.setTextColor(...C.light);
+      doc.text('-- Rest Day --', margin + 5, y + 2);
+      y += 10;
     } else {
-      dayDrills.forEach((drill, drillIndex) => {
-        checkPageBreak(16);
+      dayDrills.forEach((drill, idx) => {
+        // Calculate card height based on content
+        const hasDetails = drill.details && safeTxt(drill.details).length > 0;
+        const detailsText = hasDetails ? safeTxt(drill.details) : '';
+        
+        // Split long details into lines
+        let detailLines = [];
+        if (hasDetails) {
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'normal');
+          detailLines = doc.splitTextToSize(detailsText, contentWidth - 25);
+        }
+        
+        const cardHeight = 14 + (hasDetails ? (detailLines.length * 4.5 + 2) : 0);
+        needsNewPage(cardHeight + 4);
 
         const type = (drill.type || 'physical').toLowerCase();
-        const catColor = categoryColors[type] || categoryColors.physical;
+        const cat = catColors[type] || catColors.physical;
         const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
 
-        // Left accent line
-        doc.setFillColor(...catColor.border);
-        doc.rect(margin + 2, y, 1.2, 10, 'F');
+        // Card background
+        doc.setFillColor(...cat.bg);
+        doc.roundedRect(margin + 4, y, contentWidth - 6, cardHeight, 2, 2, 'F');
 
-        // Light background
-        doc.setFillColor(...catColor.bg);
-        doc.roundedRect(margin + 5, y, contentWidth - 7, 10, 1.5, 1.5, 'F');
+        // Left accent bar
+        doc.setFillColor(...cat.border);
+        doc.rect(margin + 4, y, 2, cardHeight, 'F');
 
         // Exercise number
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...COLORS.light);
-        doc.text(`${drillIndex + 1}`, margin + 7, y + 6);
-
-        // Exercise title
         doc.setFontSize(9);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...COLORS.black);
-        const title = drill.title || 'Unnamed';
-        doc.text(title, margin + 14, y + 4.5);
+        doc.setTextColor(...C.light);
+        doc.text(String(idx + 1), margin + 10, y + 6);
 
-        // Prescription string
-        const parts = [];
-        const sets = drill.sets || '';
-        const reps = isMeters ? (drill.distance || '') : (drill.reps || '');
-        const unitLabel = isMeters ? 'm' : (drill.unit === 'sec' ? 's' : (drill.unit === 'min' ? 'min' : (drill.unit === 'jumps' ? 'j' : '')));
+        // Exercise title - BIG and BOLD
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...C.black);
+        doc.text(safeTxt(drill.title || 'Unnamed'), margin + 18, y + 6);
 
-        if (sets && reps) {
-          parts.push(`${sets}×${reps}${unitLabel}`);
-        } else if (sets) {
-          parts.push(`${sets} sets`);
-        } else if (reps) {
-          parts.push(`${reps}${unitLabel}`);
+        // Prescription line - clear readable format
+        const sets = safeTxt(drill.sets);
+        const reps = isMeters ? safeTxt(drill.distance) : safeTxt(drill.reps);
+        const pct = safeTxt(drill.percentage);
+        const rest = safeTxt(drill.rest);
+
+        let unitStr = '';
+        if (drill.unit) {
+          const u = drill.unit.toLowerCase();
+          if (u === 'meters') unitStr = 'm';
+          else if (u === 'sec') unitStr = 's';
+          else if (u === 'min') unitStr = 'min';
+          else if (u === 'jumps') unitStr = ' jumps';
+          else if (u === 'reps') unitStr = ' reps';
+          else unitStr = '';
         }
 
-        if (drill.percentage) parts.push(`@${drill.percentage}%`);
-        if (drill.rest) parts.push(`⏱ ${drill.rest}`);
+        const parts = [];
+        if (sets && reps) {
+          parts.push(sets + ' x ' + reps + unitStr);
+        } else if (sets) {
+          parts.push(sets + ' sets');
+        } else if (reps) {
+          parts.push(reps + unitStr);
+        }
+        if (pct) parts.push('@ ' + pct + '%');
+        if (rest) parts.push('Rest: ' + rest);
 
-        const prescriptionStr = parts.join('  ·  ');
-        doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(...COLORS.dark);
-        doc.text(prescriptionStr, margin + 14, y + 8.5);
+        if (parts.length > 0) {
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...C.dark);
+          doc.text(parts.join('    |    '), margin + 18, y + 11.5);
+        }
 
-        // Type badge on the right
-        doc.setFontSize(6);
+        // Category badge on right
+        doc.setFontSize(7);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...catColor.border);
-        doc.text(type.toUpperCase(), pageWidth - margin - 5, y + 6, { align: 'right' });
+        doc.setTextColor(...cat.border);
+        doc.text(cat.label, pageWidth - margin - 8, y + 6, { align: 'right' });
 
-        y += 12;
+        // Notes / Details - clearly visible below the prescription
+        if (hasDetails && detailLines.length > 0) {
+          let noteY = y + 15;
+          doc.setFontSize(9);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...C.mid);
+          detailLines.forEach((line) => {
+            doc.text(line, margin + 18, noteY);
+            noteY += 4.5;
+          });
+        }
+
+        y += cardHeight + 3;
       });
     }
 
-    // ── Day Summary ──
+    // -- Day Summary --
     if (dayDrills.length > 0) {
-      checkPageBreak(10);
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(...COLORS.medium);
+      needsNewPage(10);
 
-      const summaryParts = [];
-      summaryParts.push(`${dayStats.totalExercises} exercises`);
-      if (dayStats.avgIntensity > 0) summaryParts.push(`Intensity: ${dayStats.avgIntensity}%`);
-      summaryParts.push(`Load: ${dayStats.totalVolumeScore}`);
-      if (dayStats.jumpsVolume > 0) summaryParts.push(`Jumps: ${dayStats.jumpsVolume}`);
-      if (dayStats.totalMeters > 0) summaryParts.push(`Run: ${dayStats.totalMeters}m`);
+      const sumParts = [];
+      sumParts.push(dayStats.totalExercises + ' exercises');
+      if (dayStats.avgIntensity > 0) sumParts.push('Intensity: ' + dayStats.avgIntensity + '%');
+      sumParts.push('Load: ' + dayStats.totalVolumeScore);
+      if (dayStats.jumpsVolume > 0) sumParts.push('Jumps: ' + dayStats.jumpsVolume);
+      if (dayStats.totalMeters > 0) sumParts.push('Run: ' + dayStats.totalMeters + 'm');
 
-      doc.text(summaryParts.join('   |   '), margin + 4, y + 1);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.mid);
+      doc.text(sumParts.join('   |   '), margin + 5, y + 1);
       y += 5;
     }
 
-    // Day separator line
-    doc.setDrawColor(...COLORS.faint);
-    doc.setLineWidth(0.2);
+    // Day separator
+    doc.setDrawColor(...C.faint);
+    doc.setLineWidth(0.3);
     doc.line(margin, y, pageWidth - margin, y);
-    y += 6;
+    y += 8;
   });
 
-  // ─────────────────────────────────────────────
-  // FINAL FOOTER
-  // ─────────────────────────────────────────────
-  drawFooter();
+  // Final footer
+  addFooter();
 
-  // ─────────────────────────────────────────────
-  // SAVE / DOWNLOAD
-  // ─────────────────────────────────────────────
-  const fileName = `Training_Plan_${athleteName.replace(/\s+/g, '_')}_${dateStart.replace(/\s+/g, '')}-${dateEnd.replace(/\s+/g, '')}.pdf`;
+  // Save
+  const fileName = 'Training_Plan_' + athleteName.replace(/\s+/g, '_') + '.pdf';
   doc.save(fileName);
 }
