@@ -11,7 +11,7 @@ export default function Header({
   setShowProfileModal, 
   isMobileView, setIsMobileView, isDarkMode, setIsDarkMode,
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal,
-  weeklyStats, // استقبلنا الإحصائيات هنا
+  weeklyStats,
   isOnline, syncStatus
 }) {
   
@@ -24,7 +24,7 @@ export default function Header({
       
       <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-y-3 gap-x-1 sm:gap-6 w-full max-w-[1600px] mx-auto">
         
-        {/* ================= القسم الأيسر ================= */}
+        {/* Left Section */}
         <div className="flex items-center gap-2 sm:gap-6 shrink-0 order-1">
           <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-400 bg-clip-text text-transparent hidden md:block">
             Weekly Planner
@@ -44,7 +44,7 @@ export default function Header({
           </div>
         </div>
 
-        {/* ================= القسم الأوسط: المؤشرات الأسبوعية ================= */}
+        {/* Middle Section: Weekly Load Indicators */}
         {weeklyStats && (
           <div className="hidden lg:flex items-center gap-3 px-4 py-1.5 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 order-4 lg:order-2">
             <div className="flex items-center gap-1.5">
@@ -62,7 +62,7 @@ export default function Header({
           </div>
         )}
 
-        {/* ================= القسم الأيمن (الأدوات) ================= */}
+        {/* Right Section (Tools) */}
         <div className="flex items-center gap-1 sm:gap-3 shrink-0 order-2 sm:order-3">
           <button onClick={() => setIsMobileView(!isMobileView)} className={`p-1.5 sm:p-2 rounded-lg transition-colors ${isMobileView ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/30' : 'text-slate-400 hover:text-blue-500 bg-transparent hover:bg-slate-100 dark:hover:bg-slate-700'}`} title="Mobile View Toggle">
             {isMobileView ? <Monitor className="w-4 h-4 sm:w-5 sm:h-5" /> : <Smartphone className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -85,7 +85,7 @@ export default function Header({
           </button>
         </div>
 
-        {/* ================= إدارة اللاعبين ================= */}
+        {/* Athlete Management */}
         <div className="relative flex items-center gap-1 sm:gap-2 flex-1 justify-center sm:justify-start order-3 sm:order-4 w-full lg:w-auto mt-1 lg:mt-0">
            
             {/* Sync Status Indicator Pill */}
@@ -94,19 +94,19 @@ export default function Header({
                 {syncStatus === 'synced' && (
                   <>
                     <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-green-600 dark:text-green-400 hidden xs:inline">متصل / Synced</span>
+                    <span className="text-green-600 dark:text-green-400 hidden xs:inline">Synced</span>
                   </>
                 )}
                 {syncStatus === 'syncing' && (
                   <>
                     <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                    <span className="text-amber-600 dark:text-amber-400 hidden xs:inline">جاري المزامنة / Syncing</span>
+                    <span className="text-amber-600 dark:text-amber-400 hidden xs:inline">Syncing</span>
                   </>
                 )}
                 {syncStatus === 'offline' && (
                   <>
                     <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                    <span className="text-red-600 dark:text-red-400 hidden xs:inline">أوفلاين / Offline</span>
+                    <span className="text-red-600 dark:text-red-400 hidden xs:inline">Offline</span>
                   </>
                 )}
               </div>
@@ -143,7 +143,7 @@ export default function Header({
               <div className="max-h-60 overflow-y-auto">
                 {filteredAthletes.length > 0 ? (
                   filteredAthletes.map(athlete => (
-                    <button key={athlete.id} onClick={() => { setSelectedAthleteId(athlete.id); setIsAthleteDropdownOpen(false); setAthleteSearch(''); handleToast(`تم اختيار ${athlete.name}`); }} className={`w-full text-left px-4 py-3 sm:py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors dark:text-slate-200 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-bold bg-orange-50/50 dark:bg-orange-500/10' : ''}`}>
+                    <button key={athlete.id} onClick={() => { setSelectedAthleteId(athlete.id); setIsAthleteDropdownOpen(false); setAthleteSearch(''); handleToast(`Selected ${athlete.name}`); }} className={`w-full text-left px-4 py-3 sm:py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors dark:text-slate-200 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-bold bg-orange-50/50 dark:bg-orange-500/10' : ''}`}>
                       {athlete.name}
                     </button>
                   ))

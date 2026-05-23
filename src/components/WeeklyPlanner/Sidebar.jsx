@@ -32,7 +32,7 @@ export default function Sidebar({
           <BarChart3 className="w-5 h-5" />
         </button>
 
-        <button onClick={onBulkSave} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="حفظ الفترة ككتلة تدريبية / Save Range as Meso-Block">
+        <button onClick={onBulkSave} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="Save Range as Meso-Block">
           <Calendar className="w-5 h-5" />
         </button>
 
@@ -43,7 +43,7 @@ export default function Sidebar({
 
       {/* Bottom/Right Controls */}
       <div className="flex flex-row md:flex-col items-center gap-1 sm:gap-3 ml-auto md:ml-0">
-        <button onClick={onExportPDF} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="تحميل PDF / Export PDF">
+        <button onClick={onExportPDF} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="Export PDF">
           <FileDown className="w-5 h-5" />
         </button>
         <button onClick={onClearWeek} className="p-2 md:p-3 text-slate-300 hover:text-red-500 rounded-xl transition-all" title="Clear Week">

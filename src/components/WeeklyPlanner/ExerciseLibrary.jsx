@@ -109,7 +109,7 @@ export default function ExerciseLibrary({
         {/* Tab 2: Single Day Blueprint Templates */}
         {activeTab === 'days' && (
           filteredDayTemplates.length === 0 ? (
-            <p className="text-center text-xs text-slate-400 py-4" dir="rtl">لا يوجد قوالب أيام محفوظة حالياً</p>
+            <p className="text-center text-xs text-slate-400 py-4">No saved day templates found</p>
           ) : (
             filteredDayTemplates.map(tpl => {
               const drillCount = tpl.drills?.length || 0;
@@ -122,7 +122,7 @@ export default function ExerciseLibrary({
                 >
                   <div className="flex justify-between items-center w-full">
                     <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
-                      <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded shrink-0">يوم / Day</span>
+                      <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded shrink-0">Day</span>
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate" title={tpl.title}>{tpl.title}</span>
                     </div>
                     <button 
@@ -134,26 +134,26 @@ export default function ExerciseLibrary({
                   </div>
 
                   <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-100/60 dark:border-slate-800/60 pb-1.5">
-                    <span>⚡ {drillCount} تمرين / Exercises</span>
-                    <span className="text-[9px] text-slate-350 dark:text-slate-500">اسحب أو اضغط للتطبيق</span>
+                    <span>⚡ {drillCount} Exercises</span>
+                    <span className="text-[9px] text-slate-350 dark:text-slate-500">Drag or tap to apply</span>
                   </div>
 
                   {/* Quick-Apply Day Badges */}
-                  <div className="flex flex-wrap gap-1 mt-1 justify-center sm:justify-start" dir="rtl">
+                  <div className="flex flex-wrap gap-1 mt-1 justify-start">
                     {[
-                      { key: 'Saturday', label: 'السبت' },
-                      { key: 'Sunday', label: 'الأحد' },
-                      { key: 'Monday', label: 'الاثنين' },
-                      { key: 'Tuesday', label: 'الثلاثاء' },
-                      { key: 'Wednesday', label: 'الأربعاء' },
-                      { key: 'Thursday', label: 'الخميس' },
-                      { key: 'Friday', label: 'الجمعة' }
+                      { key: 'Saturday', label: 'Sat' },
+                      { key: 'Sunday', label: 'Sun' },
+                      { key: 'Monday', label: 'Mon' },
+                      { key: 'Tuesday', label: 'Tue' },
+                      { key: 'Wednesday', label: 'Wed' },
+                      { key: 'Thursday', label: 'Thu' },
+                      { key: 'Friday', label: 'Fri' }
                     ].map(dayObj => (
                       <button 
                         key={dayObj.key}
                         onClick={() => onApplyDayTemplate && onApplyDayTemplate(tpl, dayObj.key)}
                         className="px-1.5 py-0.5 text-[9px] font-bold bg-white dark:bg-slate-800 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 text-slate-500 dark:text-slate-400 rounded-md border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-sm"
-                        title={`تطبيق على يوم ${dayObj.label}`}
+                        title={`Apply to ${dayObj.key}`}
                       >
                         {dayObj.label}
                       </button>
@@ -197,13 +197,13 @@ export default function ExerciseLibrary({
             <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 dark:from-amber-500/20 dark:to-orange-500/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3.5 mb-4 text-slate-700 dark:text-slate-200 text-xs shadow-sm flex flex-col gap-2">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="text-[10px] uppercase tracking-wider font-bold">دليل كتل التدريب / Meso-Blocks Guide</span>
+                <span className="text-[10px] uppercase tracking-wider font-bold">Meso-Blocks Guide</span>
               </div>
-              <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium text-right" dir="rtl">
+              <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
                 <span className="block font-bold text-amber-700 dark:text-amber-400 mb-1">
-                  💡 ما هي كتل التدريب (Meso-Blocks)؟
+                  💡 What are Meso-Blocks?
                 </span>
-                هي دورة تدريبية متكاملة لعدة أسابيع متتالية (مثلًا 4 أسابيع). تتيح لك دمج وتوصيل عدة مخططات أسبوعية معًا (أسبوع قوة، أسبوع سرعة، أسبوع استشفاء...) لتطبيق برنامج تدريبي تصاعدي ومنظم للرياضي دفعة واحدة بدءًا من هذا الأسبوع.
+                Meso-Blocks are multi-week training phases (e.g. 4 weeks) combining multiple weekly routines (e.g. strength, speed, deload) to build a structured, progressive program for the athlete all at once.
               </div>
             </div>
             

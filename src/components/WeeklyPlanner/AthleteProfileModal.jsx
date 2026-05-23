@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Activity, Dumbbell, Zap, X, Save, Scale, Ruler, Trash2 } from 'lucide-react';
+import { User, Dumbbell, Zap, X, Save, Scale, Trash2 } from 'lucide-react';
 
 export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete }) {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -41,8 +41,8 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               {formData.name ? formData.name.charAt(0).toUpperCase() : '?'}
             </div>
             <div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white">بروفايل اللاعب</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">سجل أرقام واختبارات اللاعب بدقة لحساب الأوزان تلقائياً</p>
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Athlete Profile</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Record athlete test results to calculate workload dynamically</p>
             </div>
           </div>
           <button onClick={onClose} className="p-2 bg-slate-200 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors">
@@ -56,15 +56,15 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
           {/* Section 1: Basic Info */}
           <div>
             <h4 className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">
-              <User className="w-4 h-4 text-blue-500" /> البيانات الأساسية
+              <User className="w-4 h-4 text-blue-500" /> Basic Information
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">الاسم بالكامل</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Full Name</label>
                 <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">سنة الميلاد</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Birth Year</label>
                 <input type="number" name="birthYear" value={formData.birthYear} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 dark:text-white" />
               </div>
             </div>
@@ -73,19 +73,19 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
           {/* Section 2: Body Metrics */}
           <div>
             <h4 className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">
-              <Scale className="w-4 h-4 text-green-500" /> المقاسات الجسمانية
+              <Scale className="w-4 h-4 text-green-500" /> Anthropometrics
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">الوزن (KG)</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Weight (KG)</label>
                 <input type="number" name="weight" value={formData.weight} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-green-500 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">الطول (CM)</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Height (CM)</label>
                 <input type="number" name="height" value={formData.height} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-green-500 dark:text-white" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">نسبة الدهون (%)</label>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Body Fat (%)</label>
                 <input type="number" name="bodyFat" value={formData.bodyFat} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-green-500 dark:text-white" />
               </div>
             </div>
@@ -94,11 +94,11 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
           {/* Section 3: Strength Tests (1RM) */}
           <div className="bg-orange-50 dark:bg-orange-900/10 rounded-2xl p-5 border border-orange-100 dark:border-orange-900/30">
             <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-4">
-              <Dumbbell className="w-4 h-4" /> اختبارات القوة القصوى (1RM بالـ KG)
+              <Dumbbell className="w-4 h-4" /> Max Strength Tests (1RM in KG)
             </h4>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Clean (كلين)</label>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Clean</label>
                 <input type="number" name="clean" value={formData.clean} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
               </div>
               <div>
@@ -124,10 +124,10 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
             </div>
           </div>
 
-          {/* Section 4: Power Tests (تمت إضافة الاختبارات الجديدة) */}
+          {/* Section 4: Power Tests */}
           <div className="bg-yellow-50 dark:bg-yellow-900/10 rounded-2xl p-5 border border-yellow-100 dark:border-yellow-900/30">
             <h4 className="flex items-center gap-2 text-sm font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest mb-4">
-              <Zap className="w-4 h-4" /> اختبارات القدرة (Power / Jumps)
+              <Zap className="w-4 h-4" /> Power & Jump Tests
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
@@ -150,14 +150,14 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
         {/* Footer */}
         <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
           <button type="button" onClick={() => setShowConfirmDelete(true)} className="px-4 py-2.5 bg-red-50 dark:bg-red-950/20 hover:bg-red-600 hover:text-white border border-red-200 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 font-bold text-sm flex items-center gap-2 transition-all">
-            <Trash2 className="w-4 h-4"/> حذف اللاعب / Delete
+            <Trash2 className="w-4 h-4"/> Delete Athlete
           </button>
           <div className="flex gap-3">
             <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-bold text-sm">
-              إلغاء
+              Cancel
             </button>
             <button onClick={handleSaveClick} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center gap-2">
-              <Save className="w-4 h-4"/> حفظ البيانات
+              <Save className="w-4 h-4"/> Save Details
             </button>
           </div>
         </div>
@@ -165,21 +165,21 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
       </div>
 
       {showConfirmDelete && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4" dir="rtl">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center border border-slate-200 dark:border-slate-700">
             <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 rounded-full flex items-center justify-center mx-auto mb-4">
               <Trash2 className="w-8 h-8 text-red-500" />
             </div>
-            <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white">هل أنت متأكد من الحذف؟</h3>
+            <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white">Are you sure?</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
-              سيتم حذف اللاعب <span className="font-bold text-slate-800 dark:text-white">"{formData.name}"</span> وكل سجّلاته وتدريباته وتواريخه بالكامل من خوادم النظام. لا يمكن التراجع عن هذا الإجراء مطلقًا!
+              The athlete <span className="font-bold text-slate-800 dark:text-white">"{formData.name}"</span> and all of their logs, schedules, and training history will be deleted forever. This action is irreversible!
             </p>
-            <div className="flex gap-3 flex-row-reverse">
-              <button onClick={() => { setShowConfirmDelete(false); onDelete(formData.id); }} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all">
-                تأكيد الحذف
+            <div className="flex gap-3">
+              <button onClick={() => setShowConfirmDelete(false)} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all">
+                Cancel
               </button>
-              <button onClick={() => setShowConfirmDelete(false)} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all">
-                إلغاء
+              <button onClick={() => { setShowConfirmDelete(false); onDelete(formData.id); }} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all">
+                Confirm Delete
               </button>
             </div>
           </div>
