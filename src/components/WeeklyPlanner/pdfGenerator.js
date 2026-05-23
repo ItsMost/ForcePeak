@@ -1,8 +1,8 @@
 import { jsPDF } from 'jspdf';
 
 /**
- * Generate a clean, organized PDF report of the weekly training plan.
- * Exercises listed vertically under each day - simple, big, and readable.
+ * Generate a clean, extremely premium, online-coaching style PDF report.
+ * Each training day is presented on exactly ONE dedicated A4 page.
  */
 export function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, selectedAthlete, weeklyStats, calculateDayVolume }) {
   const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -10,21 +10,20 @@ export function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, selected
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 14;
+  const margin = 15;
   const contentWidth = pageWidth - margin * 2;
-  let y = margin;
-  let pageNum = 1;
 
-  // Colors
+  // Modern Harmonious Color Palette
   const C = {
-    black:  [15, 23, 42],
-    dark:   [51, 65, 85],
-    mid:    [100, 116, 139],
-    light:  [148, 163, 184],
-    faint:  [226, 232, 240],
-    orange: [249, 115, 22],
-    white:  [255, 255, 255],
-    bg:     [248, 250, 252],
+    primary:   [15, 23, 42],      // Slate 900 (Deep/Dominant)
+    secondary: [51, 65, 85],     // Slate 700
+    orange:    [249, 115, 22],    // Premium Orange (Accent)
+    mid:       [100, 116, 139],   // Slate 500
+    light:     [148, 163, 184],   // Slate 400
+    faint:     [241, 245, 249],   // Slate 100
+    border:    [226, 232, 240],   // Slate 200
+    white:     [255, 255, 255],
+    cardBg:    [248, 250, 252],   // Slate 50
   };
 
   const catColors = {
@@ -36,248 +35,287 @@ export function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, selected
     physical:  { border: [59, 130, 246],  bg: [239, 246, 255], label: 'PHYSICAL' },
   };
 
-  // Helpers
-  const needsNewPage = (h) => {
-    if (y + h > pageHeight - 18) {
-      addFooter();
-      doc.addPage();
-      pageNum++;
-      y = margin;
-      return true;
-    }
-    return false;
-  };
-
-  const addFooter = () => {
-    doc.setFontSize(7);
-    doc.setTextColor(...C.light);
-    doc.setFont('helvetica', 'normal');
-    doc.text('ForcePeak Lab - Training Performance Report', margin, pageHeight - 7);
-    doc.text('Page ' + pageNum, pageWidth - margin, pageHeight - 7, { align: 'right' });
-  };
-
   const safeTxt = (val) => {
     if (val === null || val === undefined) return '';
     return String(val).replace(/[^\x20-\x7E\n]/g, ' ').trim();
   };
 
-  // ================================================================
-  //  HEADER
-  // ================================================================
-  doc.setFillColor(...C.orange);
-  doc.rect(margin, y, contentWidth, 2, 'F');
-  y += 8;
+  const athleteName = selectedAthlete ? safeTxt(selectedAthlete.name) : 'Elite Athlete';
+  const dateStart = weekDatesFull[0] ? weekDatesFull[0].toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
+  const dateEnd = weekDatesFull[6] ? weekDatesFull[6].toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.black);
-  doc.text('WEEKLY TRAINING PLAN', margin, y);
-  y += 8;
-
-  // Date range
-  const dateStart = weekDatesFull[0] ? weekDatesFull[0].toLocaleDateString('en-US', { day: 'numeric', month: 'long' }) : '';
-  const dateEnd = weekDatesFull[6] ? weekDatesFull[6].toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(...C.mid);
-  doc.text(dateStart + '  -  ' + dateEnd, margin, y);
-  y += 7;
-
-  // Athlete
-  const athleteName = selectedAthlete ? safeTxt(selectedAthlete.name) : 'Unknown Athlete';
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(...C.dark);
-  doc.text('Athlete: ' + athleteName, margin, y);
-
-  // Weekly stats on the right
-  if (weeklyStats) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.mid);
-    const statsStr = 'Load: ' + weeklyStats.load + '  |  Intensity: ' + weeklyStats.intensity + '%  |  ' + safeTxt(weeklyStats.loadLabel);
-    doc.text(statsStr, pageWidth - margin, y, { align: 'right' });
-  }
-  y += 5;
-
-  // Separator
-  doc.setDrawColor(...C.faint);
-  doc.setLineWidth(0.5);
-  doc.line(margin, y, pageWidth - margin, y);
-  y += 10;
-
-  // ================================================================
-  //  DAYS
-  // ================================================================
+  // Generate a page for each day of the week
   DAYS_OF_WEEK.forEach((day, dayIndex) => {
-    const dayDrills = schedule[day] || [];
-    const dateObj = weekDatesFull[dayIndex];
-    const fullDateStr = dateObj ? dateObj.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }) : '';
-    const dayTitle = safeTxt(dayTitles[day] || '');
-    const dayStats = calculateDayVolume(dayDrills);
-
-    // Estimate minimum height
-    const minH = 18 + (dayDrills.length > 0 ? 20 : 10);
-    needsNewPage(minH);
-
-    // -- Day Header Bar --
-    doc.setFillColor(...C.bg);
-    doc.roundedRect(margin, y, contentWidth, 10, 2, 2, 'F');
-
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(...C.black);
-    doc.text(day.toUpperCase(), margin + 5, y + 7.5);
-
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(...C.mid);
-    doc.text(fullDateStr, pageWidth - margin - 5, y + 7.5, { align: 'right' });
-    y += 13;
-
-    // Day workout title
-    if (dayTitle) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(...C.orange);
-      doc.text(dayTitle, margin + 5, y);
-      y += 6;
+    if (dayIndex > 0) {
+      doc.addPage();
     }
 
-    // -- Exercises --
-    if (dayDrills.length === 0) {
-      doc.setFontSize(10);
-      doc.setFont('helvetica', 'italic');
-      doc.setTextColor(...C.light);
-      doc.text('-- Rest Day --', margin + 5, y + 2);
-      y += 10;
-    } else {
-      dayDrills.forEach((drill, idx) => {
-        // Calculate card height based on content
-        const hasDetails = drill.details && safeTxt(drill.details).length > 0;
-        const detailsText = hasDetails ? safeTxt(drill.details) : '';
-        
-        // Split long details into lines
-        let detailLines = [];
-        if (hasDetails) {
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'normal');
-          detailLines = doc.splitTextToSize(detailsText, contentWidth - 25);
-        }
-        
-        const cardHeight = 14 + (hasDetails ? (detailLines.length * 4.5 + 2) : 0);
-        needsNewPage(cardHeight + 4);
+    let y = margin;
+    const dayDrills = schedule[day] || [];
+    const dateObj = weekDatesFull[dayIndex];
+    const fullDateStr = dateObj ? dateObj.toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    const dayTitle = safeTxt(dayTitles[day] || 'Training Protocol');
+    const dayStats = calculateDayVolume(dayDrills);
 
+    // ================================================================
+    //  1. PREMIUM BRAND HEADER (Top of every single page)
+    // ================================================================
+    doc.setFillColor(...C.primary);
+    doc.rect(margin, y, contentWidth, 1.5, 'F');
+    y += 6;
+
+    // Logo & Brand Name
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primary);
+    doc.text('FORCEPEAK PERFORMANCE LAB', margin, y);
+
+    // Athlete Passport label on the right
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.orange);
+    doc.text('ATHLETE PASSPORT  //  MESO-BLUEPRINT', pageWidth - margin, y, { align: 'right' });
+    y += 5;
+
+    // Small divider
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.2);
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+
+    // ================================================================
+    //  2. HERO DAY HEADER BLOCK (Clean solid background)
+    // ================================================================
+    doc.setFillColor(...C.primary);
+    doc.roundedRect(margin, y, contentWidth, 16, 2, 2, 'F');
+
+    // Day name (e.g. SATURDAY)
+    doc.setFontSize(15);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.white);
+    doc.text(day.toUpperCase(), margin + 5, y + 10.5);
+
+    // Full Date
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.light);
+    doc.text(fullDateStr, pageWidth - margin - 5, y + 10.5, { align: 'right' });
+    y += 21;
+
+    // Workout Focus Banner
+    doc.setFillColor(...C.cardBg);
+    doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
+    
+    doc.setFontSize(8.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.orange);
+    doc.text('SESSION FOCUS:', margin + 4, y + 6);
+
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.secondary);
+    doc.text(dayTitle.toUpperCase(), margin + 34, y + 6);
+    y += 14;
+
+    // ================================================================
+    //  3. SESSION PERFORMANCE METRICS DASHBOARD
+    // ================================================================
+    // Render 3 stats columns
+    const colWidth = contentWidth / 3;
+    doc.setFillColor(...C.cardBg);
+    doc.roundedRect(margin, y, contentWidth, 12, 1.5, 1.5, 'F');
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(margin, y, contentWidth, 12, 1.5, 1.5, 'S');
+
+    // Col 1: Volume / Drills
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.mid);
+    doc.text('TOTAL EXERCISES', margin + 6, y + 4.5);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primary);
+    doc.text(`${dayDrills.length} Drills`, margin + 6, y + 9.5);
+
+    // Col 2: Load
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.mid);
+    doc.text('CALCULATED LOAD', margin + colWidth + 6, y + 4.5);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primary);
+    doc.text(`${dayStats.totalVolumeScore} pts`, margin + colWidth + 6, y + 9.5);
+
+    // Col 3: Details
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.mid);
+    doc.text('ATHLETIC PROFILE', margin + colWidth * 2 + 6, y + 4.5);
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.primary);
+    doc.text(athleteName, margin + colWidth * 2 + 6, y + 9.5);
+    y += 18;
+
+    // ================================================================
+    //  4. THE CORE EXERCISE LISTING (TABLE FORMAT)
+    // ================================================================
+    if (dayDrills.length === 0) {
+      // Elegant rest day placeholder
+      doc.setFillColor(...C.cardBg);
+      doc.roundedRect(margin, y, contentWidth, 60, 3, 3, 'F');
+      doc.setDrawColor(...C.border);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(margin, y, contentWidth, 60, 3, 3, 'S');
+
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.mid);
+      doc.text('REST & ACTIVE RECOVERY', pageWidth / 2, y + 25, { align: 'center' });
+
+      doc.setFontSize(9.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.light);
+      doc.text('No formal drills scheduled. Prioritize sleep, hydration, and gentle mobility.', pageWidth / 2, y + 34, { align: 'center' });
+    } else {
+      // Table Header Row
+      doc.setFillColor(...C.primary);
+      doc.rect(margin, y, contentWidth, 7, 'F');
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.white);
+      doc.text('#', margin + 3, y + 4.8);
+      doc.text('EXERCISE / INSTRUCTIONS', margin + 10, y + 4.8);
+      doc.text('SETS', margin + 104, y + 4.8, { align: 'center' });
+      doc.text('REPS/DIST', margin + 124, y + 4.8, { align: 'center' });
+      doc.text('INTENSITY', margin + 148, y + 4.8, { align: 'center' });
+      doc.text('REST', margin + 168, y + 4.8, { align: 'center' });
+      y += 7;
+
+      // Adjust height per exercise to ensure all fit on exactly one page.
+      // Maximum exercises is usually around 10. If we scale card height, we can fit perfectly.
+      const maxUsableHeight = pageHeight - y - 35; // Save 35mm for footer & coach notes card
+      const baseRowHeight = Math.min(14, maxUsableHeight / dayDrills.length);
+
+      dayDrills.forEach((drill, idx) => {
         const type = (drill.type || 'physical').toLowerCase();
         const cat = catColors[type] || catColors.physical;
         const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
 
-        // Card background
-        doc.setFillColor(...cat.bg);
-        doc.roundedRect(margin + 4, y, contentWidth - 6, cardHeight, 2, 2, 'F');
+        // Background alternate row striping
+        if (idx % 2 === 0) {
+          doc.setFillColor(...C.cardBg);
+          doc.rect(margin, y, contentWidth, baseRowHeight, 'F');
+        }
 
-        // Left accent bar
+        // Left accent category color bar
         doc.setFillColor(...cat.border);
-        doc.rect(margin + 4, y, 2, cardHeight, 'F');
+        doc.rect(margin, y, 1.2, baseRowHeight, 'F');
 
-        // Exercise number
-        doc.setFontSize(9);
+        // Divider line at the bottom
+        doc.setDrawColor(...C.border);
+        doc.setLineWidth(0.15);
+        doc.line(margin, y + baseRowHeight, pageWidth - margin, y + baseRowHeight);
+
+        // # Number
+        doc.setFontSize(8.5);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...C.light);
-        doc.text(String(idx + 1), margin + 10, y + 6);
+        doc.setTextColor(...C.mid);
+        doc.text(String(idx + 1), margin + 4, y + baseRowHeight / 2 + 1);
 
-        // Exercise title - BIG and BOLD
-        doc.setFontSize(12);
+        // Exercise Title (Bold Slate)
+        doc.setFontSize(9.5);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...C.black);
-        doc.text(safeTxt(drill.title || 'Unnamed'), margin + 18, y + 6);
+        doc.setTextColor(...C.primary);
+        const titleStr = safeTxt(drill.title || 'Unnamed Drill');
+        doc.text(titleStr, margin + 10, y + baseRowHeight / 2 - 1);
 
-        // Prescription line - clear readable format
-        const sets = safeTxt(drill.sets);
-        const reps = isMeters ? safeTxt(drill.distance) : safeTxt(drill.reps);
-        const pct = safeTxt(drill.percentage);
-        const rest = safeTxt(drill.rest);
+        // Exercise Notes / Cues (Subtext below title)
+        const noteStr = safeTxt(drill.details || '');
+        if (noteStr) {
+          doc.setFontSize(7.5);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...C.mid);
+          // Crop notes if they are too long to prevent row bleeding
+          const truncatedNote = noteStr.length > 50 ? noteStr.substring(0, 47) + '...' : noteStr;
+          doc.text(truncatedNote, margin + 10, y + baseRowHeight / 2 + 3.2);
+        }
 
+        // Table Data Fields
+        doc.setFontSize(9.5);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...C.secondary);
+
+        // Sets
+        doc.text(safeTxt(drill.sets) || '-', margin + 104, y + baseRowHeight / 2 + 1, { align: 'center' });
+
+        // Reps / Distance
+        let repVal = isMeters ? safeTxt(drill.distance) : safeTxt(drill.reps);
         let unitStr = '';
         if (drill.unit) {
           const u = drill.unit.toLowerCase();
           if (u === 'meters') unitStr = 'm';
           else if (u === 'sec') unitStr = 's';
-          else if (u === 'min') unitStr = 'min';
-          else if (u === 'jumps') unitStr = ' jumps';
-          else if (u === 'reps') unitStr = ' reps';
-          else unitStr = '';
+          else if (u === 'min') unitStr = 'm';
+          else if (u === 'jumps') unitStr = 'j';
         }
+        doc.text(repVal ? `${repVal}${unitStr}` : '-', margin + 124, y + baseRowHeight / 2 + 1, { align: 'center' });
 
-        const parts = [];
-        if (sets && reps) {
-          parts.push(sets + ' x ' + reps + unitStr);
-        } else if (sets) {
-          parts.push(sets + ' sets');
-        } else if (reps) {
-          parts.push(reps + unitStr);
-        }
-        if (pct) parts.push('@ ' + pct + '%');
-        if (rest) parts.push('Rest: ' + rest);
+        // Intensity %
+        const pct = safeTxt(drill.percentage);
+        doc.text(pct ? `${pct}%` : '-', margin + 148, y + baseRowHeight / 2 + 1, { align: 'center' });
 
-        if (parts.length > 0) {
-          doc.setFontSize(10);
-          doc.setFont('helvetica', 'normal');
-          doc.setTextColor(...C.dark);
-          doc.text(parts.join('    |    '), margin + 18, y + 11.5);
-        }
+        // Rest
+        const rest = safeTxt(drill.rest);
+        doc.text(rest || '-', margin + 168, y + baseRowHeight / 2 + 1, { align: 'center' });
 
-        // Category badge on right
-        doc.setFontSize(7);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...cat.border);
-        doc.text(cat.label, pageWidth - margin - 8, y + 6, { align: 'right' });
-
-        // Notes / Details - clearly visible below the prescription
-        if (hasDetails && detailLines.length > 0) {
-          let noteY = y + 15;
-          doc.setFontSize(9);
-          doc.setFont('helvetica', 'italic');
-          doc.setTextColor(...C.mid);
-          detailLines.forEach((line) => {
-            doc.text(line, margin + 18, noteY);
-            noteY += 4.5;
-          });
-        }
-
-        y += cardHeight + 3;
+        y += baseRowHeight;
       });
     }
 
-    // -- Day Summary --
-    if (dayDrills.length > 0) {
-      needsNewPage(10);
+    // ================================================================
+    //  5. COACH'S NOTES & ACTION PLAN (Bottom of every page)
+    // ================================================================
+    const remainingY = pageHeight - y - 18;
+    if (remainingY > 15) {
+      y += 4;
+      doc.setFillColor(...C.primary);
+      doc.roundedRect(margin, y, contentWidth, Math.min(18, remainingY), 1.5, 1.5, 'F');
 
-      const sumParts = [];
-      sumParts.push(dayStats.totalExercises + ' exercises');
-      if (dayStats.avgIntensity > 0) sumParts.push('Intensity: ' + dayStats.avgIntensity + '%');
-      sumParts.push('Load: ' + dayStats.totalVolumeScore);
-      if (dayStats.jumpsVolume > 0) sumParts.push('Jumps: ' + dayStats.jumpsVolume);
-      if (dayStats.totalMeters > 0) sumParts.push('Run: ' + dayStats.totalMeters + 'm');
+      // Decorative orange indicator
+      doc.setFillColor(...C.orange);
+      doc.rect(margin + 4, y + 4, 1.2, 10, 'F');
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.orange);
+      doc.text('COACH PERFORMANCE BRIEF & TIPS', margin + 8, y + 6.8);
 
       doc.setFontSize(8);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...C.mid);
-      doc.text(sumParts.join('   |   '), margin + 5, y + 1);
-      y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.light);
+      const coachTips = [
+        'Maintain impeccable posture and structural stiffness during landing phases.',
+        'Hydrate appropriately: Consume at least 500ml water with electrolytes pre-workout.',
+        'Prioritize sleep hygiene: Target 8+ hours for optimal central nervous system recovery.'
+      ];
+      // Select a tip dynamically based on day or exercise length
+      const tipIndex = (dayIndex + (dayDrills.length || 0)) % coachTips.length;
+      doc.text(coachTips[tipIndex], margin + 8, y + 11.8);
     }
 
-    // Day separator
-    doc.setDrawColor(...C.faint);
-    doc.setLineWidth(0.3);
-    doc.line(margin, y, pageWidth - margin, y);
-    y += 8;
+    // Page Footer
+    doc.setFontSize(7);
+    doc.setTextColor(...C.mid);
+    doc.setFont('helvetica', 'normal');
+    doc.text('ForcePeak Lab  |  Elite Training Systems', margin, pageHeight - 8);
+    doc.text(`Week Cycle: ${dateStart} - ${dateEnd}   |   Page ${dayIndex + 1} of 7`, pageWidth - margin, pageHeight - 8, { align: 'right' });
   });
 
-  // Final footer
-  addFooter();
-
-  // Save
-  const fileName = 'Training_Plan_' + athleteName.replace(/\s+/g, '_') + '.pdf';
+  // Save PDF
+  const fileName = `ForcePeak_Weekly_Blueprint_${athleteName.replace(/\s+/g, '_')}.pdf`;
   doc.save(fileName);
 }
