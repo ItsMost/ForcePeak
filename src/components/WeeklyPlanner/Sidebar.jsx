@@ -32,7 +32,7 @@ export default function Sidebar({
           <BarChart3 className="w-5 h-5" />
         </button>
 
-        <button onClick={onBulkSave} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="Bulk Save Routine / تكرار مجدول">
+        <button onClick={onBulkSave} className="p-2 md:p-3 text-slate-400 hover:text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-xl transition-all" title="حفظ الفترة ككتلة تدريبية / Save Range as Meso-Block">
           <Calendar className="w-5 h-5" />
         </button>
 

@@ -5,7 +5,8 @@ export default function ExerciseLibrary({
   showLibrary, setShowLibrary, library, handleLibraryDragStart, 
   setAddExerciseModal, onDeleteDrill, onEditDrill, onDeleteTemplate,
   onOpenCreateProgram, programs = [], onDeleteProgram, onApplyProgram,
-  onApplyWeekTemplate
+  onApplyWeekTemplate,
+  onApplyDayTemplate
 }) {
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,9 +19,14 @@ export default function ExerciseLibrary({
     return matchesSearch && matchesCategory;
   });
 
-  // Filter Week Templates by Search
-  const filteredTemplates = (library.templates || []).filter(t => 
-    (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+  // Filter Day Templates strictly (type === 'day')
+  const filteredDayTemplates = (library.templates || []).filter(t => 
+    t.type === 'day' && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Filter Week Templates strictly (type === 'week')
+  const filteredWeekTemplates = (library.templates || []).filter(t => 
+    t.type === 'week' && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   // Filter Multi-Week Blocks by Name or Tags
@@ -35,20 +41,23 @@ export default function ExerciseLibrary({
     <div className={`fixed top-16 right-0 w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 h-[calc(100vh-64px)] z-30 shadow-2xl transition-transform duration-300 flex flex-col ${showLibrary ? 'translate-x-0' : 'translate-x-full'}`}>
       
       {/* Tabs Navigation Switcher */}
-      <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-2 gap-1">
-        <button onClick={() => { setActiveTab('exercises'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'exercises' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-          <Layers className="w-3.5 h-3.5" /> Exercises
+      <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-2 gap-1 shrink-0 overflow-x-auto scrollbar-none">
+        <button onClick={() => { setActiveTab('exercises'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'exercises' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <Layers className="w-3 h-3 shrink-0" /> Exercises
         </button>
-        <button onClick={() => { setActiveTab('templates'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'templates' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-          <Bookmark className="w-3.5 h-3.5" /> Weeks
+        <button onClick={() => { setActiveTab('days'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'days' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <Sparkles className="w-3 h-3 shrink-0" /> Days
         </button>
-        <button onClick={() => { setActiveTab('programs'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'programs' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-          <CalendarDays className="w-3.5 h-3.5" /> Blocks
+        <button onClick={() => { setActiveTab('templates'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'templates' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <Bookmark className="w-3 h-3 shrink-0" /> Weeks
+        </button>
+        <button onClick={() => { setActiveTab('programs'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'programs' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <CalendarDays className="w-3 h-3 shrink-0" /> Blocks
         </button>
       </div>
 
       {/* Control Input Headers */}
-      <div className="p-3 border-b border-slate-100 dark:border-slate-700 space-y-2">
+      <div className="p-3 border-b border-slate-100 dark:border-slate-700 space-y-2 shrink-0 bg-slate-50/20 dark:bg-slate-900/10">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
           <input type="text" placeholder={`Search ${activeTab}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white font-medium" />
@@ -97,19 +106,78 @@ export default function ExerciseLibrary({
           </>
         )}
 
-        {/* Tab 2: Single Week Blueprint Routines */}
+        {/* Tab 2: Single Day Blueprint Templates */}
+        {activeTab === 'days' && (
+          filteredDayTemplates.length === 0 ? (
+            <p className="text-center text-xs text-slate-400 py-4" dir="rtl">لا يوجد قوالب أيام محفوظة حالياً</p>
+          ) : (
+            filteredDayTemplates.map(tpl => {
+              const drillCount = tpl.drills?.length || 0;
+              return (
+                <div 
+                  key={tpl.id} 
+                  draggable={true} 
+                  onDragStart={(e) => handleLibraryDragStart(e, tpl, true)} 
+                  className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-orange-500/40 transition-all cursor-grab active:cursor-grabbing group flex flex-col gap-2"
+                >
+                  <div className="flex justify-between items-center w-full">
+                    <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
+                      <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded shrink-0">يوم / Day</span>
+                      <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate" title={tpl.title}>{tpl.title}</span>
+                    </div>
+                    <button 
+                      onClick={() => onDeleteTemplate(tpl.id)} 
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500 shrink-0"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-100/60 dark:border-slate-800/60 pb-1.5">
+                    <span>⚡ {drillCount} تمرين / Exercises</span>
+                    <span className="text-[9px] text-slate-350 dark:text-slate-500">اسحب أو اضغط للتطبيق</span>
+                  </div>
+
+                  {/* Quick-Apply Day Badges */}
+                  <div className="flex flex-wrap gap-1 mt-1 justify-center sm:justify-start" dir="rtl">
+                    {[
+                      { key: 'Saturday', label: 'السبت' },
+                      { key: 'Sunday', label: 'الأحد' },
+                      { key: 'Monday', label: 'الاثنين' },
+                      { key: 'Tuesday', label: 'الثلاثاء' },
+                      { key: 'Wednesday', label: 'الأربعاء' },
+                      { key: 'Thursday', label: 'الخميس' },
+                      { key: 'Friday', label: 'الجمعة' }
+                    ].map(dayObj => (
+                      <button 
+                        key={dayObj.key}
+                        onClick={() => onApplyDayTemplate && onApplyDayTemplate(tpl, dayObj.key)}
+                        className="px-1.5 py-0.5 text-[9px] font-bold bg-white dark:bg-slate-800 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 text-slate-500 dark:text-slate-400 rounded-md border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-sm"
+                        title={`تطبيق على يوم ${dayObj.label}`}
+                      >
+                        {dayObj.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })
+          )
+        )}
+
+        {/* Tab 3: Single Week Blueprint Routines */}
         {activeTab === 'templates' && (
-          filteredTemplates.length === 0 ? (
+          filteredWeekTemplates.length === 0 ? (
             <p className="text-center text-xs text-slate-400 py-4">No week routines saved yet</p>
           ) : (
-            filteredTemplates.map(tpl => (
-              <div key={tpl.id} draggable={tpl.type !== 'week'} onDragStart={(e) => handleLibraryDragStart(e, tpl, true)} className={`p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex justify-between items-center transition-all ${tpl.type !== 'week' ? 'cursor-grab active:cursor-grabbing hover:border-orange-500/40' : 'hover:border-blue-500/30'}`}>
-                <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5 min-w-0">
-                  {tpl.type === 'week' && <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded shrink-0">Week</span>}
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate">{tpl.title}</span>
+            filteredWeekTemplates.map(tpl => (
+              <div key={tpl.id} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex justify-between items-center transition-all hover:border-blue-500/30">
+                <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
+                  <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded shrink-0">Week</span>
+                  <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate" title={tpl.title}>{tpl.title}</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
-                  {tpl.type === 'week' && onApplyWeekTemplate && (
+                  {onApplyWeekTemplate && (
                     <button onClick={() => onApplyWeekTemplate(tpl)} className="px-2 py-1 text-[10px] font-black bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm transition-colors uppercase">Apply</button>
                   )}
                   <button onClick={() => onDeleteTemplate(tpl.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500 shrink-0"><Trash2 className="w-3 h-3" /></button>
@@ -119,7 +187,7 @@ export default function ExerciseLibrary({
           )
         )}
 
-        {/* Tab 3: Multi-Week Structural Meso Blocks */}
+        {/* Tab 4: Multi-Week Structural Meso Blocks */}
         {activeTab === 'programs' && (
           <>
             <button onClick={onOpenCreateProgram} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">

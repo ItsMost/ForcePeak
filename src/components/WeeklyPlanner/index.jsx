@@ -59,7 +59,7 @@ export default function WeeklyPlanner() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
 
-  const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '' });
+  const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' });
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [syncStatus, setSyncStatus] = useState('synced');
   const [activeMobileDay, setActiveMobileDay] = useState(() => {
@@ -562,45 +562,133 @@ export default function WeeklyPlanner() {
     handleToast(`Week routine "${template.title}" applied!`);
   };
 
-  const handleBulkSaveWeek = async () => {
+  const handleSaveRangeAsBlock = async () => {
     if (!selectedAthleteId) return;
-    const { startDate, endDate } = bulkSaveModal;
-    if (!startDate || !endDate) { handleToast('Please select both dates!'); return; }
+    const { startDate, endDate, programName, tags } = bulkSaveModal;
+    if (!programName.trim()) { handleToast('يرجى إدخال اسم الكتلة التدريبية! / Enter block name!'); return; }
+    if (!startDate || !endDate) { handleToast('يرجى تحديد تاريخ البدء والانتهاء! / Select both dates!'); return; }
+    
     const start = new Date(startDate);
     const end = new Date(endDate);
-    if (end < start) { handleToast('End date must be after Start date!'); return; }
-    
+    if (end < start) { handleToast('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء! / End date must be after Start date!'); return; }
+
     setIsLoading(true);
-    setBulkSaveModal({ isOpen: false, startDate: '', endDate: '' });
-    
-    const upserts = [];
-    const current = new Date(start);
-    while (current <= end) {
-      const dateStr = getDbDateStr(current);
-      const dayName = JS_DAYS[current.getDay()];
-      if (DAYS_OF_WEEK.includes(dayName)) {
-        const dayDrills = (schedule[dayName] || []).map((drill, idx) => ({
-          ...drill,
-          id: `bulk-${Date.now()}-${dayName}-${idx}-${Math.random()}`
-        }));
-        upserts.push({
-          athlete_id: selectedAthleteId,
-          workout_date: dateStr,
-          workout_title: dayTitles[dayName] || '',
-          drills: dayDrills
+    setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' });
+
+    try {
+      // Query workouts for selected athlete in range
+      const { data: workouts, error } = await supabase
+        .from('agilitylap_workouts')
+        .select('*')
+        .eq('athlete_id', selectedAthleteId)
+        .gte('workout_date', getDbDateStr(start))
+        .lte('workout_date', getDbDateStr(end));
+
+      if (error) throw error;
+
+      if (!workouts || workouts.length === 0) {
+        setIsLoading(false);
+        handleToast('لا توجد أي تمارين مسجلة في هذه الفترة الزمنية! / No workouts found in this range!');
+        return;
+      }
+
+      // Group into weeks starting from startDate
+      const diffTime = Math.abs(end - start);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      const numWeeks = Math.ceil(diffDays / 7);
+
+      const compiledWeeks = [];
+
+      for (let i = 0; i < numWeeks; i++) {
+        const weekStart = new Date(start);
+        weekStart.setDate(weekStart.getDate() + (i * 7));
+
+        const weekDrills = {};
+        DAYS_OF_WEEK.forEach(day => {
+          weekDrills[day] = [];
+        });
+
+        let weekHasExercises = false;
+
+        for (let j = 0; j < 7; j++) {
+          const dayDate = new Date(weekStart);
+          dayDate.setDate(dayDate.getDate() + j);
+
+          if (dayDate > end) continue; // Out of range
+
+          const dateStr = getDbDateStr(dayDate);
+          const dayName = JS_DAYS[dayDate.getDay()]; // Sunday, Monday, etc.
+
+          if (DAYS_OF_WEEK.includes(dayName)) {
+            const record = workouts.find(w => w.workout_date === dateStr);
+            if (record && record.drills && record.drills.length > 0) {
+              weekDrills[dayName] = record.drills.map(d => ({ ...d }));
+              weekHasExercises = true;
+            }
+          }
+        }
+
+        // Include week to preserve multi-week block structure
+        compiledWeeks.push({
+          title: `${programName} - Week ${i + 1}`,
+          drills: weekDrills,
+          blockTags: tags || ''
         });
       }
-      current.setDate(current.getDate() + 1);
+
+      // Save Meso-Block to agilitylap_programs
+      const payload = {
+        program_name: programName,
+        weeks: compiledWeeks
+      };
+
+      const { error: insertError } = await supabase.from('agilitylap_programs').insert([payload]);
+      if (insertError) throw insertError;
+
+      // Refresh local programs list
+      const { data: progData } = await supabase
+        .from('agilitylap_programs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setPrograms(progData || []);
+
+      setIsLoading(false);
+      handleToast(`تم حفظ الكتلة التدريبية "${programName}" بنجاح! / Meso-Block saved!`);
+
+    } catch (err) {
+      setIsLoading(false);
+      console.error(err);
+      handleToast('حدث خطأ أثناء حفظ الكتلة التدريبية / Error saving program block');
     }
-    
-    if (upserts.length === 0) { setIsLoading(false); handleToast('No valid dates in range!'); return; }
-    const { error } = await supabase.from('agilitylap_workouts').upsert(upserts, { onConflict: 'athlete_id,workout_date' });
+  };
+
+  const handleApplyDayTemplate = async (template, targetDay) => {
+    if (!selectedAthleteId) return;
+    setIsLoading(true);
+
+    const dayDrills = (template.drills || []).map((drill, idx) => ({
+      ...drill,
+      id: `tpl-day-${Date.now()}-${targetDay}-${idx}-${Math.random()}`
+    }));
+
+    const newSchedule = {
+      ...schedule,
+      [targetDay]: dayDrills
+    };
+
+    const newTitles = {
+      ...dayTitles,
+      [targetDay]: template.title || ''
+    };
+
+    setSchedule(newSchedule);
+    setDayTitles(newTitles);
+    pushToHistory(newSchedule, newTitles);
+
+    await autoSaveDay(targetDay, dayDrills, template.title || '');
+
     setIsLoading(false);
-    if (!error) {
-      handleToast(`تم نسخ وتكرار الجدول التدريبي بنجاح عبر ${upserts.length} أيام!`);
-    } else {
-      handleToast('Error duplicating routine');
-    }
+    handleToast(`تم تطبيق القالب على يوم ${targetDay === 'Saturday' ? 'السبت' : targetDay === 'Sunday' ? 'الأحد' : targetDay === 'Monday' ? 'الاثنين' : targetDay === 'Tuesday' ? 'الثلاثاء' : targetDay === 'Wednesday' ? 'الأربعاء' : targetDay === 'Thursday' ? 'الخميس' : 'الجمعة'}!`);
   };
 
   const handleAddAthlete = async () => { if(newAthleteData.name.trim()) { const newAthlete = { name: newAthleteData.name, birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null }; const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); if (data && data.length > 0) { const addedAthlete = { ...data[0], birthYear: data[0].birth_year, bodyFat: data[0].body_fat, verticalJump: data[0].vertical_jump, halfSquat: data[0].half_squat, quarterSquat: data[0].quarter_squat }; setAthletes([addedAthlete, ...athletes]); setSelectedAthleteId(addedAthlete.id); setNewAthleteData({ name: '', birthYear: '', weight: '' }); setShowAddAthleteModal(false); } } };
@@ -685,21 +773,52 @@ export default function WeeklyPlanner() {
 
       {bulkSaveModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-right">
-            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white">تكرار وتوزيع الجدول التدريبي</h3>
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-right border border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-orange-500" /> حفظ الفترة ككتلة تدريبية</h3>
             <div className="space-y-4 mb-6">
               <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">اسم الكتلة التدريبية / Block Name</label>
+                <input 
+                  type="text" 
+                  value={bulkSaveModal.programName || ''} 
+                  onChange={(e) => setBulkSaveModal({...bulkSaveModal, programName: e.target.value})} 
+                  placeholder="مثال: برنامج شهر مايو الكامل" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                  autoFocus 
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">تاريخ البدء / Start Date</label>
-                <input type="date" value={bulkSaveModal.startDate} onChange={(e) => setBulkSaveModal({...bulkSaveModal, startDate: e.target.value})} className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 text-sm" />
+                <input 
+                  type="date" 
+                  value={bulkSaveModal.startDate} 
+                  onChange={(e) => setBulkSaveModal({...bulkSaveModal, startDate: e.target.value})} 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">تاريخ الانتهاء / End Date</label>
-                <input type="date" value={bulkSaveModal.endDate} onChange={(e) => setBulkSaveModal({...bulkSaveModal, endDate: e.target.value})} className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 text-sm" />
+                <input 
+                  type="date" 
+                  value={bulkSaveModal.endDate} 
+                  onChange={(e) => setBulkSaveModal({...bulkSaveModal, endDate: e.target.value})} 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">الوسوم / Tags (اختياري)</label>
+                <input 
+                  type="text" 
+                  value={bulkSaveModal.tags || ''} 
+                  onChange={(e) => setBulkSaveModal({...bulkSaveModal, tags: e.target.value})} 
+                  placeholder="مثال: قوة, تحمل" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                />
               </div>
             </div>
             <div className="flex gap-3 flex-row-reverse">
-              <button onClick={handleBulkSaveWeek} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all">توزيع التمارين</button>
-              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">إلغاء</button>
+              <button onClick={handleSaveRangeAsBlock} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">حفظ الكتلة</button>
+              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">إلغاء</button>
             </div>
           </div>
         </div>
@@ -902,7 +1021,7 @@ export default function WeeklyPlanner() {
           onShowStats={() => setShowStatsModal(true)}
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
           onPrint={handlePrint} 
-          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '' })}
+          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '' })}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
           
           {/* Premium Printed Report Header */}
@@ -1206,7 +1325,7 @@ export default function WeeklyPlanner() {
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
            <div className="pointer-events-auto h-full absolute right-0" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
-             <ExerciseLibrary showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library} handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal} setSaveWeekTemplateModal={setSaveWeekTemplateModal} onDeleteDrill={handleDeleteLibraryDrill} onEditDrill={handleEditLibraryDrill} onDeleteTemplate={handleDeleteLibraryTemplate} onEditTemplate={handleEditTemplate} onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} programs={programs} onDeleteProgram={handleDeleteProgramBlock} onApplyProgram={handleApplyProgramBlock} onApplyWeekTemplate={handleApplyWeekTemplate} />
+             <ExerciseLibrary showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library} handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal} setSaveWeekTemplateModal={setSaveWeekTemplateModal} onDeleteDrill={handleDeleteLibraryDrill} onEditDrill={handleEditLibraryDrill} onDeleteTemplate={handleDeleteLibraryTemplate} onEditTemplate={handleEditTemplate} onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} programs={programs} onDeleteProgram={handleDeleteProgramBlock} onApplyProgram={handleApplyProgramBlock} onApplyWeekTemplate={handleApplyWeekTemplate} onApplyDayTemplate={handleApplyDayTemplate} />
            </div>
         </div>
 
