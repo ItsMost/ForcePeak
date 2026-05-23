@@ -7,6 +7,7 @@ import TimelineCard from './TimelineCard.jsx';
 import ExerciseLibrary from './ExerciseLibrary.jsx';
 import AthleteProfileModal from './AthleteProfileModal.jsx';
 import { supabase } from '../../supabaseClient.js';
+import { generateWeeklyPDF } from './pdfGenerator.js';
 
 const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', strength: 'Strength', physical: 'Physical' };
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -110,11 +111,16 @@ export default function WeeklyPlanner() {
     };
   }, []);
 
-  const handlePrint = (mode) => {
-    setPrintMode(mode);
-    setTimeout(() => {
-      window.print();
-    }, 150);
+  const handleExportPDF = () => {
+    generateWeeklyPDF({
+      schedule,
+      dayTitles,
+      weekDatesFull,
+      selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
+      weeklyStats,
+      calculateDayVolume,
+    });
+    handleToast('تم تحميل الـ PDF بنجاح! / PDF Downloaded!');
   };
 
   const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
@@ -1020,7 +1026,7 @@ export default function WeeklyPlanner() {
           canUndo={historyIndex > 0} canRedo={historyIndex < history.length - 1}
           onShowStats={() => setShowStatsModal(true)}
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
-          onPrint={handlePrint} 
+          onExportPDF={handleExportPDF}
           onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '' })}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
           
