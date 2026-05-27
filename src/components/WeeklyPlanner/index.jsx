@@ -867,7 +867,11 @@ export default function WeeklyPlanner() {
   const handleSaveRangeAsBlock = async () => {
     if (!selectedAthleteId) return;
 
-    // Destructure modal properties correctly to prevent ReferenceError
+    // Destructure modal properties correctly to prevent ReferenceError.
+    // Note: Storing Meso & Macro programs inside 'agilitylap_programs' requires adding the following columns to the table:
+    // - type TEXT DEFAULT 'meso' (to partition micro/meso/macro blocks)
+    // - tags TEXT (for seasonal cycle tags)
+    // - "blocksChain" JSONB (for Macro-Cycle links sequence in camelCase)
     const { programName = '', startDate = '', endDate = '', tags = '' } = bulkSaveModal;
 
     if (!programName.trim()) { handleToast('Please enter Meso-Block name!'); return; }
