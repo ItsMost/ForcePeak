@@ -852,21 +852,50 @@ export default function WeeklyPlanner() {
   };
 
   const renderLargeCalendarDays = () => {
-    const days = []; const startDayObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1); const startDay = (startDayObj.getDay() + 1) % 7; 
-    for(let i=0; i<startDay; i++) days.push(<div key={`empty-${i}`} className="p-1 sm:p-4 border border-transparent"></div>); 
+    const days = [];
+    const startDayObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    const startDay = startDayObj.getDay(); // Align with standard Sunday-first layout
+    for (let i = 0; i < startDay; i++) {
+      days.push(<div key={`empty-${i}`} className="p-1 sm:p-4 border border-transparent"></div>);
+    }
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     for (let i = 1; i <= daysInMonth; i++) {
-      const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i); const dateStr = getDbDateStr(dateObj);
+      const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
+      const dateStr = getDbDateStr(dateObj);
       const isSelectedWeek = weekDatesFull.some(d => getDbDateStr(d) === dateStr);
-      const dayData = monthWorkouts[dateStr]; const hasWorkoutSaved = dayData && dayData.hasDrills;
-      let displayTitle = ""; if (isSelectedWeek) { const dayName = JS_DAYS[dateObj.getDay()]; displayTitle = dayTitles[dayName] || (hasWorkoutSaved ? "Workout" : ""); } else if (hasWorkoutSaved) { displayTitle = dayData.title || "Workout"; }
+      const dayData = monthWorkouts[dateStr];
+      const hasWorkoutSaved = dayData && dayData.hasDrills;
+      const isActive = hasWorkoutSaved || isSelectedWeek;
+      
       days.push(
-        <button key={i} onClick={() => { const newDate = new Date(currentDate); newDate.setDate(i); setCurrentDate(newDate); setShowMonthCalendar(false); }} className={`h-20 sm:h-28 w-full rounded-xl p-1 sm:p-3 flex flex-col items-center sm:items-start justify-start border overflow-hidden ${isSelectedWeek ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200' : hasWorkoutSaved ? 'bg-blue-50 border-blue-200' : 'border-slate-100 hover:bg-slate-50'}`}>
-          <span className={`text-[10px] sm:text-sm font-bold w-6 h-6 flex items-center justify-center rounded-full mb-1 ${isSelectedWeek ? 'bg-orange-500 text-white' : hasWorkoutSaved ? 'bg-blue-500 text-white' : 'text-slate-700'}`}>{i}</span>
-          {(displayTitle) && ( <span className={`text-[8px] sm:text-xs font-medium text-center sm:text-left line-clamp-2 w-full ${isSelectedWeek ? 'text-orange-700' : 'text-blue-700'}`}>{displayTitle}</span> )}
+        <button 
+          key={i} 
+          onClick={() => {
+            const newDate = new Date(currentDate);
+            newDate.setDate(i);
+            setCurrentDate(newDate);
+            setShowMonthCalendar(false);
+          }} 
+          className={`h-20 sm:h-24 w-full rounded-2xl p-2.5 flex flex-col items-center sm:items-start justify-start border relative overflow-hidden transition-all hover:scale-[1.02] ${isActive ? 'bg-emerald-500/[0.02] border-[#00c58d] border-2 shadow-sm' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:bg-slate-50'}`}
+        >
+          {/* Top right green active dot */}
+          {isActive && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] absolute top-2 right-2"></span>
+          )}
+
+          {/* Number Circle Badge */}
+          <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 shrink-0 ${isActive ? 'bg-[#00c58d] text-white shadow-sm shadow-[#00c58d]/20' : 'text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-850'}`}>
+            {i}
+          </span>
+          
+          {/* Bottom Plan Status Text Label */}
+          <span className={`text-[9px] font-black uppercase tracking-widest sm:text-left text-center w-full mt-auto truncate leading-none ${isActive ? 'text-[#00c58d]' : 'text-slate-400 dark:text-slate-650'}`}>
+            {isActive ? 'Active Plan' : 'Rest/Off'}
+          </span>
         </button>
       );
-    } return days;
+    }
+    return days;
   };
 
   return (
@@ -875,7 +904,70 @@ export default function WeeklyPlanner() {
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
 
-      {showMonthCalendar && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-2 print:hidden" onClick={() => setShowMonthCalendar(false)}> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-4 sm:p-8 w-full max-w-4xl max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4"> <h3 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><CalendarIcon className="w-6 h-6 text-orange-500" />{monthYearString}</h3> <button onClick={() => setShowMonthCalendar(false)} className="p-2 bg-slate-100 rounded-full"><X className="w-5 h-5"/></button> </div> <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-2"> {['Sat', 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map(d => ( <div key={d} className="text-[9px] sm:text-sm font-bold text-slate-400 uppercase">{d}</div> ))} </div> <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div> </div> </div> )}
+      {showMonthCalendar && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8 w-full max-w-4xl max-h-[95vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            
+            {/* Header: Title & Subtitle */}
+            <div className="flex justify-between items-start mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-sm shrink-0">
+                  <CalendarIcon className="w-6 h-6 text-orange-500" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white leading-tight">Monthly Plan Audit</h3>
+                  <p className="text-[10px] sm:text-xs font-black uppercase text-slate-450 mt-0.5 tracking-wider">
+                    TRACK & FIELD LAB
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setShowMonthCalendar(false)} className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Date navigation bar & Go to Today button */}
+            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900 border border-slate-150 dark:border-slate-800/80 p-3.5 rounded-2xl mb-6">
+              <div className="flex items-center gap-2 bg-white dark:bg-slate-850 border border-slate-150 dark:border-slate-800/80 rounded-xl p-1 shadow-sm">
+                <button 
+                  onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() - 1)))} 
+                  className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 transition-colors"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-sm sm:text-base font-black text-slate-800 dark:text-white px-3 sm:px-4 uppercase tracking-wider select-none">
+                  {currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
+                <button 
+                  onClick={() => setCurrentDate(new Date(currentDate.setMonth(currentDate.getMonth() + 1)))} 
+                  className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-500 transition-colors"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              <button 
+                onClick={() => { setCurrentDate(new Date()); }} 
+                className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-xl shadow-md hover:shadow-lg hover:shadow-orange-500/25 transition-all font-black text-xs uppercase tracking-wider"
+              >
+                Go to Today
+              </button>
+            </div>
+
+            {/* Grid weekdays headers */}
+            <div className="grid grid-cols-7 gap-2 sm:gap-4 text-center mb-3">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                <div key={d} className="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+                  {d}
+                </div>
+              ))}
+            </div>
+
+            {/* Calendar days grid */}
+            <div className="grid grid-cols-7 gap-2 sm:gap-4">{renderLargeCalendarDays()}</div>
+          </div>
+        </div>
+      )}
       
       {deleteConfirmation.isOpen && ( <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center"> <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4"><AlertTriangle className="w-8 h-8 text-red-500" /></div> <h3 className="text-lg font-bold mb-2">Are you sure?</h3> <p className="text-slate-500 text-sm mb-6">{deleteConfirmation.type === 'week' ? "Erase all structural days?" : "Wipe out this day's records?"}</p> <div className="flex gap-3"> <button onClick={() => setDeleteConfirmation({isOpen: false})} className="flex-1 px-4 py-2.5 bg-slate-100 rounded-xl font-medium text-sm">Cancel</button> <button onClick={confirmDelete} className="flex-1 px-4 py-2.5 bg-red-50 hover:bg-red-600 hover:text-white rounded-xl text-red-600 font-medium text-sm">Delete</button> </div> </div> </div> )}
       
@@ -1285,17 +1377,17 @@ export default function WeeklyPlanner() {
               return (
               <div key={day} className="flex flex-col w-full print:break-inside-avoid print:mb-0">
                 
-                <div className="mb-4 flex flex-col group border-b border-slate-350 dark:border-slate-700 pb-3 px-1 md:px-2 day-header">
+                <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-800 pb-3 px-1 md:px-2 day-header select-none">
                   <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-[10px] md:text-xs font-black tracking-wider text-slate-800 dark:text-slate-200 uppercase">{day}</span>
-                    <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400">{fullDateStr}</span>
+                    <span className="text-[9.5px] md:text-[10.5px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">{day}</span>
+                    <span className="text-[9px] md:text-[10px] font-bold text-slate-400/80 dark:text-slate-600">{fullDateStr}</span>
                   </div>
                   <div className="flex items-start gap-1 md:gap-2 justify-between">
-                    <div className="flex items-start gap-1 md:gap-2 flex-1">
-                      <div className="w-6 h-6 md:w-8 md:h-8 shrink-0 rounded-full border border-slate-400 dark:border-slate-500 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-white bg-white dark:bg-slate-800 shadow-sm">
+                    <div className="flex items-start gap-2 flex-1">
+                      <div className="w-6.5 h-6.5 md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 shadow-sm">
                         {weekDates[index]}
                       </div>
-                      <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-xs md:text-[14px] font-black text-slate-900 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400" readOnly={isPreviewMode}/>
+                      <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-[11px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full placeholder:text-slate-400" readOnly={isPreviewMode}/>
                     </div>
                     {!isPreviewMode && (
                       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
