@@ -417,23 +417,23 @@ export default function WeeklyPlanner() {
   useEffect(() => {
     const fetchFourWeekData = async () => {
       if (!selectedAthleteId) return;
-      const start28DaysAgo = new Date(currentWeekStart);
-      start28DaysAgo.setDate(start28DaysAgo.getDate() - 21); // 3 weeks ago
-      const endActiveWeek = new Date(currentWeekStart);
-      endActiveWeek.setDate(endActiveWeek.getDate() + 6); // end of active week
+      const startActiveWeek = new Date(currentWeekStart);
+      const endOf4Weeks = new Date(currentWeekStart);
+      endOf4Weeks.setDate(endOf4Weeks.getDate() + 27); // 4 weeks total
       
       const { data, error } = await supabase
         .from('agilitylap_workouts')
         .select('workout_date, drills')
         .eq('athlete_id', selectedAthleteId)
-        .gte('workout_date', getDbDateStr(start28DaysAgo))
-        .lte('workout_date', getDbDateStr(endActiveWeek));
+        .gte('workout_date', getDbDateStr(startActiveWeek))
+        .lte('workout_date', getDbDateStr(endOf4Weeks));
         
       if (!error && data) {
-        const w1Start = new Date(start28DaysAgo);
-        const w2Start = new Date(start28DaysAgo); w2Start.setDate(w2Start.getDate() + 7);
-        const w3Start = new Date(start28DaysAgo); w3Start.setDate(w3Start.getDate() + 14);
-        const w4Start = new Date(currentWeekStart);
+        const w1Start = new Date(currentWeekStart);
+        const w2Start = new Date(currentWeekStart); w2Start.setDate(w2Start.getDate() + 7);
+        const w3Start = new Date(currentWeekStart); w3Start.setDate(w3Start.getDate() + 14);
+        const w4Start = new Date(currentWeekStart); w4Start.setDate(w4Start.getDate() + 21);
+        const w4End = new Date(currentWeekStart); w4End.setDate(w4End.getDate() + 28);
         
         let w1Load = 0, w2Load = 0, w3Load = 0, w4Load = 0;
         
@@ -449,16 +449,20 @@ export default function WeeklyPlanner() {
             w2Load += load;
           } else if (rDate >= w3Start && rDate < w4Start) {
             w3Load += load;
-          } else if (rDate >= w4Start) {
+          } else if (rDate >= w4Start && rDate < w4End) {
             w4Load += load;
           }
         });
         
+        const formatDateLabel = (date) => {
+          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        };
+
         setFourWeekData([
-          { label: 'Week 1', load: Math.round(w1Load) },
-          { label: 'Week 2', load: Math.round(w2Load) },
-          { label: 'Week 3', load: Math.round(w3Load) },
-          { label: 'Active Week', load: Math.round(w4Load) }
+          { label: formatDateLabel(w1Start), load: Math.round(w1Load) },
+          { label: formatDateLabel(w2Start), load: Math.round(w2Load) },
+          { label: formatDateLabel(w3Start), load: Math.round(w3Load) },
+          { label: formatDateLabel(w4Start), load: Math.round(w4Load) }
         ]);
       }
     };
@@ -1261,7 +1265,7 @@ export default function WeeklyPlanner() {
                                 x={pt.x}
                                 y="125"
                                 textAnchor="middle"
-                                className={`text-[9px] font-black uppercase tracking-wider ${idx === 3 ? 'fill-orange-500' : 'fill-slate-400 dark:fill-slate-500'}`}
+                                className={`text-[9px] font-black uppercase tracking-wider ${idx === 0 ? 'fill-orange-500' : 'fill-slate-400 dark:fill-slate-500'}`}
                               >
                                 {pt.label}
                               </text>

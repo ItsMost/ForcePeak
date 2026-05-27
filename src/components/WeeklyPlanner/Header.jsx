@@ -49,7 +49,7 @@ export default function Header({
           </div>
           <div>
             <h1 className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
-              Track & Field Lab
+              Force Peak
             </h1>
             <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
               PERFORMANCE CORE

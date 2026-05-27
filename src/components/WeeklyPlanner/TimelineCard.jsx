@@ -135,7 +135,7 @@ export default function TimelineCard({
             </span>
           )}
 
-          <h4 className="text-[13px] md:text-[14px] font-black text-slate-800 dark:text-slate-100 leading-tight">
+          <h4 className="text-[13px] md:text-[14px] font-bold text-slate-800 dark:text-slate-100 leading-tight">
             {drill.title || "Unnamed Exercise"}
           </h4>
           
