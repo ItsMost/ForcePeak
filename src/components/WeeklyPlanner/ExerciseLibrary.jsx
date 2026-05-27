@@ -81,7 +81,7 @@ export default function ExerciseLibrary({
 
         {activeTab === 'exercises' && (
           <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px] font-bold">
-            {['all', 'strength', 'power', 'isometric', 'core', 'mobility'].map(cat => (
+            {['all', 'strength', 'power', 'speed', 'endurance', 'isometric', 'core', 'mobility'].map(cat => (
               <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-2.5 py-1 rounded-full shrink-0 uppercase tracking-wider transition-colors ${activeCategory === cat ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200'}`}>
                 {cat}
               </button>

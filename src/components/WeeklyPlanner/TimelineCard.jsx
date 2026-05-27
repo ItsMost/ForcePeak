@@ -7,6 +7,8 @@ const CATEGORY_STYLES = {
   isometric: { label: 'ISOMETRIC', color: 'text-amber-500 border-amber-500', bg: 'border-amber-100 bg-amber-50/50 dark:bg-amber-950/20', icon: <Target className="w-3.5 h-3.5" /> },
   power: { label: 'PLYOS', color: 'text-orange-500 border-orange-500', bg: 'border-orange-100 bg-orange-50/50 dark:bg-orange-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
   strength: { label: 'STRENGTH', color: 'text-blue-500 border-blue-500', bg: 'border-blue-100 bg-blue-50/50 dark:bg-blue-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> },
+  speed: { label: 'SPEED', color: 'text-emerald-500 border-emerald-500', bg: 'border-emerald-100 bg-emerald-50/50 dark:bg-emerald-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
+  endurance: { label: 'ENDURANCE', color: 'text-teal-500 border-teal-500', bg: 'border-teal-100 bg-teal-50/50 dark:bg-teal-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
   physical: { label: 'PHYSICAL', color: 'text-slate-500 border-slate-500', bg: 'border-slate-100 bg-slate-50/50 dark:bg-slate-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> }
 };
 
