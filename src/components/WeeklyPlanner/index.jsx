@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search } from 'lucide-react';
+import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search, Printer, FileText, Layout } from 'lucide-react';
 
 import Header from './Header.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -112,6 +112,7 @@ export default function WeeklyPlanner() {
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
+  const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
 
   const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' });
   const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
@@ -168,15 +169,34 @@ export default function WeeklyPlanner() {
   }, []);
 
   const handleExportPDF = () => {
-    generateWeeklyPDF({
-      schedule,
-      dayTitles,
-      weekDatesFull,
-      selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
-      weeklyStats,
-      calculateDayVolume,
+    setPrintStudioModal({
+      isOpen: true,
+      orientation: 'landscape',
+      theme: 'crimson'
     });
-    handleToast('PDF downloaded successfully!');
+  };
+
+  const handlePrintStudioSubmit = async () => {
+    setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
+    setIsLoading(true);
+    try {
+      await generateWeeklyPDF({
+        schedule,
+        dayTitles,
+        weekDatesFull,
+        selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
+        weeklyStats,
+        calculateDayVolume,
+        orientation: printStudioModal.orientation,
+        theme: printStudioModal.theme
+      });
+      handleToast('تم تحميل ملف الـ PDF بنجاح! / PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      handleToast('حدث خطأ أثناء تحميل الملف / Error generating PDF');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
@@ -1192,6 +1212,223 @@ export default function WeeklyPlanner() {
             <div className="flex gap-3">
               <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">Cancel</button>
               <button onClick={handleSaveRangeAsBlock} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">Save Block</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {printStudioModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-100 dark:border-slate-700/50 overflow-hidden animate-fadeIn">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                  <Printer className="w-5 h-5" />
+                </div>
+                <div className="text-right">
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white leading-none">PDF استوديو الطباعة والـ</h3>
+                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-1 block">Printing & PDF Lab</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
+                className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full transition-all"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6 text-right">
+              {/* 1. Layout Orientation */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">1. LAYOUT ORIENTATION / اتجاه الصفحة</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Landscape Card */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, orientation: 'landscape' }))}
+                    className={`relative p-4 rounded-2xl border text-right transition-all flex flex-col justify-between h-24 ${
+                      printStudioModal.orientation === 'landscape'
+                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-600/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:bg-slate-600 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start w-full">
+                      <Layout className={`w-6 h-6 ${printStudioModal.orientation === 'landscape' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
+                      {printStudioModal.orientation === 'landscape' && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'landscape' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>Landscape (1 Page)</h4>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">بالعرض - ورقة واحدة كامل الأسبوع</p>
+                    </div>
+                  </button>
+
+                  {/* Portrait Card */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, orientation: 'portrait' }))}
+                    className={`relative p-4 rounded-2xl border text-right transition-all flex flex-col justify-between h-24 ${
+                      printStudioModal.orientation === 'portrait'
+                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-600/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:bg-slate-600 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex justify-between items-start w-full">
+                      <FileText className={`w-6 h-6 ${printStudioModal.orientation === 'portrait' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
+                      {printStudioModal.orientation === 'portrait' && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
+                      )}
+                    </div>
+                    <div>
+                      <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'portrait' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>Portrait (Vertical)</h4>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">بالطول - قائمة عمودية</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Visual Print Theme */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">2. VISUAL PRINT THEME / المظهر الفني للطباعة</span>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {/* Crimson Theme */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'crimson' }))}
+                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                      printStudioModal.theme === 'crimson'
+                        ? 'border-rose-500 dark:border-rose-400 bg-rose-50/30 dark:bg-rose-950/10 ring-2 ring-rose-500/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-md bg-rose-600 block shrink-0"></span>
+                      <div>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'crimson' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>Classic Crimson</h5>
+                        <p className="text-[9px] text-slate-400 font-medium">الأحمر الكلاسيكي للمدرب</p>
+                      </div>
+                    </div>
+                    {printStudioModal.theme === 'crimson' && (
+                      <span className="w-2 h-2 rounded-full bg-rose-600 dark:bg-rose-400"></span>
+                    )}
+                  </button>
+
+                  {/* Navy Theme */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'navy' }))}
+                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                      printStudioModal.theme === 'navy'
+                        ? 'border-blue-600 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-950/10 ring-2 ring-blue-600/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-md bg-blue-600 block shrink-0"></span>
+                      <div>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'navy' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>Professional Navy</h5>
+                        <p className="text-[9px] text-slate-400 font-medium">الكحلي الاحترافي</p>
+                      </div>
+                    </div>
+                    {printStudioModal.theme === 'navy' && (
+                      <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400"></span>
+                    )}
+                  </button>
+
+                  {/* Green Theme */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'green' }))}
+                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                      printStudioModal.theme === 'green'
+                        ? 'border-green-600 dark:border-green-500 bg-green-50/30 dark:bg-green-950/10 ring-2 ring-green-600/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-md bg-green-700 block shrink-0"></span>
+                      <div>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'green' ? 'text-green-700 dark:text-green-400' : 'text-slate-700 dark:text-slate-300'}`}>Athletic Green</h5>
+                        <p className="text-[9px] text-slate-400 font-medium">الأخضر الرياضي الحركي</p>
+                      </div>
+                    </div>
+                    {printStudioModal.theme === 'green' && (
+                      <span className="w-2 h-2 rounded-full bg-green-700 dark:bg-green-400"></span>
+                    )}
+                  </button>
+
+                  {/* Minimal Theme */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'minimal' }))}
+                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                      printStudioModal.theme === 'minimal'
+                        ? 'border-slate-600 dark:border-slate-500 bg-slate-50/30 dark:bg-slate-700/20 ring-2 ring-slate-600/10'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-md bg-white border border-slate-400 block shrink-0"></span>
+                      <div>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'minimal' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>Minimal Ink Saver</h5>
+                        <p className="text-[9px] text-slate-400 font-medium">موفر الحبر (أبيض وأسود)</p>
+                      </div>
+                    </div>
+                    {printStudioModal.theme === 'minimal' && (
+                      <span className="w-2 h-2 rounded-full bg-slate-600 dark:bg-slate-400"></span>
+                    )}
+                  </button>
+
+                  {/* Dark Theme */}
+                  <button
+                    type="button"
+                    onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'dark' }))}
+                    className={`col-span-2 p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                      printStudioModal.theme === 'dark'
+                        ? 'border-orange-500 bg-slate-900 ring-2 ring-orange-500/10 text-white'
+                        : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="w-5 h-5 rounded-md bg-slate-950 border border-slate-700 flex items-center justify-center shrink-0">
+                        <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
+                      </span>
+                      <div>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'dark' ? 'text-orange-400' : 'text-slate-700 dark:text-slate-300'}`}>Elite Dark (Digital PDF)</h5>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">الداكن الرياضي الاحترافي (مثالي للملفات الرقمية)</p>
+                      </div>
+                    </div>
+                    {printStudioModal.theme === 'dark' && (
+                      <span className="w-2 h-2 rounded-full bg-orange-500"></span>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center gap-4">
+              <button 
+                onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
+                className="px-6 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all flex-1 text-center"
+              >
+                إلغاء / Cancel
+              </button>
+              <button 
+                onClick={handlePrintStudioSubmit} 
+                className="px-8 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2 flex-1"
+              >
+                <Printer className="w-4 h-4" />
+                طباعة البرنامج / Print Plan
+              </button>
             </div>
           </div>
         </div>
