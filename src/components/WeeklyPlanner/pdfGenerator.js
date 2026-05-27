@@ -27,9 +27,9 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
       }
       const base64Font = window.btoa(binary);
       doc.addFileToVFS('Cairo-Regular.ttf', base64Font);
-      doc.addFont('Cairo-Regular.ttf', 'Cairo', 'normal');
-      doc.addFont('Cairo-Regular.ttf', 'Cairo', 'bold');
-      doc.addFont('Cairo-Regular.ttf', 'Cairo', 'italic');
+      doc.addFont('Cairo-Regular.ttf', 'Cairo', 'normal', 'Identity-H');
+      doc.addFont('Cairo-Regular.ttf', 'Cairo', 'bold', 'Identity-H');
+      doc.addFont('Cairo-Regular.ttf', 'Cairo', 'italic', 'Identity-H');
       fName = 'Cairo';
     }
   } catch (err) {
@@ -497,6 +497,16 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
     const colWidth = (contentWidth - (totalGap * (colCount - 1))) / colCount;
     const gridHeight = pageHeight - y - 16;
 
+    // Calculate maximum number of drills dynamically to scale cards to fit in one A4 sheet
+    let maxDrillsInAnyDay = 0;
+    DAYS_OF_WEEK.forEach(day => {
+      maxDrillsInAnyDay = Math.max(maxDrillsInAnyDay, (schedule[day] || []).length);
+    });
+
+    const maxColDrills = Math.max(8, maxDrillsInAnyDay);
+    const cardGap = maxColDrills > 12 ? 0.35 : (maxColDrills > 10 ? 0.5 : (maxColDrills > 8 ? 0.6 : 1.2));
+    const cardHeight = Math.max(7.5, Math.min(15, (gridHeight - 22 - (cardGap * (maxColDrills - 1))) / maxColDrills));
+
     DAYS_OF_WEEK.forEach((day, colIdx) => {
       const colX = margin + colIdx * (colWidth + totalGap);
       const dayDrills = schedule[day] || [];
@@ -546,7 +556,6 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
       // Render Drills in this column
       let drillY = y + 19;
-      const maxColDrills = 8;
 
       if (dayDrills.length === 0) {
         doc.setFontSize(8.5);
@@ -562,25 +571,35 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
           // Background card for exercise
           doc.setFillColor(...(theme === 'dark' ? C.white : [255, 255, 255]));
-          doc.roundedRect(colX + 2, drillY, colWidth - 4, 15, 1, 1, 'F');
+          doc.roundedRect(colX + 2, drillY, colWidth - 4, cardHeight, 1, 1, 'F');
           
           doc.setDrawColor(...C.border);
           doc.setLineWidth(0.15);
-          doc.roundedRect(colX + 2, drillY, colWidth - 4, 15, 1, 1, 'S');
+          doc.roundedRect(colX + 2, drillY, colWidth - 4, cardHeight, 1, 1, 'S');
 
           // Accent bar left
           doc.setFillColor(...cat.border);
-          doc.rect(colX + 2, drillY, 1, 15, 'F');
+          doc.rect(colX + 2, drillY, 1, cardHeight, 'F');
+
+          // Dynamic Text Sizes based on scaled card height
+          const titleFontSize = cardHeight < 10 ? 6.2 : (cardHeight < 12 ? 6.8 : 7.5);
+          const titleOffset = cardHeight < 10 ? 3 : (cardHeight < 12 ? 3.5 : 4);
+          
+          const paramFontSize = cardHeight < 10 ? 5.8 : (cardHeight < 12 ? 6.5 : 7.5);
+          const paramOffset = cardHeight < 10 ? 6.2 : (cardHeight < 12 ? 7.5 : 8.5);
+          
+          const footerFontSize = cardHeight < 10 ? 5.2 : (cardHeight < 12 ? 5.8 : 6.5);
+          const footerOffset = cardHeight < 10 ? 9.2 : (cardHeight < 12 ? 11 : 12.5);
 
           // Exercise Title
-          doc.setFontSize(7.5);
+          doc.setFontSize(titleFontSize);
           doc.setFont(fName, 'bold');
           doc.setTextColor(...C.primary);
           const drillTitle = safeTxt(drill.title || 'Drill');
-          doc.text(drillTitle.substring(0, 21), colX + 4.5, drillY + 4);
+          doc.text(drillTitle.substring(0, 21), colX + 4.5, drillY + titleOffset);
 
           // Workout Prescription Parameters (Sets x Reps)
-          doc.setFontSize(7.5);
+          doc.setFontSize(paramFontSize);
           doc.setFont(fName, 'bold');
           doc.setTextColor(...C.orange);
           const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
@@ -593,7 +612,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             else if (u === 'jumps') repsStr += 'j';
           }
           const intensityStr = drill.percentage ? `@${drill.percentage}%` : '';
-          doc.text(`${setsStr} x ${repsStr} ${intensityStr}`.trim(), colX + 4.5, drillY + 8.5);
+          doc.text(`${setsStr} x ${repsStr} ${intensityStr}`.trim(), colX + 4.5, drillY + paramOffset);
 
           // Rest interval and notes combined
           let footerTxt = '';
@@ -605,17 +624,17 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
               footerTxt += cleanNote;
             }
           }
-          if (footerTxt) {
-            doc.setFontSize(6.5);
+          if (footerTxt && cardHeight >= 9.2) {
+            doc.setFontSize(footerFontSize);
             doc.setFont(fName, 'normal');
             doc.setTextColor(...C.mid);
             // Truncate to fit column card safely
-            const colLimit = 26;
+            const colLimit = cardHeight < 11 ? 32 : 26;
             const truncatedFooter = footerTxt.length > colLimit ? footerTxt.substring(0, colLimit - 3) + '...' : footerTxt;
-            doc.text(truncatedFooter, colX + 4.5, drillY + 12.5);
+            doc.text(truncatedFooter, colX + 4.5, drillY + footerOffset);
           }
 
-          drillY += 16.5;
+          drillY += cardHeight + cardGap;
         });
         
         // Show count indicator if exercises are compressed
