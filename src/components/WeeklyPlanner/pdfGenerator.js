@@ -561,7 +561,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           const cat = catColors[type] || catColors.physical;
 
           // Background card for exercise
-          doc.setFillColor(theme === 'dark' ? C.white : [255, 255, 255]);
+          doc.setFillColor(...(theme === 'dark' ? C.white : [255, 255, 255]));
           doc.roundedRect(colX + 2, drillY, colWidth - 4, 15, 1, 1, 'F');
           
           doc.setDrawColor(...C.border);
@@ -636,7 +636,8 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
     doc.text(`Generated for Athlete: ${athleteName}   |   Page 1 of 1`, pageWidth - margin, pageHeight - 6, { align: 'right' });
   }
 
-  // Save PDF file
-  const fileName = `PeakForce_${orientation === 'landscape' ? 'Weekly_Grid' : 'Vertical_Plan'}_${athleteName.replace(/\s+/g, '_')}.pdf`;
+  // Save PDF file safely using only ASCII characters for the filename to prevent browser download crashes
+  const asciiAthleteName = athleteName.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, '_').trim() || 'Athlete';
+  const fileName = `PeakForce_${orientation === 'landscape' ? 'Weekly_Grid' : 'Vertical_Plan'}_${asciiAthleteName}.pdf`;
   doc.save(fileName);
 }
