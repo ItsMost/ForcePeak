@@ -866,6 +866,10 @@ export default function WeeklyPlanner() {
 
   const handleSaveRangeAsBlock = async () => {
     if (!selectedAthleteId) return;
+
+    // Destructure modal properties correctly to prevent ReferenceError
+    const { programName = '', startDate = '', endDate = '', tags = '' } = bulkSaveModal;
+
     if (!programName.trim()) { handleToast('Please enter Meso-Block name!'); return; }
     if (!startDate || !endDate) { handleToast('Please select start and end dates!'); return; }
     
@@ -909,8 +913,6 @@ export default function WeeklyPlanner() {
           weekDrills[day] = [];
         });
 
-        let weekHasExercises = false;
-
         for (let j = 0; j < 7; j++) {
           const dayDate = new Date(weekStart);
           dayDate.setDate(dayDate.getDate() + j);
@@ -924,12 +926,11 @@ export default function WeeklyPlanner() {
             const record = workouts.find(w => w.workout_date === dateStr);
             if (record && record.drills && record.drills.length > 0) {
               weekDrills[dayName] = record.drills.map(d => ({ ...d }));
-              weekHasExercises = true;
             }
           }
         }
 
-        // Include week to preserve multi-week block structure
+        // Include week to preserve structure
         compiledWeeks.push({
           title: `${programName} - Week ${i + 1}`,
           drills: weekDrills,
@@ -937,29 +938,95 @@ export default function WeeklyPlanner() {
         });
       }
 
-      // Save Meso-Block to agilitylap_programs
-      const payload = {
-        program_name: programName,
-        weeks: compiledWeeks
-      };
+      // Route dynamically based on calculated week count:
+      if (numWeeks < 3) {
+        // Micro-Cycles (1 or 2 weeks): Save each week separately as a week template inside agilitylap_templates
+        const templatesToInsert = compiledWeeks.map((w, idx) => ({
+          template_name: numWeeks === 1 ? programName : `${programName} - W${idx + 1}`,
+          template_type: 'week',
+          drills: w.drills
+        }));
 
-      const { error: insertError } = await supabase.from('agilitylap_programs').insert([payload]);
-      if (insertError) throw insertError;
+        const { error: insertError } = await supabase
+          .from('agilitylap_templates')
+          .insert(templatesToInsert);
 
-      // Refresh local programs list
-      const { data: progData } = await supabase
-        .from('agilitylap_programs')
-        .select('*')
-        .order('created_at', { ascending: false });
-      setPrograms(progData || []);
+        if (insertError) throw insertError;
 
-      setIsLoading(false);
-      handleToast(`Meso-Block "${programName}" saved successfully!`);
+        await fetchLibraryData(); // Cleanly sync library templates list in UI
+        setIsLoading(false);
+        handleToast(`Saved ${templatesToInsert.length} week(s) as Micro-Cycle Template(s)!`);
+
+      } else if (numWeeks >= 3 && numWeeks <= 6) {
+        // Meso-Cycles (3 to 6 weeks): Save as a standard Meso-Block program in agilitylap_programs
+        const payload = {
+          program_name: programName,
+          type: 'meso',
+          weeks: compiledWeeks
+        };
+
+        const { error: insertError } = await supabase.from('agilitylap_programs').insert([payload]);
+        if (insertError) throw insertError;
+
+        await fetchLibraryData(); // Cleanly sync programs list in UI
+        setIsLoading(false);
+        handleToast(`Meso-Cycle "${programName}" (${numWeeks} weeks) saved successfully!`);
+
+      } else {
+        // Macro-Cycles (7+ weeks):
+        // 1. Create a Meso-Block to store the actual workouts sequence
+        const mesoPayload = {
+          program_name: `${programName} (Meso)`,
+          type: 'meso',
+          weeks: compiledWeeks
+        };
+
+        const { data: mesoData, error: mesoError } = await supabase
+          .from('agilitylap_programs')
+          .insert([mesoPayload])
+          .select();
+
+        if (mesoError) throw mesoError;
+        if (!mesoData || mesoData.length === 0) {
+          throw new Error('Could not create reference Meso-Block for Macro-Cycle');
+        }
+
+        const mesoId = mesoData[0].id;
+        const blocksChain = [
+          {
+            blockId: mesoId,
+            blockName: `${programName} (Meso)`,
+            weeksCount: numWeeks
+          }
+        ];
+
+        // 2. Create the Macro-Cycle referencing the Meso-Block
+        const macroPayload = {
+          program_name: programName,
+          type: 'macro',
+          tags: tags || '',
+          blocksChain: blocksChain,
+          weeks: [
+            {
+              isMacro: true,
+              blocksChain: blocksChain,
+              tags: tags || ''
+            }
+          ]
+        };
+
+        const { error: macroError } = await supabase.from('agilitylap_programs').insert([macroPayload]);
+        if (macroError) throw macroError;
+
+        await fetchLibraryData(); // Cleanly sync programs list in UI
+        setIsLoading(false);
+        handleToast(`Macro-Cycle "${programName}" (${numWeeks} weeks) saved successfully!`);
+      }
 
     } catch (err) {
       setIsLoading(false);
       console.error(err);
-      handleToast('Error saving Meso-Block program.');
+      handleToast('Error saving range as block.');
     }
   };
 
