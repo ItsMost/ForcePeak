@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Dumbbell, Zap, X, Save, Scale, Trash2 } from 'lucide-react';
+import { User, Dumbbell, Zap, X, Save, Scale, Trash2, ShieldAlert } from 'lucide-react';
 
 export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete }) {
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
@@ -30,155 +30,294 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
     onSave(formData);
   };
 
+  // Get athlete initials
+  const getInitials = (name) => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4 print:hidden">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col max-h-[90vh]">
+      <div className="bg-[#FAFBFD] dark:bg-slate-900 rounded-[32px] shadow-2xl w-full max-w-[1050px] overflow-hidden border border-slate-200/60 dark:border-slate-800 flex flex-col max-h-[92vh] animate-fadeIn">
         
-        {/* Header */}
-        <div className="flex justify-between items-center p-5 md:p-6 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white font-bold text-xl shadow-md">
-              {formData.name ? formData.name.charAt(0).toUpperCase() : '?'}
+        {/* Mockup Premium Header */}
+        <div className="flex justify-between items-center px-8 py-5 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-sm shrink-0">
+              <User className="w-6 h-6"/>
             </div>
             <div>
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white">Athlete Profile</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Record athlete test results to calculate workload dynamically</p>
+              <h3 className="text-xl font-black text-slate-800 dark:text-white leading-tight">Athletic Performance Dashboard</h3>
+              <p className="text-[10px] sm:text-xs font-black uppercase text-slate-400 mt-0.5 tracking-wider">
+                PROFILE MANAGEMENT • <span className="text-slate-600 dark:text-slate-200">{formData.name || 'NEW ATHLETE'}</span>
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 bg-slate-200 dark:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors">
-            <X className="w-5 h-5"/>
+          <button onClick={onClose} className="p-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-white rounded-full transition-colors">
+            <X className="w-4 h-4"/>
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-5 md:p-6 overflow-y-auto flex-1 space-y-8">
+        {/* Mockup Dashboard Body Content */}
+        <div className="p-6 md:p-8 overflow-y-auto flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8 bg-[#F5F7FA] dark:bg-slate-900/40">
           
-          {/* Section 1: Basic Info */}
-          <div>
-            <h4 className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">
-              <User className="w-4 h-4 text-blue-500" /> Basic Information
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Full Name</label>
-                <input type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 dark:text-white" />
+          {/* ================= LEFT COLUMN (Lg: 5/12 grid) ================= */}
+          <div className="lg:col-span-5 space-y-6">
+            
+            {/* Card 1: Full Athlete Name Card */}
+            <div className="bg-white dark:bg-slate-800 p-5 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm flex items-center gap-5">
+              <div className="w-16 h-16 rounded-[20px] bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-orange-500/30 shrink-0">
+                {getInitials(formData.name)}
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Birth Year</label>
-                <input type="number" name="birthYear" value={formData.birthYear} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-blue-500 dark:text-white" />
+              <div className="flex-1">
+                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME</label>
+                <input 
+                  type="text" 
+                  name="name" 
+                  value={formData.name} 
+                  onChange={handleChange} 
+                  placeholder="Enter Athlete Name"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-800 dark:text-white font-bold text-sm outline-none transition-all" 
+                />
               </div>
             </div>
+
+            {/* Card 2: Physical Metrics */}
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm space-y-4">
+              <h4 className="flex items-center gap-2 text-[10px] sm:text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 dark:border-slate-800">
+                <Scale className="w-4 h-4 text-orange-500" /> Physical Metrics
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">BIRTH YEAR</label>
+                  <input 
+                    type="number" 
+                    name="birthYear" 
+                    value={formData.birthYear} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 2005"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">BODY FAT (%)</label>
+                  <input 
+                    type="number" 
+                    name="bodyFat" 
+                    step="0.1"
+                    value={formData.bodyFat} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 12.5"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">WEIGHT (KG)</label>
+                  <input 
+                    type="number" 
+                    name="weight" 
+                    value={formData.weight} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 75"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">HEIGHT (CM)</label>
+                  <input 
+                    type="number" 
+                    name="height" 
+                    value={formData.height} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 180"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: CNS & Plyometric Capacity */}
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm space-y-4">
+              <h4 className="flex items-center gap-2 text-[10px] sm:text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 dark:border-slate-800">
+                <Zap className="w-4 h-4 text-orange-500" /> CNS & PLYOMETRIC CAPACITY
+              </h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">VERTICAL JUMP (CM)</label>
+                  <input 
+                    type="number" 
+                    name="verticalJump" 
+                    value={formData.verticalJump} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 60"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">SQUAT JUMP (CM)</label>
+                  <input 
+                    type="number" 
+                    name="squatJump" 
+                    value={formData.squatJump} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 55"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">STANDING LONG JUMP (METERS)</label>
+                <input 
+                  type="number" 
+                  step="0.01"
+                  name="standingLongJump" 
+                  value={formData.standingLongJump} 
+                  onChange={handleChange} 
+                  placeholder="e.g. 2.50"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-850 dark:text-white font-bold text-xs sm:text-sm outline-none transition-all" 
+                />
+              </div>
+            </div>
+
           </div>
 
-          {/* Section 2: Body Metrics */}
-          <div>
-            <h4 className="flex items-center gap-2 text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">
-              <Scale className="w-4 h-4 text-green-500" /> Anthropometrics
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Weight (KG)</label>
-                <input type="number" name="weight" value={formData.weight} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-green-500 dark:text-white" />
+          {/* ================= RIGHT COLUMN (Lg: 7/12 grid) ================= */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            {/* Card 4: Gym Strength Records */}
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-[24px] border border-slate-200/50 dark:border-slate-800 shadow-sm space-y-5 h-full">
+              <h4 className="flex items-center gap-2 text-[10px] sm:text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest pb-2 border-b border-slate-100 dark:border-slate-800">
+                <Dumbbell className="w-4 h-4 text-blue-500" /> GYM STRENGTH RECORDS (1RM)
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">POWER CLEAN (KG)</label>
+                  <input 
+                    type="number" 
+                    name="clean" 
+                    value={formData.clean} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 90"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/25 text-slate-850 dark:text-white font-black text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">BENCH PRESS (KG)</label>
+                  <input 
+                    type="number" 
+                    name="bench" 
+                    value={formData.bench} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 100"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/25 text-slate-850 dark:text-white font-black text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">DEADLIFT (KG)</label>
+                  <input 
+                    type="number" 
+                    name="deadlift" 
+                    value={formData.deadlift} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 180"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/25 text-slate-850 dark:text-white font-black text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL SQUAT (KG)</label>
+                  <input 
+                    type="number" 
+                    name="fullSquat" 
+                    value={formData.fullSquat} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 140"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/25 text-slate-850 dark:text-white font-black text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">HALF SQUAT (KG)</label>
+                  <input 
+                    type="number" 
+                    name="halfSquat" 
+                    value={formData.halfSquat} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 160"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/25 text-slate-850 dark:text-white font-black text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">QUARTER SQUAT (KG)</label>
+                  <input 
+                    type="number" 
+                    name="quarterSquat" 
+                    value={formData.quarterSquat} 
+                    onChange={handleChange} 
+                    placeholder="e.g. 180"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-[#F8FAFC] dark:bg-slate-900 focus:ring-2 focus:ring-blue-500/25 text-slate-850 dark:text-white font-black text-xs sm:text-sm outline-none transition-all" 
+                  />
+                </div>
               </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Height (CM)</label>
-                <input type="number" name="height" value={formData.height} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-green-500 dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Body Fat (%)</label>
-                <input type="number" name="bodyFat" value={formData.bodyFat} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-green-500 dark:text-white" />
-              </div>
-            </div>
-          </div>
 
-          {/* Section 3: Strength Tests (1RM) */}
-          <div className="bg-orange-50 dark:bg-orange-900/10 rounded-2xl p-5 border border-orange-100 dark:border-orange-900/30">
-            <h4 className="flex items-center gap-2 text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-widest mb-4">
-              <Dumbbell className="w-4 h-4" /> Max Strength Tests (1RM in KG)
-            </h4>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Clean</label>
-                <input type="number" name="clean" value={formData.clean} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Bench Press</label>
-                <input type="number" name="bench" value={formData.bench} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Deadlift</label>
-                <input type="number" name="deadlift" value={formData.deadlift} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Full Squat</label>
-                <input type="number" name="fullSquat" value={formData.fullSquat} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Half Squat</label>
-                <input type="number" name="halfSquat" value={formData.halfSquat} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Quarter Squat</label>
-                <input type="number" name="quarterSquat" value={formData.quarterSquat} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500 dark:text-white font-bold" />
+              {/* Decorative Mockup Note */}
+              <div className="mt-8 p-4 bg-blue-50/50 dark:bg-slate-900/60 rounded-2xl border border-blue-100 dark:border-slate-800 text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed">
+                ℹ️ Peak strength testing parameters are locked strictly to 1-Repetition Maximum (1RM) indices. These calculations power the automated percentage multiplier blocks dynamically across the timeline workflow.
               </div>
             </div>
-          </div>
 
-          {/* Section 4: Power Tests */}
-          <div className="bg-yellow-50 dark:bg-yellow-900/10 rounded-2xl p-5 border border-yellow-100 dark:border-yellow-900/30">
-            <h4 className="flex items-center gap-2 text-sm font-bold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest mb-4">
-              <Zap className="w-4 h-4" /> Power & Jump Tests
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Vertical Jump (CM)</label>
-                <input type="number" name="verticalJump" value={formData.verticalJump} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-yellow-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Standing Long Jump (CM)</label>
-                <input type="number" name="standingLongJump" value={formData.standingLongJump} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-yellow-500 dark:text-white font-bold" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">Squat Jump (CM)</label>
-                <input type="number" name="squatJump" value={formData.squatJump} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-yellow-500 dark:text-white font-bold" />
-              </div>
-            </div>
           </div>
 
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
-          <button type="button" onClick={() => setShowConfirmDelete(true)} className="px-4 py-2.5 bg-red-50 dark:bg-red-950/20 hover:bg-red-600 hover:text-white border border-red-200 dark:border-red-900/30 rounded-xl text-red-600 dark:text-red-400 font-bold text-sm flex items-center gap-2 transition-all">
-            <Trash2 className="w-4 h-4"/> Delete Athlete
+        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shrink-0">
+          <button 
+            type="button" 
+            onClick={() => setShowConfirmDelete(true)} 
+            className="px-4 py-2.5 bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-700 border border-red-200 hover:border-red-300 dark:border-red-900/40 rounded-xl text-red-500 dark:text-red-400 font-black text-xs uppercase tracking-wider flex items-center gap-2 transition-all"
+          >
+            <Trash2 className="w-4 h-4"/> Delete Profile
           </button>
+          
           <div className="flex gap-3">
-            <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors font-bold text-sm">
+            <button 
+              onClick={onClose} 
+              className="px-5 py-2.5 rounded-xl text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-black text-xs uppercase tracking-wider"
+            >
               Cancel
             </button>
-            <button onClick={handleSaveClick} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center gap-2">
-              <Save className="w-4 h-4"/> Save Details
+            <button 
+              onClick={handleSaveClick} 
+              className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl shadow-md hover:shadow-lg hover:shadow-orange-500/20 active:scale-98 transition-all font-black text-xs uppercase tracking-wider flex items-center gap-2"
+            >
+              <Save className="w-4 h-4"/> Save Changes
             </button>
           </div>
         </div>
 
       </div>
 
+      {/* Delete Confirmation Overlaid Box */}
       {showConfirmDelete && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center border border-slate-200 dark:border-slate-700">
-            <div className="w-16 h-16 bg-red-100 dark:bg-red-950/40 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Trash2 className="w-8 h-8 text-red-500" />
+          <div className="bg-white dark:bg-slate-800 rounded-[28px] shadow-2xl w-full max-w-sm p-6 text-center border border-slate-200 dark:border-slate-700">
+            <div className="w-16 h-16 bg-red-50 dark:bg-red-950/30 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <ShieldAlert className="w-8 h-8 text-red-500 animate-pulse" />
             </div>
-            <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-white">Are you sure?</h3>
-            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
-              The athlete <span className="font-bold text-slate-800 dark:text-white">"{formData.name}"</span> and all of their logs, schedules, and training history will be deleted forever. This action is irreversible!
+            <h3 className="text-lg font-black mb-2 text-slate-800 dark:text-white">Are you absolutely sure?</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-xs mb-6 leading-relaxed">
+              This will permanently delete <span className="font-black text-slate-800 dark:text-white">"{formData.name}"</span> and all training workflows, histories, and analytics from the database. This action is irreversible!
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setShowConfirmDelete(false)} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-all">
+              <button 
+                onClick={() => setShowConfirmDelete(false)} 
+                className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-650 dark:text-slate-350 rounded-xl font-bold text-xs uppercase transition-all"
+              >
                 Cancel
               </button>
-              <button onClick={() => { setShowConfirmDelete(false); onDelete(formData.id); }} className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all">
+              <button 
+                onClick={() => { setShowConfirmDelete(false); onDelete(formData.id); }} 
+                className="flex-1 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-xs uppercase shadow-md transition-all active:scale-95"
+              >
                 Confirm Delete
               </button>
             </div>

@@ -13,6 +13,59 @@ const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Is
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
+const getSupersetProps = (drills, index) => {
+  const drill = drills[index];
+  if (!drill || !drill.superset) {
+    return {
+      isSuperset: false,
+      isSupersetStart: false,
+      isSupersetMiddle: false,
+      isSupersetEnd: false,
+      supersetLabel: '',
+      supersetGroup: ''
+    };
+  }
+
+  const group = drill.superset; // "A", "B", "C", "D"
+  const prevDrill = drills[index - 1];
+  const isPrevSame = prevDrill && prevDrill.superset === group;
+  const nextDrill = drills[index + 1];
+  const isNextSame = nextDrill && nextDrill.superset === group;
+
+  let startIndex = index;
+  while (startIndex > 0 && drills[startIndex - 1].superset === group) {
+    startIndex--;
+  }
+  
+  const position = index - startIndex + 1;
+  const label = `${group}${position}`;
+  const hasAdjacentSame = isPrevSame || isNextSame;
+
+  return {
+    isSuperset: hasAdjacentSame,
+    isSupersetStart: hasAdjacentSame && !isPrevSame,
+    isSupersetMiddle: hasAdjacentSame && isPrevSame && isNextSame,
+    isSupersetEnd: hasAdjacentSame && isPrevSame && !isNextSame,
+    supersetLabel: label,
+    supersetGroup: group
+  };
+};
+
+const getBezierPath = (points) => {
+  if (points.length < 2) return '';
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[i];
+    const p1 = points[i + 1];
+    const cpX1 = p0.x + (p1.x - p0.x) / 2;
+    const cpY1 = p0.y;
+    const cpX2 = p0.x + (p1.x - p0.x) / 2;
+    const cpY2 = p1.y;
+    path += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
+  }
+  return path;
+};
+
 export default function WeeklyPlanner() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -67,6 +120,7 @@ export default function WeeklyPlanner() {
     const todayName = JS_DAYS[new Date().getDay()];
     return DAYS_OF_WEEK.includes(todayName) ? todayName : 'Saturday';
   });
+  const [fourWeekData, setFourWeekData] = useState([]);
 
   const syncOfflineQueue = async () => {
     const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
@@ -360,6 +414,58 @@ export default function WeeklyPlanner() {
     return { load: totalLoad, intensity: avgIntensity, loadLabel, loadColor, dailyData, totalJumps, cnsPercentage, structuralPercentage, totalMeters };
   }, [schedule]);
 
+  useEffect(() => {
+    const fetchFourWeekData = async () => {
+      if (!selectedAthleteId) return;
+      const start28DaysAgo = new Date(currentWeekStart);
+      start28DaysAgo.setDate(start28DaysAgo.getDate() - 21); // 3 weeks ago
+      const endActiveWeek = new Date(currentWeekStart);
+      endActiveWeek.setDate(endActiveWeek.getDate() + 6); // end of active week
+      
+      const { data, error } = await supabase
+        .from('agilitylap_workouts')
+        .select('workout_date, drills')
+        .eq('athlete_id', selectedAthleteId)
+        .gte('workout_date', getDbDateStr(start28DaysAgo))
+        .lte('workout_date', getDbDateStr(endActiveWeek));
+        
+      if (!error && data) {
+        const w1Start = new Date(start28DaysAgo);
+        const w2Start = new Date(start28DaysAgo); w2Start.setDate(w2Start.getDate() + 7);
+        const w3Start = new Date(start28DaysAgo); w3Start.setDate(w3Start.getDate() + 14);
+        const w4Start = new Date(currentWeekStart);
+        
+        let w1Load = 0, w2Load = 0, w3Load = 0, w4Load = 0;
+        
+        data.forEach(record => {
+          const rDate = new Date(record.workout_date);
+          const drills = record.drills || [];
+          const stats = calculateDayVolume(drills);
+          const load = stats.totalVolumeScore;
+          
+          if (rDate >= w1Start && rDate < w2Start) {
+            w1Load += load;
+          } else if (rDate >= w2Start && rDate < w3Start) {
+            w2Load += load;
+          } else if (rDate >= w3Start && rDate < w4Start) {
+            w3Load += load;
+          } else if (rDate >= w4Start) {
+            w4Load += load;
+          }
+        });
+        
+        setFourWeekData([
+          { label: 'Week 1', load: Math.round(w1Load) },
+          { label: 'Week 2', load: Math.round(w2Load) },
+          { label: 'Week 3', load: Math.round(w3Load) },
+          { label: 'Active Week', load: Math.round(w4Load) }
+        ]);
+      }
+    };
+    
+    fetchFourWeekData();
+  }, [selectedAthleteId, weekStartDateStr]);
+
   const handleSaveProgramBlock = async () => {
     if (!createProgramModal.name.trim()) return;
     const compiledWeeks = createProgramModal.weeksChain.map(tplId => {
@@ -478,8 +584,8 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, unit: drill.unit || 'reps', distance: drill.distance || '' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '' }, isNew: false }); };
 
   const handleSaveDayDrillModal = () => {
     const { day, drill, isNew } = dayDrillModal;
@@ -885,7 +991,7 @@ export default function WeeklyPlanner() {
         </div>
       )}
 
-      {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6"> <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Category</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="w-28"> <label className="block text-xs font-bold text-slate-500 mb-1">Intensity %</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-8 pr-3 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" /> <Percent className="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" /> </div> </div> </div> <div className="flex gap-2"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Sets</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">{addExerciseModal.unit === 'meters' ? 'Distance (m)' : 'Volume'}</label> <input type="text" value={addExerciseModal.unit === 'meters' ? (addExerciseModal.distance || '') : addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, [addExerciseModal.unit === 'meters' ? 'distance' : 'reps']: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Unit</label> <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"> <option value="reps">Reps</option> <option value="sec">Sec</option> <option value="min">Min</option> <option value="jumps">Jumps</option> <option value="meters">Meters</option> </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Rest</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" /> </div> </div> <div className="flex justify-end gap-3 mt-6"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button> </div> </div> </div> )}
+      {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6"> <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Category</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Superset Link</label> <select value={addExerciseModal.superset || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, superset: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> <option value="">None</option> <option value="A">Group A</option> <option value="B">Group B</option> <option value="C">Group C</option> <option value="D">Group D</option> </select> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Intensity %</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" /> <Percent className="w-3.5 h-3.5 absolute left-2 top-2.5 text-slate-400" /> </div> </div> </div> <div className="flex gap-2"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Sets</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">{addExerciseModal.unit === 'meters' ? 'Distance (m)' : 'Volume'}</label> <input type="text" value={addExerciseModal.unit === 'meters' ? (addExerciseModal.distance || '') : addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, [addExerciseModal.unit === 'meters' ? 'distance' : 'reps']: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Unit</label> <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"> <option value="reps">Reps</option> <option value="sec">Sec</option> <option value="min">Min</option> <option value="jumps">Jumps</option> <option value="meters">Meters</option> </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Rest</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" /> </div> </div> <div className="flex justify-end gap-3 mt-6"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button> </div> </div> </div> )}
 
       {dayDrillModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -900,6 +1006,16 @@ export default function WeeklyPlanner() {
                   <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
                   <select value={dayDrillModal.drill.type} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, type: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                     {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Superset Link</label>
+                  <select value={dayDrillModal.drill.superset || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, superset: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">None</option>
+                    <option value="A">Group A</option>
+                    <option value="B">Group B</option>
+                    <option value="C">Group C</option>
+                    <option value="D">Group D</option>
                   </select>
                 </div>
                 <div className="w-24">
@@ -932,10 +1048,10 @@ export default function WeeklyPlanner() {
 
       {showStatsModal && (
         <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4" onClick={() => setShowStatsModal(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 scrollbar-thin" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold flex items-center gap-2"><BarChart3 className="w-6 h-6 text-orange-500" /> Workload Analytics</h3>
-              <button onClick={() => setShowStatsModal(false)} className="p-2 bg-slate-100 rounded-full"><X className="w-5 h-5"/></button>
+              <button onClick={() => setShowStatsModal(false)} className="p-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 dark:text-white"/></button>
             </div>
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
@@ -944,27 +1060,28 @@ export default function WeeklyPlanner() {
                   <p className="text-3xl font-black">{weeklyStats.load} <span className="text-sm font-medium opacity-80">AU</span></p>
                   <p className="text-sm font-bold mt-1 opacity-90">{weeklyStats.loadLabel}</p>
                 </div>
-                <div className="p-4 rounded-2xl border border-blue-200 bg-blue-50 text-blue-700">
+                <div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-900/30 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-400">
                   <p className="text-xs font-bold uppercase opacity-70 mb-1">Average Intensity</p>
                   <p className="text-3xl font-black">{weeklyStats.intensity}%</p>
                 </div>
               </div>
+              
               <div className="grid grid-cols-4 gap-3">
-                <div className="p-3 bg-slate-50 border rounded-xl text-center">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Total Jumps</p>
                   <p className="text-xl font-black text-orange-500">{weeklyStats.totalJumps}</p>
                 </div>
-                <div className="p-3 bg-slate-50 border rounded-xl text-center">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">CNS Split</p>
                   <p className="text-xl font-black text-yellow-500">{weeklyStats.cnsPercentage}%</p>
                 </div>
-                <div className="p-3 bg-slate-50 border rounded-xl text-center">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Structural</p>
                   <p className="text-xl font-black text-blue-500">{weeklyStats.structuralPercentage}%</p>
                 </div>
-                <div className="p-3 bg-slate-50 border rounded-xl text-center">
+                <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Total Run</p>
-                  <p className="text-lg sm:text-xl font-black text-indigo-600">{weeklyStats.totalMeters}m</p>
+                  <p className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400">{weeklyStats.totalMeters}m</p>
                 </div>
               </div>
               
@@ -973,7 +1090,7 @@ export default function WeeklyPlanner() {
                   <span>CNS / Power Fatigue</span>
                   <span>Structural Muscle Strain</span>
                 </div>
-                <div className="w-full h-4 bg-slate-100 rounded-full flex overflow-hidden shadow-inner">
+                <div className="w-full h-4 bg-slate-100 dark:bg-slate-900 rounded-full flex overflow-hidden shadow-inner">
                   <div className="h-full bg-amber-500 transition-all" style={{ width: `${weeklyStats.cnsPercentage}%` }} />
                   <div className="h-full bg-blue-500 transition-all" style={{ width: `${weeklyStats.structuralPercentage}%` }} />
                 </div>
@@ -983,21 +1100,112 @@ export default function WeeklyPlanner() {
                 </div>
               </div>
 
-              <div className="flex items-end justify-between gap-2 h-36 border-b pb-2">
-                  {weeklyStats.dailyData.map((data, i) => {
-                    const maxLoad = Math.max(...weeklyStats.dailyData.map(d => d.load), 1000); 
-                    const heightPercent = data.load > 0 ? (data.load / maxLoad) * 100 : 0;
-                    return (
-                      <div key={i} className="flex flex-col items-center flex-1 group h-full justify-end">
-                        <div className="text-[9px] font-bold text-slate-400 mb-1">{data.load}</div>
-                        <div className="w-full max-w-[40px] bg-slate-100 rounded-t-md relative flex items-end justify-center h-full">
-                          <div className="w-full bg-orange-500 rounded-t-md transition-all duration-700" style={{ height: `${heightPercent}%`, minHeight: data.load > 0 ? '4px' : '0' }}></div>
-                        </div>
-                        <span className="text-[10px] md:text-xs font-bold text-slate-500 mt-2 uppercase">{data.day.substring(0, 3)}</span>
-                      </div>
-                    );
-                  })}
+              {/* 📊 Premium 4-Week Workload Trend Bezier Area Curve Chart */}
+              <div className="p-5 bg-slate-50 dark:bg-slate-900/50 border border-slate-150 dark:border-slate-700/50 rounded-3xl">
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider mb-4">4-Week Workload Trend</h4>
+                {fourWeekData && fourWeekData.length > 0 ? (
+                  <div className="w-full overflow-hidden">
+                    {(() => {
+                      const points = fourWeekData.map((data, idx) => {
+                        const x = 50 + idx * 130;
+                        const maxVal = Math.max(...fourWeekData.map(d => d.load), 1000);
+                        const y = 95 - (data.load / maxVal) * 65;
+                        return { x, y, label: data.label, load: data.load };
+                      });
+                      const bezierPath = getBezierPath(points);
+                      return (
+                        <svg viewBox="0 0 500 130" className="w-full overflow-visible">
+                          <defs>
+                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#f97316" stopOpacity="0.25" />
+                              <stop offset="100%" stopColor="#f97316" stopOpacity="0.0" />
+                            </linearGradient>
+                          </defs>
+                          
+                          {/* Grid lines */}
+                          <line x1="40" y1="30" x2="460" y2="30" className="stroke-slate-200 dark:stroke-slate-800" strokeDasharray="4 4" />
+                          <line x1="40" y1="65" x2="460" y2="65" className="stroke-slate-200 dark:stroke-slate-800" strokeDasharray="4 4" />
+                          <line x1="40" y1="100" x2="460" y2="100" className="stroke-slate-200 dark:stroke-slate-800" strokeDasharray="4 4" />
+
+                          {/* Area under curve */}
+                          <path
+                            d={`${bezierPath} L ${points[points.length - 1].x} 110 L ${points[0].x} 110 Z`}
+                            fill="url(#chartGradient)"
+                          />
+
+                          {/* Curve path */}
+                          <path
+                            d={bezierPath}
+                            fill="none"
+                            stroke="#f97316"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                          />
+
+                          {/* Node Dots & Labels */}
+                          {points.map((pt, idx) => (
+                            <g key={idx} className="group/node cursor-pointer">
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r="5"
+                                className="fill-white stroke-orange-500 stroke-[3px] transition-all group-hover/node:r-7"
+                              />
+                              <circle
+                                cx={pt.x}
+                                cy={pt.y}
+                                r="10"
+                                className="fill-transparent hover:fill-orange-500/10"
+                              />
+                              <text
+                                x={pt.x}
+                                y={pt.y - 12}
+                                textAnchor="middle"
+                                className="text-[10px] font-black fill-slate-700 dark:fill-slate-200 font-sans"
+                              >
+                                {pt.load}
+                              </text>
+                              <text
+                                x={pt.x}
+                                y="125"
+                                textAnchor="middle"
+                                className={`text-[9px] font-black uppercase tracking-wider ${idx === 3 ? 'fill-orange-500' : 'fill-slate-400 dark:fill-slate-500'}`}
+                              >
+                                {pt.label}
+                              </text>
+                            </g>
+                          ))}
+                        </svg>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="h-28 flex items-center justify-center text-slate-400 font-bold text-sm">
+                    No workload trend data available.
+                  </div>
+                )}
               </div>
+
+              {/* Daily Load breakdown */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">Daily Load Breakdown</h4>
+                <div className="flex items-end justify-between gap-2 h-36 border-b dark:border-slate-700 pb-2">
+                    {weeklyStats.dailyData.map((data, i) => {
+                      const maxLoad = Math.max(...weeklyStats.dailyData.map(d => d.load), 1000); 
+                      const heightPercent = data.load > 0 ? (data.load / maxLoad) * 100 : 0;
+                      return (
+                        <div key={i} className="flex flex-col items-center flex-1 group h-full justify-end">
+                          <div className="text-[9px] font-bold text-slate-400 mb-1">{data.load}</div>
+                          <div className="w-full max-w-[40px] bg-slate-100 dark:bg-slate-900 rounded-t-md relative flex items-end justify-center h-full">
+                            <div className="w-full bg-orange-500 rounded-t-md transition-all duration-700" style={{ height: `${heightPercent}%`, minHeight: data.load > 0 ? '4px' : '0' }}></div>
+                          </div>
+                          <span className="text-[10px] md:text-xs font-bold text-slate-500 mt-2 uppercase">{data.day.substring(0, 3)}</span>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -1077,17 +1285,17 @@ export default function WeeklyPlanner() {
               return (
               <div key={day} className="flex flex-col w-full print:break-inside-avoid print:mb-0">
                 
-                <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-700 pb-3 px-1 md:px-2 day-header">
+                <div className="mb-4 flex flex-col group border-b border-slate-350 dark:border-slate-700 pb-3 px-1 md:px-2 day-header">
                   <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-[10px] md:text-xs font-semibold tracking-wider text-slate-400 uppercase">{day}</span>
-                    <span className="text-[9px] md:text-[10px] font-medium text-slate-400/80">{fullDateStr}</span>
+                    <span className="text-[10px] md:text-xs font-black tracking-wider text-slate-800 dark:text-slate-200 uppercase">{day}</span>
+                    <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400">{fullDateStr}</span>
                   </div>
                   <div className="flex items-start gap-1 md:gap-2 justify-between">
                     <div className="flex items-start gap-1 md:gap-2 flex-1">
-                      <div className="w-6 h-6 md:w-8 md:h-8 shrink-0 rounded-full border border-slate-300 dark:border-slate-600 flex items-center justify-center text-xs md:text-sm font-bold text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800">
+                      <div className="w-6 h-6 md:w-8 md:h-8 shrink-0 rounded-full border border-slate-400 dark:border-slate-500 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-white bg-white dark:bg-slate-800 shadow-sm">
                         {weekDates[index]}
                       </div>
-                      <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-xs md:text-[14px] font-medium text-slate-700 dark:text-slate-200 bg-transparent border-none outline-none w-full" readOnly={isPreviewMode}/>
+                      <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-xs md:text-[14px] font-black text-slate-900 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400" readOnly={isPreviewMode}/>
                     </div>
                     {!isPreviewMode && (
                       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
@@ -1101,9 +1309,34 @@ export default function WeeklyPlanner() {
                 </div>
 
                 <div className={`flex-1 px-1 md:px-2 pb-6 ${draggedItem && draggedItem.source !== 'library' && draggedItem.day !== day ? 'bg-slate-100/50 dark:bg-slate-800/30 border-dashed border border-slate-200 rounded-xl' : ''}`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, day)}>
-                  {dayDrills.map((drill, drillIndex) => (
-                    <TimelineCard key={drill.id} drill={drill} day={day} index={drillIndex} isLast={drillIndex === dayDrills.length - 1} isPreviewMode={isPreviewMode} athlete={selectedAthlete} onEdit={handleEditExerciseBtn} onDelete={handleDeleteExercise} onCopy={handleCopyExercise} onMoveUp={() => moveDrillUp(day, drillIndex)} onMoveDown={() => moveDrillDown(day, drillIndex)} onDragStart={handleDragStartWrapper} onDragOver={handleDragOver} onDrop={handleDrop} />
-                  ))}
+                  {dayDrills.map((drill, drillIndex) => {
+                    const sProps = getSupersetProps(dayDrills, drillIndex);
+                    return (
+                      <TimelineCard 
+                        key={drill.id} 
+                        drill={drill} 
+                        day={day} 
+                        index={drillIndex} 
+                        isLast={drillIndex === dayDrills.length - 1} 
+                        isPreviewMode={isPreviewMode} 
+                        athlete={selectedAthlete} 
+                        onEdit={handleEditExerciseBtn} 
+                        onDelete={handleDeleteExercise} 
+                        onCopy={handleCopyExercise} 
+                        onMoveUp={() => moveDrillUp(day, drillIndex)} 
+                        onMoveDown={() => moveDrillDown(day, drillIndex)} 
+                        onDragStart={handleDragStartWrapper} 
+                        onDragOver={handleDragOver} 
+                        onDrop={handleDrop}
+                        isSuperset={sProps.isSuperset}
+                        isSupersetStart={sProps.isSupersetStart}
+                        isSupersetMiddle={sProps.isSupersetMiddle}
+                        isSupersetEnd={sProps.isSupersetEnd}
+                        supersetLabel={sProps.supersetLabel}
+                        supersetGroup={sProps.supersetGroup}
+                      />
+                    );
+                  })}
                   
                   {!isPreviewMode && (
                     <div className="flex items-center gap-2 mt-2 group cursor-pointer print:hidden" onClick={() => handleAddExerciseBtn(day)}>
@@ -1181,7 +1414,7 @@ export default function WeeklyPlanner() {
             {(() => {
               const day = activeMobileDay;
               const index = DAYS_OF_WEEK.indexOf(day);
-              const fullDateStr = weekDatesFull[index]?.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
+              const fullDateStr = weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
@@ -1232,25 +1465,34 @@ export default function WeeklyPlanner() {
                         <p className="text-xs mt-1 text-slate-400/80">Add exercises to get started</p>
                       </div>
                     ) : (
-                      dayDrills.map((drill, drillIndex) => (
-                        <TimelineCard 
-                          key={drill.id} 
-                          drill={drill} 
-                          day={day} 
-                          index={drillIndex} 
-                          isLast={drillIndex === dayDrills.length - 1} 
-                          isPreviewMode={isPreviewMode} 
-                          athlete={selectedAthlete} 
-                          onEdit={handleEditExerciseBtn} 
-                          onDelete={handleDeleteExercise} 
-                          onCopy={handleCopyExercise} 
-                          onMoveUp={() => moveDrillUp(day, drillIndex)} 
-                          onMoveDown={() => moveDrillDown(day, drillIndex)} 
-                          onDragStart={handleDragStartWrapper} 
-                          onDragOver={handleDragOver} 
-                          onDrop={handleDrop} 
-                        />
-                      ))
+                      dayDrills.map((drill, drillIndex) => {
+                        const sProps = getSupersetProps(dayDrills, drillIndex);
+                        return (
+                          <TimelineCard 
+                            key={drill.id} 
+                            drill={drill} 
+                            day={day} 
+                            index={drillIndex} 
+                            isLast={drillIndex === dayDrills.length - 1} 
+                            isPreviewMode={isPreviewMode} 
+                            athlete={selectedAthlete} 
+                            onEdit={handleEditExerciseBtn} 
+                            onDelete={handleDeleteExercise} 
+                            onCopy={handleCopyExercise} 
+                            onMoveUp={() => moveDrillUp(day, drillIndex)} 
+                            onMoveDown={() => moveDrillDown(day, drillIndex)} 
+                            onDragStart={handleDragStartWrapper} 
+                            onDragOver={handleDragOver} 
+                            onDrop={handleDrop}
+                            isSuperset={sProps.isSuperset}
+                            isSupersetStart={sProps.isSupersetStart}
+                            isSupersetMiddle={sProps.isSupersetMiddle}
+                            isSupersetEnd={sProps.isSupersetEnd}
+                            supersetLabel={sProps.supersetLabel}
+                            supersetGroup={sProps.supersetGroup}
+                          />
+                        );
+                      })
                     )}
 
                     {!isPreviewMode && (
