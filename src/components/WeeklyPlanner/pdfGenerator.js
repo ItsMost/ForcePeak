@@ -36,12 +36,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
     console.error('Failed to load Arabic font Cairo:', err);
   }
 
-  // Intercept setFont calls to transparently swap helvetica for Cairo
-  const originalSetFont = doc.setFont.bind(doc);
-  doc.setFont = function(fontName, fontStyle) {
-    const targetFont = fontName === 'helvetica' ? fName : fontName;
-    return originalSetFont(targetFont, fontStyle);
-  };
+
   
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
@@ -160,12 +155,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
       y += 6;
 
       doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.primary);
       doc.text('PEAK FORCE PERFORMANCE LAB', margin, y);
 
       doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fName, 'normal');
       doc.setTextColor(...C.orange);
       doc.text('ATHLETE PASSPORT  //  MESO-BLUEPRINT', pageWidth - margin, y, { align: 'right' });
       y += 5;
@@ -180,12 +175,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
       doc.roundedRect(margin, y, contentWidth, 15, 2, 2, 'F');
 
       doc.setFontSize(14);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(C.white[0], C.white[1], C.white[2]);
       doc.text(day.toUpperCase(), margin + 5, y + 9.5);
 
       doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fName, 'normal');
       doc.setTextColor(...C.light);
       doc.text(fullDateStr, pageWidth - margin - 5, y + 9.5, { align: 'right' });
       y += 20;
@@ -195,12 +190,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
       doc.roundedRect(margin, y, contentWidth, 9, 1, 1, 'F');
       
       doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.orange);
       doc.text('SESSION FOCUS:', margin + 4, y + 6);
 
       doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.secondary);
       doc.text(dayTitle.toUpperCase(), margin + 34, y + 6);
       y += 14;
@@ -215,31 +210,31 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
       // Col 1: Volume / Drills
       doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.mid);
       doc.text('TOTAL EXERCISES', margin + 6, y + 4.5);
       doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.primary);
       doc.text(`${dayDrills.length} Drills`, margin + 6, y + 9.5);
 
       // Col 2: Load
       doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.mid);
       doc.text('CALCULATED LOAD', margin + colWidth + 6, y + 4.5);
       doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.primary);
       doc.text(`${dayStats.totalVolumeScore} pts`, margin + colWidth + 6, y + 9.5);
 
       // Col 3: Details
       doc.setFontSize(7.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.mid);
       doc.text('ATHLETIC PROFILE', margin + colWidth * 2 + 6, y + 4.5);
       doc.setFontSize(9.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.primary);
       doc.text(athleteName, margin + colWidth * 2 + 6, y + 9.5);
       y += 18;
@@ -253,12 +248,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
         doc.roundedRect(margin, y, contentWidth, 50, 3, 3, 'S');
 
         doc.setFontSize(13);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fName, 'bold');
         doc.setTextColor(...C.mid);
         doc.text('REST & ACTIVE RECOVERY', pageWidth / 2, y + 22, { align: 'center' });
 
         doc.setFontSize(9.5);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont(fName, 'normal');
         doc.setTextColor(...C.light);
         doc.text('No formal drills scheduled. Prioritize sleep, hydration, and gentle mobility.', pageWidth / 2, y + 31, { align: 'center' });
       } else {
@@ -267,7 +262,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
         doc.rect(margin, y, contentWidth, 7, 'F');
 
         doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fName, 'bold');
         doc.setTextColor(C.white[0], C.white[1], C.white[2]);
         doc.text('#', margin + 3, y + 4.8);
         doc.text('EXERCISE / INSTRUCTIONS', margin + 10, y + 4.8);
@@ -308,12 +303,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             y += 6;
 
             doc.setFontSize(11);
-            doc.setFont('helvetica', 'bold');
+            doc.setFont(fName, 'bold');
             doc.setTextColor(...C.primary);
             doc.text('PEAK FORCE PERFORMANCE LAB', margin, y);
 
             doc.setFontSize(8.5);
-            doc.setFont('helvetica', 'normal');
+            doc.setFont(fName, 'normal');
             doc.setTextColor(...C.orange);
             doc.text(`ATHLETE PASSPORT  //  ${day.toUpperCase()} CONTINUED`, pageWidth - margin, y, { align: 'right' });
             y += 5;
@@ -328,7 +323,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             doc.rect(margin, y, contentWidth, 7, 'F');
 
             doc.setFontSize(7.5);
-            doc.setFont('helvetica', 'bold');
+            doc.setFont(fName, 'bold');
             doc.setTextColor(C.white[0], C.white[1], C.white[2]);
             doc.text('#', margin + 3, y + 4.8);
             doc.text('EXERCISE / INSTRUCTIONS', margin + 10, y + 4.8);
@@ -355,13 +350,13 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
           // Index Number
           doc.setFontSize(8.5);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(fName, 'bold');
           doc.setTextColor(...C.mid);
           doc.text(String(idx + 1), margin + 4, y + 5);
 
           // Draw Title Lines
           doc.setFontSize(9.5);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(fName, 'bold');
           doc.setTextColor(...C.primary);
           titleLines.forEach((tLine, tIdx) => {
             doc.text(tLine, margin + 10, y + 5 + (tIdx * 4));
@@ -370,7 +365,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           // Draw FULL Exercise Notes (Absolutely no truncation, wraps perfectly!)
           if (noteStr) {
             doc.setFontSize(7.5);
-            doc.setFont('helvetica', 'italic');
+            doc.setFont(fName, 'italic');
             doc.setTextColor(...C.mid);
             noteLines.forEach((nLine, nIdx) => {
               doc.text(nLine, margin + 10, y + 5 + titleHeight + 1 + (nIdx * 3.2));
@@ -379,7 +374,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
           // Draw Workout parameters (Sets, volume, reps, rest) centered in the middle of card
           doc.setFontSize(9.5);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(fName, 'bold');
           doc.setTextColor(...C.secondary);
 
           const dataY = y + (rowHeight / 2) + 1;
@@ -418,12 +413,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
         doc.rect(margin + 4, y + 4, 1.2, 10, 'F');
 
         doc.setFontSize(7.5);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fName, 'bold');
         doc.setTextColor(...C.orange);
         doc.text('COACH PERFORMANCE BRIEF & TIPS', margin + 8, y + 6.8);
 
         doc.setFontSize(8);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont(fName, 'normal');
         doc.setTextColor(...C.light);
         const coachTips = [
           'Maintain impeccable posture and structural stiffness during landing phases.',
@@ -437,7 +432,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
       // Page Footer
       doc.setFontSize(7);
       doc.setTextColor(...C.mid);
-      doc.setFont('helvetica', 'normal');
+      doc.setFont(fName, 'normal');
       doc.text('Peak Force Lab  |  Elite Training Systems', margin, pageHeight - 8);
       doc.text(`Week Cycle: ${dateStart} - ${dateEnd}   |   Page ${dayIndex + 1} of 7`, pageWidth - margin, pageHeight - 8, { align: 'right' });
     });
@@ -457,12 +452,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
     y += 5;
 
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fName, 'bold');
     doc.setTextColor(...C.primary);
     doc.text('PEAK FORCE PERFORMANCE LAB', margin, y);
 
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fName, 'normal');
     doc.setTextColor(...C.orange);
     doc.text(`ATHLETE WEEKLY BLUEPRINT  //  ${athleteName.toUpperCase()}`, pageWidth - margin, y, { align: 'right' });
     y += 5;
@@ -480,18 +475,18 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
     doc.roundedRect(margin, y, contentWidth, 10, 1.5, 1.5, 'S');
 
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fName, 'bold');
     doc.setTextColor(...C.orange);
     doc.text('WEEKLY CYCLE:', margin + 4, y + 6.5);
     
     doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fName, 'bold');
     doc.setTextColor(...C.primary);
     doc.text(`${dateStart.toUpperCase()} - ${dateEnd.toUpperCase()}`, margin + 30, y + 6.5);
 
     // Total stats summary on the right
     doc.setFontSize(8);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont(fName, 'bold');
     doc.setTextColor(...C.mid);
     doc.text(`WEEK VOLUME SCORE:  ${weeklyStats.load} pts   |   AVG INTENSITY:  ${weeklyStats.intensity}%   |   CNS SPLIT:  ${weeklyStats.cnsPercentage}% CNS`, pageWidth - margin - 4, y + 6.5, { align: 'right' });
     y += 15;
@@ -524,13 +519,13 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
       doc.rect(colX, y + 8, colWidth, 2, 'F');
 
       doc.setFontSize(8.5);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(C.white[0], C.white[1], C.white[2]);
       doc.text(day.toUpperCase().substring(0, 3), colX + 3, y + 6.5);
 
       // Date number
       doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.orange);
       doc.text(String(dateDay), colX + colWidth - 7, y + 6.5);
 
@@ -541,7 +536,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
       // Focus label
       doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
+      doc.setFont(fName, 'bold');
       doc.setTextColor(...C.mid);
       doc.text(dayTitle.substring(0, 22).toUpperCase(), colX + 3, y + 14);
 
@@ -555,7 +550,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
       if (dayDrills.length === 0) {
         doc.setFontSize(8.5);
-        doc.setFont('helvetica', 'bold');
+        doc.setFont(fName, 'bold');
         doc.setTextColor(...C.mid);
         doc.text('REST DAY', colX + colWidth / 2, y + 45, { align: 'center' });
       } else {
@@ -579,14 +574,14 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
 
           // Exercise Title
           doc.setFontSize(7.5);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(fName, 'bold');
           doc.setTextColor(...C.primary);
           const drillTitle = safeTxt(drill.title || 'Drill');
           doc.text(drillTitle.substring(0, 21), colX + 4.5, drillY + 4);
 
           // Workout Prescription Parameters (Sets x Reps)
           doc.setFontSize(7.5);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(fName, 'bold');
           doc.setTextColor(...C.orange);
           const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
           const setsStr = drill.sets ? `${drill.sets}s` : '';
@@ -612,7 +607,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           }
           if (footerTxt) {
             doc.setFontSize(6.5);
-            doc.setFont('helvetica', 'normal');
+            doc.setFont(fName, 'normal');
             doc.setTextColor(...C.mid);
             // Truncate to fit column card safely
             const colLimit = 26;
@@ -626,7 +621,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
         // Show count indicator if exercises are compressed
         if (dayDrills.length > maxColDrills) {
           doc.setFontSize(6.5);
-          doc.setFont('helvetica', 'bold');
+          doc.setFont(fName, 'bold');
           doc.setTextColor(...C.orange);
           doc.text(`+ ${dayDrills.length - maxColDrills} more drills`, colX + colWidth / 2, drillY + 2, { align: 'center' });
         }
@@ -636,7 +631,7 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
     // Page Footer
     doc.setFontSize(7.5);
     doc.setTextColor(...C.mid);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont(fName, 'normal');
     doc.text('Peak Force Lab  |  Elite Training Systems  |  Landscape Grid Blueprint', margin, pageHeight - 6);
     doc.text(`Generated for Athlete: ${athleteName}   |   Page 1 of 1`, pageWidth - margin, pageHeight - 6, { align: 'right' });
   }
