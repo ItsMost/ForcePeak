@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search } from 'lucide-react';
+import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search } from 'lucide-react';
 
 import Header from './Header.jsx';
 import Sidebar from './Sidebar.jsx';
@@ -114,6 +114,8 @@ export default function WeeklyPlanner() {
   const [printMode, setPrintMode] = useState('landscape');
 
   const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' });
+  const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
+  const [macroConfirmModal, setMacroConfirmModal] = useState({ isOpen: false, macro: null, startDate: '' });
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [syncStatus, setSyncStatus] = useState('synced');
   const [activeMobileDay, setActiveMobileDay] = useState(() => {
@@ -526,7 +528,142 @@ export default function WeeklyPlanner() {
     handleToast(`Meso-Block "${program.program_name}" deployed successfully!`);
   };
 
-  const handleDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program block cleared'); } };
+  const handleSaveMacroCycle = async () => {
+    if (!createMacroModal.name.trim()) {
+      handleToast('Please write a Macro-Cycle name!');
+      return;
+    }
+    const filteredChain = createMacroModal.blocksChain.filter(b => b.blockId);
+    if (filteredChain.length === 0) {
+      handleToast('Please select at least one Meso-Cycle block!');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const payload = {
+        program_name: createMacroModal.name,
+        weeks: [
+          {
+            isMacro: true,
+            blocksChain: filteredChain,
+            tags: createMacroModal.tags
+          }
+        ]
+      };
+
+      const { error } = await supabase.from('agilitylap_programs').insert([payload]);
+      if (!error) {
+        setCreateMacroModal({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
+        await fetchLibraryData();
+        handleToast(`Macro-Cycle "${payload.program_name}" saved!`);
+      } else {
+        throw error;
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('Error saving Macro-Cycle.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const executeApplyMacroCycle = async () => {
+    const { macro, startDate } = macroConfirmModal;
+    if (!macro || !startDate) return;
+    setMacroConfirmModal({ isOpen: false, macro: null, startDate: '' });
+    setIsLoading(true);
+
+    try {
+      const startBaseDate = new Date(startDate);
+      let currentWeekOffset = 0;
+      const blocksChain = macro.weeks?.[0]?.blocksChain || [];
+
+      for (let blockIndex = 0; blockIndex < blocksChain.length; blockIndex++) {
+        const blockItem = blocksChain[blockIndex];
+        const { data: progDetails, error: fetchErr } = await supabase
+          .from('agilitylap_programs')
+          .select('*')
+          .eq('id', blockItem.blockId)
+          .single();
+
+        if (fetchErr || !progDetails) {
+          console.error('Error fetching block details:', fetchErr);
+          continue;
+        }
+
+        const program = progDetails;
+        const totalWeeksInBlock = program.weeks?.length || 0;
+
+        for (let i = 0; i < totalWeeksInBlock; i++) {
+          const futureWeekStart = new Date(startBaseDate);
+          futureWeekStart.setDate(futureWeekStart.getDate() + ((currentWeekOffset + i) * 7));
+          const weekTemplateObject = program.weeks[i].drills || {};
+          const targetBlockTitle = program.weeks[i].title || 'Block Workout';
+
+          for (let j = 0; j < DAYS_OF_WEEK.length; j++) {
+            const dayDate = new Date(futureWeekStart);
+            dayDate.setDate(dayDate.getDate() + j);
+
+            let clonedDrills = [];
+            if (weekTemplateObject && !Array.isArray(weekTemplateObject)) {
+              clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ 
+                ...drill, 
+                id: `macro-${Date.now()}-${blockIndex}-${i}-${j}-${idx}-${Math.random()}` 
+              }));
+            } else if (Array.isArray(weekTemplateObject)) {
+              clonedDrills = weekTemplateObject.map((drill, idx) => ({ 
+                ...drill, 
+                id: `macro-${Date.now()}-${blockIndex}-${i}-${j}-${idx}-${Math.random()}` 
+              }));
+            }
+
+            await supabase.from('agilitylap_workouts').upsert({ 
+              athlete_id: selectedAthleteId, 
+              workout_date: getDbDateStr(dayDate), 
+              workout_title: targetBlockTitle, 
+              drills: clonedDrills 
+            }, { onConflict: 'athlete_id,workout_date' });
+          }
+        }
+
+        currentWeekOffset += totalWeeksInBlock;
+      }
+
+      const { data: refreshedWorkouts } = await supabase
+        .from('agilitylap_workouts')
+        .select('*')
+        .eq('athlete_id', selectedAthleteId)
+        .gte('workout_date', weekStartDateStr)
+        .lte('workout_date', getDbDateStr(weekDatesFull[6]));
+      
+      const newSchedule = {}; 
+      const newTitles = {}; 
+      DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; });
+      
+      if (refreshedWorkouts) { 
+        refreshedWorkouts.forEach(record => { 
+          const dayName = JS_DAYS[new Date(record.workout_date).getDay()]; 
+          if (dayName) { 
+            newSchedule[dayName] = record.drills || []; 
+            newTitles[dayName] = record.workout_title || ''; 
+          } 
+        }); 
+      }
+      
+      setSchedule(newSchedule); 
+      setDayTitles(newTitles); 
+      setIsLoading(false); 
+      handleToast(`Macro-Cycle "${macro.program_name}" deployed across ${currentWeekOffset} weeks!`);
+
+    } catch (err) {
+      setIsLoading(false);
+      console.error(err);
+      handleToast('Error deploying Macro-Cycle.');
+    }
+  };
+
+  const handleDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program cleared'); } };
   const handleLibraryDragStart = (e, item, isTemplate = false) => { setDraggedItem({ source: 'library', item, isTemplate }); e.dataTransfer.effectAllowed = 'copy'; };
   const handleDragStartWrapper = (e, day, drill, index) => { setDraggedItem({ source: 'timeline', day, drill, index }); e.dataTransfer.effectAllowed = 'move'; };
   const handleDragOver = (e) => e.preventDefault();
@@ -1081,6 +1218,144 @@ export default function WeeklyPlanner() {
               </button>
               <button onClick={executeApplyProgramBlock} className="flex-1 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all">
                 Confirm & Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Seasonal Macro-Cycle Modal */}
+      {createMacroModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-indigo-500" /> Create Seasonal Macro-Cycle
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Macro-Cycle Name</label>
+                <input 
+                  type="text" 
+                  value={createMacroModal.name} 
+                  onChange={(e) => setCreateMacroModal({...createMacroModal, name: e.target.value})} 
+                  placeholder="e.g. Annual Championship Prep" 
+                  className="w-full px-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Tags (Optional)</label>
+                <input 
+                  type="text" 
+                  value={createMacroModal.tags || ''} 
+                  onChange={(e) => setCreateMacroModal({...createMacroModal, tags: e.target.value})} 
+                  placeholder="e.g. Power, OlympicPrep" 
+                  className="w-full px-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-500 mb-1">Sequence of Meso-Cycles</label>
+                <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                  {programs.filter(p => !p.weeks?.[0]?.isMacro).length === 0 ? (
+                    <div className="text-[11px] font-medium text-amber-600 bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-xl border border-amber-200 dark:border-amber-900/30 leading-relaxed">
+                      ⚠️ No Meso-Cycles (Blocks) saved yet!
+                      <span className="block mt-1 font-normal text-slate-500 dark:text-slate-400">Please create and save a Meso-Cycle first to chain them into a Macro-Cycle plan.</span>
+                    </div>
+                  ) : (
+                    createMacroModal.blocksChain.map((chainItem, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-400 w-16">Phase {idx + 1}:</span>
+                        <select 
+                          value={chainItem.blockId} 
+                          onChange={(e) => {
+                            const updated = [...createMacroModal.blocksChain];
+                            const selectedBlock = programs.find(p => p.id === parseInt(e.target.value) || p.id === e.target.value);
+                            updated[idx] = { 
+                              blockId: e.target.value, 
+                              blockName: selectedBlock?.program_name || '', 
+                              weeksCount: selectedBlock?.weeks?.length || 0 
+                            };
+                            setCreateMacroModal({...createMacroModal, blocksChain: updated});
+                          }} 
+                          className="flex-1 text-sm bg-slate-50 dark:bg-slate-900 border p-2 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white dark:border-slate-700"
+                        >
+                          <option value="">-- Choose Meso-Cycle --</option>
+                          {programs.filter(p => !p.weeks?.[0]?.isMacro).map(p => (
+                            <option key={p.id} value={p.id}>{p.program_name} ({p.weeks?.length || 0} Weeks)</option>
+                          ))}
+                        </select>
+                        <button 
+                          onClick={() => {
+                            const updated = createMacroModal.blocksChain.filter((_, i) => i !== idx);
+                            setCreateMacroModal({...createMacroModal, blocksChain: updated.length > 0 ? updated : [{ blockId: '', blockName: '', weeksCount: 0 }]});
+                          }}
+                          className="p-1.5 text-slate-400 hover:text-red-500 shrink-0"
+                          title="Remove Phase"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+                {programs.filter(p => !p.weeks?.[0]?.isMacro).length > 0 && (
+                  <button 
+                    onClick={() => setCreateMacroModal({...createMacroModal, blocksChain: [...createMacroModal.blocksChain, { blockId: '', blockName: '', weeksCount: 0 }]})} 
+                    className="text-xs font-bold text-indigo-500 hover:text-indigo-650 mt-1"
+                  >
+                    + Add Training Phase
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button 
+                onClick={() => setCreateMacroModal({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] })} 
+                className="px-4 py-2 text-sm font-bold bg-slate-100 dark:bg-slate-750 dark:text-slate-350 rounded-xl"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveMacroCycle} 
+                className="px-5 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-colors"
+              >
+                Save Macro-Cycle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Macro-Cycle Deployment Modal */}
+      {macroConfirmModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-100 dark:border-slate-700/50">
+            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-950/40 rounded-full flex items-center justify-center mb-4">
+              <Calendar className="w-6 h-6 text-indigo-600" />
+            </div>
+            <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-slate-100">Confirm Macro-Cycle Application</h3>
+            <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
+              You are about to deploy Macro-Cycle <span className="font-bold text-slate-800 dark:text-white">"{macroConfirmModal.macro?.program_name}"</span> containing <span className="font-bold text-slate-800 dark:text-white">{macroConfirmModal.macro?.weeks?.[0]?.blocksChain?.length || 0} Meso-cycles</span> ({macroConfirmModal.macro?.weeks?.[0]?.blocksChain?.reduce((acc, c) => acc + (c.weeksCount || 0), 0) || 0} total weeks) to the selected athlete.
+              <span className="block mt-2 text-amber-600 dark:text-amber-400 font-medium">⚠️ Warning: This will sequentially overwrite workouts in the calendar. This action cannot be undone.</span>
+            </p>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Select Start Date</label>
+                <input 
+                  type="date" 
+                  value={macroConfirmModal.startDate} 
+                  onChange={(e) => setMacroConfirmModal({...macroConfirmModal, startDate: e.target.value})} 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500" 
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setMacroConfirmModal({ isOpen: false, macro: null, startDate: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl font-bold text-sm transition-all">
+                Cancel
+              </button>
+              <button onClick={executeApplyMacroCycle} className="flex-1 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all">
+                Confirm & Deploy
               </button>
             </div>
           </div>
@@ -1666,7 +1941,27 @@ export default function WeeklyPlanner() {
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
            <div className="pointer-events-auto h-full absolute right-0" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
-             <ExerciseLibrary showLibrary={showLibrary} setShowLibrary={setShowLibrary} library={library} handleLibraryDragStart={handleLibraryDragStart} setAddExerciseModal={setAddExerciseModal} setSaveWeekTemplateModal={setSaveWeekTemplateModal} onDeleteDrill={handleDeleteLibraryDrill} onEditDrill={handleEditLibraryDrill} onDeleteTemplate={handleDeleteLibraryTemplate} onEditTemplate={handleEditTemplate} onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} programs={programs} onDeleteProgram={handleDeleteProgramBlock} onApplyProgram={handleApplyProgramBlock} onApplyWeekTemplate={handleApplyWeekTemplate} onApplyDayTemplate={handleApplyDayTemplate} />
+             <ExerciseLibrary 
+               showLibrary={showLibrary} 
+               setShowLibrary={setShowLibrary} 
+               library={library} 
+               handleLibraryDragStart={handleLibraryDragStart} 
+               setAddExerciseModal={setAddExerciseModal} 
+               setSaveWeekTemplateModal={setSaveWeekTemplateModal} 
+               onDeleteDrill={handleDeleteLibraryDrill} 
+               onEditDrill={handleEditLibraryDrill} 
+               onDeleteTemplate={handleDeleteLibraryTemplate} 
+               onEditTemplate={handleEditTemplate} 
+               onOpenCreateProgram={() => setCreateProgramModal({...createProgramModal, isOpen: true})} 
+               programs={programs} 
+               onDeleteProgram={handleDeleteProgramBlock} 
+               onApplyProgram={handleApplyProgramBlock} 
+               onApplyWeekTemplate={handleApplyWeekTemplate} 
+               onApplyDayTemplate={handleApplyDayTemplate} 
+               onOpenCreateMacro={() => setCreateMacroModal({...createMacroModal, isOpen: true, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }]})}
+               onApplyMacro={(macro) => setMacroConfirmModal({ isOpen: true, macro, startDate: getDbDateStr(new Date()) })}
+               onDeleteMacro={handleDeleteProgramBlock}
+             />
            </div>
         </div>
 

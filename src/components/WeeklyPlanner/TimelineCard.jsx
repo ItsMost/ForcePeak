@@ -93,18 +93,8 @@ export default function TimelineCard({
   const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
 
   // Build the superset visual packaging class list
-  let supersetClasses = '';
-  if (isSuperset) {
-    supersetClasses = `border-l-2 border-r-2 px-3 pt-2 shadow-inner transition-colors duration-200 ${sStyle.border} ${sStyle.bg} `;
-    if (isSupersetStart) {
-      supersetClasses += 'border-t-2 rounded-t-2xl mt-2 pt-3.5 ';
-    }
-    if (isSupersetEnd) {
-      supersetClasses += 'border-b-2 rounded-b-2xl mb-2 pb-3.5 ';
-    }
-  } else {
-    supersetClasses = 'pb-3.5';
-  }
+  // No boxed cards for supersets anymore! Every exercise is a standard timeline row.
+  const supersetClasses = 'pb-3.5';
 
   return (
     <div 
@@ -119,8 +109,15 @@ export default function TimelineCard({
         <div className={`absolute top-8 bottom-0 left-[15px] sm:left-[17px] w-px ${isSuperset && !isSupersetEnd ? `w-[3px] ${sStyle.line}` : 'bg-slate-200 dark:bg-slate-700'} print:bg-slate-300`}></div>
       )}
 
+      {/* Sleek Superset Connecting Down-Arrow on the filament line */}
+      {isSuperset && !isSupersetEnd && (
+        <div className={`absolute bottom-[-7px] left-[9px] sm:left-[11px] z-20 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-white dark:bg-slate-900 border shadow-sm ${sStyle.border}`}>
+          <ArrowDown className={`w-2.5 h-2.5 ${sStyle.text}`} />
+        </div>
+      )}
+
       {/* Category Icon Display Status indicator */}
-      <div className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-white dark:bg-slate-900 shrink-0 print:border-slate-400 shadow-sm ${style.color}`}>
+      <div className={`relative z-10 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-white dark:bg-slate-800 shrink-0 print:border-slate-400 shadow-sm ${style.color}`}>
         {style.icon}
       </div>
 

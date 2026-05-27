@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Tag, Sparkles } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, Tag, Sparkles } from 'lucide-react';
 
 export default function ExerciseLibrary({ 
   showLibrary, setShowLibrary, library, handleLibraryDragStart, 
   setAddExerciseModal, onDeleteDrill, onEditDrill, onDeleteTemplate,
   onOpenCreateProgram, programs = [], onDeleteProgram, onApplyProgram,
   onApplyWeekTemplate,
-  onApplyDayTemplate
+  onApplyDayTemplate,
+  onOpenCreateMacro,
+  onApplyMacro,
+  onDeleteMacro
 }) {
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
@@ -24,16 +27,26 @@ export default function ExerciseLibrary({
     t.type === 'day' && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter Week Templates strictly (type === 'week')
+  // Filter Micro-Cycles (Week Templates strictly, type === 'week')
   const filteredWeekTemplates = (library.templates || []).filter(t => 
     t.type === 'week' && (t.title || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Filter Multi-Week Blocks by Name or Tags
-  const filteredPrograms = (programs || []).filter(prog => {
+  // Filter Meso-Cycles (Blocks where type !== 'macro')
+  const filteredMesoPrograms = (programs || []).filter(prog => {
+    if (prog.type === 'macro') return false;
     const matchesName = (prog.program_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const firstWeekTags = (prog.weeks?.[0]?.blockTags || '').toLowerCase();
     const matchesTags = firstWeekTags.includes(searchQuery.toLowerCase());
+    return matchesName || matchesTags;
+  });
+
+  // Filter Macro-Cycles (Programs where type === 'macro')
+  const filteredMacroPrograms = (programs || []).filter(prog => {
+    if (prog.type !== 'macro') return false;
+    const matchesName = (prog.program_name || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const tagsStr = (prog.tags || '').toLowerCase();
+    const matchesTags = tagsStr.includes(searchQuery.toLowerCase());
     return matchesName || matchesTags;
   });
 
@@ -42,17 +55,20 @@ export default function ExerciseLibrary({
       
       {/* Tabs Navigation Switcher */}
       <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-2 gap-1 shrink-0 overflow-x-auto scrollbar-none">
-        <button onClick={() => { setActiveTab('exercises'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'exercises' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+        <button onClick={() => { setActiveTab('exercises'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'exercises' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
           <Layers className="w-3 h-3 shrink-0" /> Exercises
         </button>
-        <button onClick={() => { setActiveTab('days'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'days' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+        <button onClick={() => { setActiveTab('days'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'days' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
           <Sparkles className="w-3 h-3 shrink-0" /> Days
         </button>
-        <button onClick={() => { setActiveTab('templates'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'templates' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-          <Bookmark className="w-3 h-3 shrink-0" /> Weeks
+        <button onClick={() => { setActiveTab('templates'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'templates' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <Bookmark className="w-3 h-3 shrink-0" /> Micro
         </button>
-        <button onClick={() => { setActiveTab('programs'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'programs' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
-          <CalendarDays className="w-3 h-3 shrink-0" /> Blocks
+        <button onClick={() => { setActiveTab('programs'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'programs' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <CalendarDays className="w-3 h-3 shrink-0" /> Meso
+        </button>
+        <button onClick={() => { setActiveTab('macro'); setSearchQuery(''); }} className={`flex-1 flex items-center justify-center gap-1 py-2 px-2 text-[10px] font-black rounded-lg transition-all shrink-0 ${activeTab === 'macro' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800'}`}>
+          <Calendar className="w-3 h-3 shrink-0" /> Macro
         </button>
       </div>
 
@@ -60,7 +76,7 @@ export default function ExerciseLibrary({
       <div className="p-3 border-b border-slate-100 dark:border-slate-700 space-y-2 shrink-0 bg-slate-50/20 dark:bg-slate-900/10">
         <div className="relative">
           <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
-          <input type="text" placeholder={`Search ${activeTab}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white font-medium" />
+          <input type="text" placeholder={`Search ${activeTab === 'templates' ? 'Micro-Cycles' : activeTab === 'programs' ? 'Meso-Cycles' : activeTab === 'macro' ? 'Macro-Cycles' : activeTab}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-9 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white font-medium" />
         </div>
 
         {activeTab === 'exercises' && (
@@ -135,7 +151,7 @@ export default function ExerciseLibrary({
 
                   <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-100/60 dark:border-slate-800/60 pb-1.5">
                     <span>⚡ {drillCount} Exercises</span>
-                    <span className="text-[9px] text-slate-350 dark:text-slate-500">Drag or tap to apply</span>
+                    <span className="text-[9px] text-slate-355 dark:text-slate-500">Drag or tap to apply</span>
                   </div>
 
                   {/* Quick-Apply Day Badges */}
@@ -165,15 +181,15 @@ export default function ExerciseLibrary({
           )
         )}
 
-        {/* Tab 3: Single Week Blueprint Routines */}
+        {/* Tab 3: Micro-Cycles (Week Blueprints) */}
         {activeTab === 'templates' && (
           filteredWeekTemplates.length === 0 ? (
-            <p className="text-center text-xs text-slate-400 py-4">No week routines saved yet</p>
+            <p className="text-center text-xs text-slate-400 py-4">No Micro-Cycles (weeks) saved yet</p>
           ) : (
             filteredWeekTemplates.map(tpl => (
               <div key={tpl.id} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex justify-between items-center transition-all hover:border-blue-500/30">
                 <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
-                  <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded shrink-0">Week</span>
+                  <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-500 text-white rounded shrink-0">Micro</span>
                   <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate" title={tpl.title}>{tpl.title}</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
@@ -187,30 +203,30 @@ export default function ExerciseLibrary({
           )
         )}
 
-        {/* Tab 4: Multi-Week Structural Meso Blocks */}
+        {/* Tab 4: Meso-Cycles (Multi-Week Blocks) */}
         {activeTab === 'programs' && (
           <>
             <button onClick={onOpenCreateProgram} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
-              <Plus className="w-4 h-4" /> Create Multi-Week Block
+              <Plus className="w-4 h-4" /> Create Meso-Cycle
             </button>
 
             <div className="bg-gradient-to-br from-amber-500/10 to-orange-500/5 dark:from-amber-500/20 dark:to-orange-500/10 border border-amber-200/50 dark:border-amber-800/30 rounded-xl p-3.5 mb-4 text-slate-700 dark:text-slate-200 text-xs shadow-sm flex flex-col gap-2">
               <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <span className="text-[10px] uppercase tracking-wider font-bold">Meso-Blocks Guide</span>
+                <span className="text-[10px] uppercase tracking-wider font-bold">Meso-Cycles Guide</span>
               </div>
               <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
                 <span className="block font-bold text-amber-700 dark:text-amber-400 mb-1">
-                  💡 What are Meso-Blocks?
+                  💡 What are Meso-Cycles?
                 </span>
-                Meso-Blocks are multi-week training phases (e.g. 4 weeks) combining multiple weekly routines (e.g. strength, speed, deload) to build a structured, progressive program for the athlete all at once.
+                Meso-Cycles are multi-week training phases (e.g. 4 weeks) combining multiple Micro-Cycles (weekly routines) to build a structured progressive program for the athlete.
               </div>
             </div>
             
-            {filteredPrograms.length === 0 ? (
-              <p className="text-center text-xs text-slate-400 py-4">No custom macro blocks stored</p>
+            {filteredMesoPrograms.length === 0 ? (
+              <p className="text-center text-xs text-slate-400 py-4">No Meso-Cycles saved yet</p>
             ) : (
-              filteredPrograms.map(prog => {
+              filteredMesoPrograms.map(prog => {
                 const tagsString = prog.weeks?.[0]?.blockTags || '';
                 const tagBadges = tagsString.split(',').map(t => t.trim()).filter(Boolean);
 
@@ -219,7 +235,7 @@ export default function ExerciseLibrary({
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 flex-1">
                         <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{prog.program_name}</h5>
-                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{prog.weeks?.length || 0} Linked Weeks Block</p>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{prog.weeks?.length || 0} Weeks Meso-Block</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => onApplyProgram(prog)} className="px-2 py-1 text-[10px] font-black bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm transition-colors uppercase">Apply</button>
@@ -233,6 +249,64 @@ export default function ExerciseLibrary({
                         <Tag className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                         {tagBadges.map((badge, bIdx) => (
                           <span key={bIdx} className="text-[9px] font-black px-1.5 py-0.5 bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded-md border border-orange-100/60 dark:border-orange-900/30">
+                            #{badge}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
+
+        {/* Tab 5: Macro-Cycles (Annual/Season Plans) */}
+        {activeTab === 'macro' && (
+          <>
+            <button onClick={onOpenCreateMacro} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
+              <Plus className="w-4 h-4" /> Create Macro-Cycle
+            </button>
+
+            <div className="bg-gradient-to-br from-indigo-500/10 to-blue-500/5 dark:from-indigo-500/20 dark:to-blue-500/10 border border-indigo-200/50 dark:border-indigo-800/30 rounded-xl p-3.5 mb-4 text-slate-700 dark:text-slate-200 text-xs shadow-sm flex flex-col gap-2">
+              <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 font-bold">
+                <Calendar className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="text-[10px] uppercase tracking-wider font-bold">Macro-Cycles Guide</span>
+              </div>
+              <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
+                <span className="block font-bold text-indigo-700 dark:text-indigo-400 mb-1">
+                  💡 What are Macro-Cycles?
+                </span>
+                Macro-Cycles are long-term annual or seasonal plans (e.g. 12 weeks) consisting of multiple Meso-Cycles chained together in sequence. Applying a Macro-Cycle automatically maps out your seasonal block sequentially.
+              </div>
+            </div>
+            
+            {filteredMacroPrograms.length === 0 ? (
+              <p className="text-center text-xs text-slate-400 py-4">No Macro-Cycles saved yet</p>
+            ) : (
+              filteredMacroPrograms.map(macro => {
+                const totalWeeks = macro.blocksChain?.reduce((acc, curr) => acc + (curr.weeksCount || 0), 0) || 0;
+                const tagBadges = (macro.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+
+                return (
+                  <div key={macro.id} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex flex-col gap-2 transition-all hover:border-indigo-500/30">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="min-w-0 flex-1">
+                        <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{macro.program_name}</h5>
+                        <p className="text-[10px] text-slate-400 font-medium mt-0.5">{macro.blocksChain?.length || 0} Meso-Cycles ({totalWeeks} Weeks)</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => onApplyMacro(macro)} className="px-2 py-1 text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors uppercase">Apply</button>
+                        <button onClick={() => onDeleteMacro(macro.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+
+                    {/* Rendering descriptive tag labels dynamically */}
+                    {tagBadges.length > 0 && (
+                      <div className="flex flex-wrap gap-1 items-center pt-1 border-t border-slate-100 dark:border-slate-800">
+                        <Tag className="w-2.5 h-2.5 text-slate-400 shrink-0" />
+                        {tagBadges.map((badge, bIdx) => (
+                          <span key={bIdx} className="text-[9px] font-black px-1.5 py-0.5 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100/60 dark:border-indigo-900/30">
                             #{badge}
                           </span>
                         ))}
