@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'favicon.svg'],
       manifest: {
-        name: 'PF',
-        short_name: 'PF',
+        name: 'Peak Force',
+        short_name: 'Peak Force',
         description: 'Peak Force Weekly Workout Planner',
         theme_color: '#f97316', // اللون البرتقالي للتطبيق
         background_color: '#0f172a', // لون الخلفية (الوضع الليلي)
