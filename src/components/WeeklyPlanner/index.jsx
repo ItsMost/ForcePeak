@@ -1136,16 +1136,20 @@ export default function WeeklyPlanner() {
     const startDayObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const startDay = startDayObj.getDay(); // Align with standard Sunday-first layout
     for (let i = 0; i < startDay; i++) {
-      days.push(<div key={`empty-${i}`} className="p-1 sm:p-4 border border-transparent"></div>);
+      days.push(<div key={`empty-${i}`} className="h-12 sm:h-24"></div>);
     }
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+    const todayStr = getDbDateStr(new Date());
+    const selectedStr = getDbDateStr(currentDate);
+
     for (let i = 1; i <= daysInMonth; i++) {
       const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
       const dateStr = getDbDateStr(dateObj);
-      const isSelectedWeek = weekDatesFull.some(d => getDbDateStr(d) === dateStr);
       const dayData = monthWorkouts[dateStr];
       const hasWorkoutSaved = dayData && dayData.hasDrills;
       const isActive = hasWorkoutSaved;
+      const isToday = todayStr === dateStr;
+      const isSelected = selectedStr === dateStr;
       
       days.push(
         <button 
@@ -1154,28 +1158,59 @@ export default function WeeklyPlanner() {
             const newDate = new Date(currentDate);
             newDate.setDate(i);
             setCurrentDate(newDate);
+
+            // Switch active day on mobile view so the clicked day is shown instantly!
+            const dayOfWeekName = JS_DAYS[newDate.getDay()];
+            if (DAYS_OF_WEEK.includes(dayOfWeekName)) {
+              setActiveMobileDay(dayOfWeekName);
+            }
+
             setShowMonthCalendar(false);
           }} 
-          className={`h-14 sm:h-24 w-full rounded-2xl p-1 sm:p-2.5 flex flex-col items-center sm:items-start justify-center sm:justify-start border relative overflow-hidden transition-all hover:scale-[1.02] ${isActive ? 'bg-emerald-500/[0.02] border-[#00c58d] border-2 shadow-sm' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:bg-slate-50'}`}
+          className={`relative flex flex-col items-center justify-center transition-all active:scale-95 group
+            h-12 sm:h-24 w-full rounded-2xl sm:p-2.5 sm:flex sm:flex-col sm:items-start sm:justify-start sm:border
+            ${isSelected 
+              ? 'bg-orange-500 text-white sm:bg-orange-500/10 sm:text-slate-800 sm:dark:text-white sm:border-orange-500 sm:border-2' 
+              : isActive 
+                ? 'bg-emerald-500/10 dark:bg-emerald-500/5 text-[#00c58d] sm:bg-emerald-500/[0.02] sm:border-[#00c58d] sm:border-2' 
+                : 'bg-transparent text-slate-800 dark:text-slate-200 sm:border-slate-100 sm:dark:border-slate-800 sm:bg-white sm:dark:bg-slate-900/50 sm:hover:bg-slate-50'
+            }
+          `}
         >
           {/* Top right green active dot (visible on desktop) */}
-          {isActive && (
+          {isActive && !isSelected && (
             <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] absolute top-2 right-2 hidden sm:block"></span>
           )}
 
           {/* Number Circle Badge */}
-          <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs sm:mb-1.5 shrink-0 ${isActive ? 'bg-[#00c58d] text-white shadow-sm shadow-[#00c58d]/20' : 'text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-850'}`}>
+          <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 transition-all
+            ${isSelected
+              ? 'bg-white text-orange-500 sm:bg-orange-500 sm:text-white'
+              : isToday
+                ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-350 dark:border-orange-800'
+                : isActive
+                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                  : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 sm:group-hover:bg-slate-100'
+            }
+          `}>
             {i}
           </span>
           
           {/* Bottom active dot indicator on mobile */}
-          {isActive && (
-            <span className="w-1 h-1 rounded-full bg-[#00c58d] mt-1 sm:hidden"></span>
+          {isActive && !isSelected && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] mt-1 sm:hidden"></span>
           )}
 
           {/* Bottom Plan Status Text Label (hidden on mobile to prevent clutter) */}
-          <span className={`text-[9px] font-black uppercase tracking-widest sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block ${isActive ? 'text-[#00c58d]' : 'text-slate-400 dark:text-slate-650'}`}>
-            {isActive ? 'Active Plan' : 'Rest/Off'}
+          <span className={`text-[9px] font-black uppercase tracking-widest sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block 
+            ${isSelected 
+              ? 'text-orange-600 dark:text-orange-400' 
+              : isActive 
+                ? 'text-[#00c58d]' 
+                : 'text-slate-400 dark:text-slate-650'
+            }
+          `}>
+            ${isSelected ? 'Selected' : isActive ? 'Active Plan' : 'Rest/Off'}
           </span>
         </button>
       );

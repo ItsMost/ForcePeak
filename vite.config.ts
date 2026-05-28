@@ -9,8 +9,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Peak Force',
-        short_name: 'Peak Force',
+        name: 'PF',
+        short_name: 'PF',
         description: 'Peak Force Weekly Workout Planner',
         theme_color: '#f97316', // اللون البرتقالي للتطبيق
         background_color: '#0f172a', // لون الخلفية (الوضع الليلي)
@@ -26,7 +26,7 @@ export default defineConfig({
             src: 'pwa-512x512.png', // تأكد من وضع هذه الصورة في مجلد public
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable',
+            purpose: 'any',
           },
         ],
       },
