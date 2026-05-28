@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'AgilityLap',
-        short_name: 'AgilityLap',
-        description: 'Professional Weekly Workout Planner',
+        name: 'Peak Force',
+        short_name: 'Peak Force',
+        description: 'Peak Force Weekly Workout Planner',
         theme_color: '#f97316', // اللون البرتقالي للتطبيق
         background_color: '#0f172a', // لون الخلفية (الوضع الليلي)
         display: 'standalone', // **هذا السطر هو ما يخفي شريط المتصفح (Chrome/Safari)**

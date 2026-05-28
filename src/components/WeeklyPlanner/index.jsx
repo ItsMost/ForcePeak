@@ -305,17 +305,36 @@ export default function WeeklyPlanner() {
   }, [selectedAthleteId, weekStartDateStr]);
 
   useEffect(() => {
+    if (!showMonthCalendar) {
+      setMonthWorkouts({}); // Instantly clear state when closed to prevent stale data flashing next time
+      return;
+    }
     const fetchMonthData = async () => {
       if (!selectedAthleteId) return;
+      setMonthWorkouts({}); // Clear state immediately before fetching new athlete data
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      const { data } = await supabase.from('agilitylap_workouts').select('workout_date, workout_title, drills').eq('athlete_id', selectedAthleteId).gte('workout_date', getDbDateStr(startOfMonth)).lte('workout_date', getDbDateStr(endOfMonth));
-      if (data) {
-        const mWorkouts = {};
-        data.forEach(record => { mWorkouts[record.workout_date] = { title: record.workout_title, hasDrills: record.drills && record.drills.length > 0 }; });
-        setMonthWorkouts(mWorkouts);
+      const { data, error } = await supabase
+        .from('agilitylap_workouts')
+        .select('workout_date, workout_title, drills')
+        .eq('athlete_id', selectedAthleteId)
+        .gte('workout_date', getDbDateStr(startOfMonth))
+        .lte('workout_date', getDbDateStr(endOfMonth));
+      
+      const mWorkouts = {};
+      if (data && !error) {
+        data.forEach(record => { 
+          // An active plan day MUST contain actual drills saved (length > 0)
+          const hasDrills = Array.isArray(record.drills) && record.drills.length > 0;
+          mWorkouts[record.workout_date] = { 
+            title: record.workout_title, 
+            hasDrills: hasDrills 
+          }; 
+        });
       }
-    }; if (showMonthCalendar) fetchMonthData();
+      setMonthWorkouts(mWorkouts);
+    };
+    fetchMonthData();
   }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar]);
 
   const autoSaveDay = async (day, drillsToSave, titleToSave) => {
@@ -1137,20 +1156,25 @@ export default function WeeklyPlanner() {
             setCurrentDate(newDate);
             setShowMonthCalendar(false);
           }} 
-          className={`h-20 sm:h-24 w-full rounded-2xl p-2.5 flex flex-col items-center sm:items-start justify-start border relative overflow-hidden transition-all hover:scale-[1.02] ${isActive ? 'bg-emerald-500/[0.02] border-[#00c58d] border-2 shadow-sm' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:bg-slate-50'}`}
+          className={`h-14 sm:h-24 w-full rounded-2xl p-1 sm:p-2.5 flex flex-col items-center sm:items-start justify-center sm:justify-start border relative overflow-hidden transition-all hover:scale-[1.02] ${isActive ? 'bg-emerald-500/[0.02] border-[#00c58d] border-2 shadow-sm' : 'border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/50 hover:bg-slate-50'}`}
         >
-          {/* Top right green active dot */}
+          {/* Top right green active dot (visible on desktop) */}
           {isActive && (
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] absolute top-2 right-2"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] absolute top-2 right-2 hidden sm:block"></span>
           )}
 
           {/* Number Circle Badge */}
-          <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs mb-1.5 shrink-0 ${isActive ? 'bg-[#00c58d] text-white shadow-sm shadow-[#00c58d]/20' : 'text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-850'}`}>
+          <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs sm:mb-1.5 shrink-0 ${isActive ? 'bg-[#00c58d] text-white shadow-sm shadow-[#00c58d]/20' : 'text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-850'}`}>
             {i}
           </span>
           
-          {/* Bottom Plan Status Text Label */}
-          <span className={`text-[9px] font-black uppercase tracking-widest sm:text-left text-center w-full mt-auto truncate leading-none ${isActive ? 'text-[#00c58d]' : 'text-slate-400 dark:text-slate-650'}`}>
+          {/* Bottom active dot indicator on mobile */}
+          {isActive && (
+            <span className="w-1 h-1 rounded-full bg-[#00c58d] mt-1 sm:hidden"></span>
+          )}
+
+          {/* Bottom Plan Status Text Label (hidden on mobile to prevent clutter) */}
+          <span className={`text-[9px] font-black uppercase tracking-widest sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block ${isActive ? 'text-[#00c58d]' : 'text-slate-400 dark:text-slate-650'}`}>
             {isActive ? 'Active Plan' : 'Rest/Off'}
           </span>
         </button>
@@ -1178,7 +1202,7 @@ export default function WeeklyPlanner() {
                 <div>
                   <h3 className="text-xl font-black text-slate-800 dark:text-white leading-tight">Peak Force</h3>
                   <p className="text-[10px] sm:text-xs font-black uppercase text-slate-450 mt-0.5 tracking-wider">
-                    TRACK & FIELD LAB
+                    PEAK FORCE LAB
                   </p>
                 </div>
               </div>
@@ -1216,16 +1240,17 @@ export default function WeeklyPlanner() {
             </div>
 
             {/* Grid weekdays headers */}
-            <div className="grid grid-cols-7 gap-2 sm:gap-4 text-center mb-3">
+            <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-3">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
                 <div key={d} className="text-[10px] sm:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">
-                  {d}
+                  <span className="sm:hidden">{d[0]}</span>
+                  <span className="hidden sm:inline">{d}</span>
                 </div>
               ))}
             </div>
 
             {/* Calendar days grid */}
-            <div className="grid grid-cols-7 gap-2 sm:gap-4">{renderLargeCalendarDays()}</div>
+            <div className="grid grid-cols-7 gap-1 sm:gap-4">{renderLargeCalendarDays()}</div>
           </div>
         </div>
       )}
