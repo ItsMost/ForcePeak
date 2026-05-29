@@ -62,22 +62,39 @@ export default function TimelineCard({
   const currentGroup = supersetGroup ? supersetGroup.toUpperCase() : '';
   const sStyle = SUPERSET_STYLES[currentGroup] || SUPERSET_STYLES.A;
 
-  // Automated 1RM Weight Multiplier Calculation from Athlete Profile
+  // Automated 1RM Weight and Bodyweight (BW) Multiplier Calculation
   let calculatedWeight = null;
-  if (athlete && drill.percentage) {
-    const title = (drill.title || '').toLowerCase();
-    const percent = parseFloat(drill.percentage);
-    let maxWeight = null;
- 
+  let calculatedBwWeight = null;
+  let calculatedIntensityFromBw = null;
+
+  const title = (drill.title || '').toLowerCase();
+  let maxWeight = null;
+
+  if (athlete) {
     if (title.includes('clean')) maxWeight = athlete.clean;
     else if (title.includes('bench')) maxWeight = athlete.bench;
     else if (title.includes('deadlift')) maxWeight = athlete.deadlift;
     else if (title.includes('half squat')) maxWeight = athlete.halfSquat;
     else if (title.includes('quarter squat')) maxWeight = athlete.quarterSquat;
     else if (title.includes('squat')) maxWeight = athlete.fullSquat;
+  }
 
-    if (maxWeight > 0 && percent > 0) {
+  // 1. Calculate from percentage (% 1RM)
+  if (athlete && drill.percentage && maxWeight > 0) {
+    const percent = parseFloat(drill.percentage);
+    if (percent > 0) {
       calculatedWeight = Math.round((maxWeight * percent) / 100);
+    }
+  }
+
+  // 2. Calculate from BW Ratio (Bodyweight Multiplier)
+  if (athlete && athlete.weight > 0 && drill.bwRatio) {
+    const bwVal = parseFloat(drill.bwRatio);
+    if (bwVal > 0) {
+      calculatedBwWeight = Math.round(bwVal * athlete.weight);
+      if (maxWeight > 0) {
+        calculatedIntensityFromBw = Math.round((calculatedBwWeight / maxWeight) * 100);
+      }
     }
   }
 
@@ -147,6 +164,18 @@ export default function TimelineCard({
           {drill.percentage && (
             <span className="px-1.5 py-0.5 text-[9px] font-black bg-orange-50/80 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/20 shrink-0">
               {drill.percentage}% 1RM
+            </span>
+          )}
+
+          {drill.bwRatio && (
+            <span className="px-1.5 py-0.5 text-[9px] font-black bg-teal-50/80 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-md border border-teal-100 dark:border-teal-900/20 shrink-0">
+              {drill.bwRatio}x BW {calculatedBwWeight ? `(${calculatedBwWeight} KG)` : ''}
+            </span>
+          )}
+
+          {calculatedIntensityFromBw && (
+            <span className="px-1.5 py-0.5 text-[9px] font-black bg-orange-50/80 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/20 shrink-0">
+              {calculatedIntensityFromBw}% Intensity
             </span>
           )}
         </div>

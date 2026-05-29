@@ -108,7 +108,7 @@ export default function WeeklyPlanner() {
   const [createProgramModal, setCreateProgramModal] = useState({ isOpen: false, name: '', tags: '', weeksChain: [''] });
   const [blockConfirmModal, setBlockConfirmModal] = useState({ isOpen: false, program: null });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
@@ -793,8 +793,29 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '' }, isNew: false }); };
+
+  const getCalculatedIntensityInModal = (modalDrill) => {
+    if (!selectedAthlete || !modalDrill || !modalDrill.bwRatio) return null;
+    const bwVal = parseFloat(modalDrill.bwRatio);
+    if (isNaN(bwVal) || bwVal <= 0 || !selectedAthlete.weight) return null;
+    
+    const title = (modalDrill.title || '').toLowerCase();
+    let maxWeight = null;
+    if (title.includes('clean')) maxWeight = selectedAthlete.clean;
+    else if (title.includes('bench')) maxWeight = selectedAthlete.bench;
+    else if (title.includes('deadlift')) maxWeight = selectedAthlete.deadlift;
+    else if (title.includes('half squat')) maxWeight = selectedAthlete.halfSquat;
+    else if (title.includes('quarter squat')) maxWeight = selectedAthlete.quarterSquat;
+    else if (title.includes('squat')) maxWeight = selectedAthlete.fullSquat;
+
+    if (maxWeight > 0) {
+      const calculatedWeight = bwVal * selectedAthlete.weight;
+      return Math.round((calculatedWeight / maxWeight) * 100);
+    }
+    return null;
+  };
 
   const handleSaveDayDrillModal = () => {
     const { day, drill, isNew } = dayDrillModal;
@@ -1105,7 +1126,7 @@ export default function WeeklyPlanner() {
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
@@ -1116,6 +1137,7 @@ export default function WeeklyPlanner() {
       details: addExerciseModal.details, 
       type: addExerciseModal.type, 
       percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null, 
+      bwRatio: addExerciseModal.bwRatio ? parseFloat(addExerciseModal.bwRatio) : null,
       sets: addExerciseModal.sets, 
       reps: addExerciseModal.reps, 
       rest: addExerciseModal.rest, 
@@ -1124,10 +1146,10 @@ export default function WeeklyPlanner() {
     }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise updated'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise updated'); }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise added'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise added'); }
     }
   };
 
@@ -1759,7 +1781,101 @@ export default function WeeklyPlanner() {
         </div>
       )}
 
-      {addExerciseModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden"> <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6"> <h3 className="text-xl font-bold mb-4 flex items-center gap-2"><Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}</h3> <div className="space-y-4"> <div className="flex gap-3"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Category</label> <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))} </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Superset Link</label> <select value={addExerciseModal.superset || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, superset: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500"> <option value="">None</option> <option value="A">Group A</option> <option value="B">Group B</option> <option value="C">Group C</option> <option value="D">Group D</option> </select> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Intensity %</label> <div className="relative w-full"> <input type="number" value={addExerciseModal.percentage} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" /> <Percent className="w-3.5 h-3.5 absolute left-2 top-2.5 text-slate-400" /> </div> </div> </div> <div className="flex gap-2"> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Sets</label> <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">{addExerciseModal.unit === 'meters' ? 'Distance (m)' : 'Volume'}</label> <input type="text" value={addExerciseModal.unit === 'meters' ? (addExerciseModal.distance || '') : addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, [addExerciseModal.unit === 'meters' ? 'distance' : 'reps']: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> <div className="w-24"> <label className="block text-xs font-bold text-slate-500 mb-1">Unit</label> <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"> <option value="reps">Reps</option> <option value="sec">Sec</option> <option value="min">Min</option> <option value="jumps">Jumps</option> <option value="meters">Meters</option> </select> </div> <div className="flex-1"> <label className="block text-xs font-bold text-slate-500 mb-1">Rest</label> <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" /> </div> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label> <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus/> </div> <div> <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label> <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" /> </div> </div> <div className="flex justify-end gap-3 mt-6"> <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button> <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button> </div> </div> </div> )}
+      {addExerciseModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6">
+            <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}
+            </h3>
+            <div className="space-y-4">
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
+                  <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+                    {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Superset Link</label>
+                  <select value={addExerciseModal.superset || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, superset: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="">None</option>
+                    <option value="A">Group A</option>
+                    <option value="B">Group B</option>
+                    <option value="C">Group C</option>
+                    <option value="D">Group D</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">Intensity (% 1RM)</label>
+                    {getCalculatedIntensityInModal(addExerciseModal) && (
+                      <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md">
+                        Auto: {getCalculatedIntensityInModal(addExerciseModal)}%
+                      </span>
+                    )}
+                  </div>
+                  <div className="relative w-full">
+                    <input type="number" value={addExerciseModal.percentage || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" />
+                    <Percent className="w-3.5 h-3.5 absolute left-2 top-2.5 text-slate-400" />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">BW Ratio</label>
+                    {selectedAthlete && selectedAthlete.weight && addExerciseModal.bwRatio && (
+                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.2 rounded-md">
+                        {Math.round(parseFloat(addExerciseModal.bwRatio) * selectedAthlete.weight)} kg
+                      </span>
+                    )}
+                  </div>
+                  <input type="number" step="0.1" value={addExerciseModal.bwRatio || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, bwRatio: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="e.g. 1.0" />
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Sets</label>
+                  <input type="text" value={addExerciseModal.sets} onChange={(e) => setAddExerciseModal({...addExerciseModal, sets: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">{addExerciseModal.unit === 'meters' ? 'Distance (m)' : 'Volume'}</label>
+                  <input type="text" value={addExerciseModal.unit === 'meters' ? (addExerciseModal.distance || '') : addExerciseModal.reps} onChange={(e) => setAddExerciseModal({...addExerciseModal, [addExerciseModal.unit === 'meters' ? 'distance' : 'reps']: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" />
+                </div>
+                <div className="w-24">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Unit</label>
+                  <select value={addExerciseModal.unit || 'reps'} onChange={(e) => setAddExerciseModal({...addExerciseModal, unit: e.target.value})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none">
+                    <option value="reps">Reps</option>
+                    <option value="sec">Sec</option>
+                    <option value="min">Min</option>
+                    <option value="jumps">Jumps</option>
+                    <option value="meters">Meters</option>
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Rest</label>
+                  <input type="text" value={addExerciseModal.rest} onChange={(e) => setAddExerciseModal({...addExerciseModal, rest: e.target.value})} className="w-full px-3 py-2 border rounded-xl outline-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label>
+                <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label>
+                <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
+              <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {dayDrillModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
@@ -1786,12 +1902,33 @@ export default function WeeklyPlanner() {
                     <option value="D">Group D</option>
                   </select>
                 </div>
-                <div className="w-24">
-                  <label className="block text-xs font-bold text-slate-500 mb-1">Intensity %</label>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">Intensity (% 1RM)</label>
+                    {getCalculatedIntensityInModal(dayDrillModal.drill) && (
+                      <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md">
+                        Auto: {getCalculatedIntensityInModal(dayDrillModal.drill)}%
+                      </span>
+                    )}
+                  </div>
                   <div className="relative w-full">
-                    <input type="number" value={dayDrillModal.drill.percentage || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, percentage: e.target.value}})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none" placeholder="0" />
+                    <input type="number" value={dayDrillModal.drill.percentage || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, percentage: e.target.value}})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
                     <Percent className="w-3.5 h-3.5 absolute left-2 top-2.5 text-slate-400" />
                   </div>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">BW Ratio</label>
+                    {selectedAthlete && selectedAthlete.weight && dayDrillModal.drill.bwRatio && (
+                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-1.5 py-0.2 rounded-md">
+                        {Math.round(parseFloat(dayDrillModal.drill.bwRatio) * selectedAthlete.weight)} kg
+                      </span>
+                    )}
+                  </div>
+                  <input type="number" step="0.1" value={dayDrillModal.drill.bwRatio || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, bwRatio: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 1.0" />
                 </div>
               </div>
               <div className="flex gap-2">
