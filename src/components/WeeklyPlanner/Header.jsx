@@ -221,6 +221,14 @@ export default function Header({
 
           {/* Library and tools buttons */}
           <button 
+            onClick={() => setSaveWeekTemplateModal({ isOpen: true, name: '' })} 
+            className="p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
+            title="Save Week Template / حفظ الأسبوع"
+          >
+            <BookmarkPlus className="w-4 h-4" />
+          </button>
+
+          <button 
             onClick={() => setShowLibrary(!showLibrary)} 
             className={`p-2 rounded-xl transition-all border shrink-0 ${showLibrary ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900 text-orange-500' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-orange-500 shadow-sm'}`} 
             title="Exercise Library"
