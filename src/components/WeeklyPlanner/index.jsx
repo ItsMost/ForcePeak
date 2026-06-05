@@ -10,6 +10,23 @@ import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
 
 const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
+const SUBCATEGORIES = {
+  core: {
+    rotation: 'Rotation',
+    anti_rotation: 'Anti-Rotation',
+    extension: 'Extension',
+    flexion: 'Flexion',
+    anti_extension: 'Anti-Extension',
+    anti_flexion: 'Anti-Flexion',
+    lateral_flexion: 'Lateral Flexion',
+    anti_lateral_flexion: 'Anti-Lateral Flexion'
+  },
+  strength: {
+    upper_body: 'Upper Body',
+    double_leg: 'Double Leg (Lower)',
+    single_leg: 'Single Leg (Lower)'
+  }
+};
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -108,7 +125,7 @@ export default function WeeklyPlanner() {
   const [createProgramModal, setCreateProgramModal] = useState({ isOpen: false, name: '', tags: '', weeksChain: [''] });
   const [blockConfirmModal, setBlockConfirmModal] = useState({ isOpen: false, program: null });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
@@ -793,8 +810,8 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '' }, isNew: false }); };
 
   const getCalculatedIntensityInModal = (modalDrill) => {
     if (!selectedAthlete || !modalDrill || !modalDrill.bwRatio) return null;
@@ -1126,7 +1143,7 @@ export default function WeeklyPlanner() {
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
@@ -1136,6 +1153,7 @@ export default function WeeklyPlanner() {
       title: addExerciseModal.title, 
       details: addExerciseModal.details, 
       type: addExerciseModal.type, 
+      subcategory: addExerciseModal.subcategory || null,
       percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null, 
       bwRatio: addExerciseModal.bwRatio ? parseFloat(addExerciseModal.bwRatio) : null,
       sets: addExerciseModal.sets, 
@@ -1146,10 +1164,10 @@ export default function WeeklyPlanner() {
     }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise updated'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise updated'); }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise added'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise added'); }
     }
   };
 
@@ -1791,10 +1809,21 @@ export default function WeeklyPlanner() {
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
-                  <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+                  <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value, subcategory: ''})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
                     {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
                   </select>
                 </div>
+                {SUBCATEGORIES[addExerciseModal.type] && (
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Subcategory</label>
+                    <select value={addExerciseModal.subcategory || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, subcategory: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+                      <option value="">None / General</option>
+                      {Object.entries(SUBCATEGORIES[addExerciseModal.type]).map(([subKey, subLabel]) => (
+                        <option key={subKey} value={subKey}>{subLabel}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Superset Link</label>
                   <select value={addExerciseModal.superset || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, superset: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
@@ -1870,7 +1899,7 @@ export default function WeeklyPlanner() {
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
+              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
               <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button>
             </div>
           </div>
@@ -1888,10 +1917,21 @@ export default function WeeklyPlanner() {
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
-                  <select value={dayDrillModal.drill.type} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, type: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                  <select value={dayDrillModal.drill.type} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, type: e.target.value, subcategory: ''}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
                     {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
                   </select>
                 </div>
+                {SUBCATEGORIES[dayDrillModal.drill.type] && (
+                  <div className="flex-1">
+                    <label className="block text-xs font-bold text-slate-500 mb-1">Subcategory</label>
+                    <select value={dayDrillModal.drill.subcategory || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, subcategory: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                      <option value="">None / General</option>
+                      {Object.entries(SUBCATEGORIES[dayDrillModal.drill.type]).map(([subKey, subLabel]) => (
+                        <option key={subKey} value={subKey}>{subLabel}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Superset Link</label>
                   <select value={dayDrillModal.drill.superset || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, superset: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">

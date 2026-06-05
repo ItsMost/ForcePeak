@@ -1,6 +1,26 @@
 import React, { useState } from 'react';
 import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, Tag, Sparkles } from 'lucide-react';
 
+const SUBCATEGORIES = {
+  core: {
+    all: 'All Core',
+    rotation: 'Rotation',
+    anti_rotation: 'Anti-Rotation',
+    extension: 'Extension',
+    flexion: 'Flexion',
+    anti_extension: 'Anti-Extension',
+    anti_flexion: 'Anti-Flexion',
+    lateral_flexion: 'Lat Flexion',
+    anti_lateral_flexion: 'Anti-Lat Flex'
+  },
+  strength: {
+    all: 'All Strength',
+    upper_body: 'Upper Body',
+    double_leg: 'Double Leg',
+    single_leg: 'Single Leg'
+  }
+};
+
 export default function ExerciseLibrary({ 
   showLibrary, setShowLibrary, library, handleLibraryDragStart, 
   setAddExerciseModal, onDeleteDrill, onEditDrill, onDeleteTemplate,
@@ -14,12 +34,19 @@ export default function ExerciseLibrary({
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
+  const [activeSubcategory, setActiveSubcategory] = useState('all');
 
-  // Filter Drills by Search and Category Tab
+  // Filter Drills by Search, Category Tab, and Subcategory Tab
   const filteredDrills = (library.drills || []).filter(drill => {
     const matchesSearch = (drill.title || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = activeCategory === 'all' || (drill.type || '').toLowerCase() === activeCategory.toLowerCase();
-    return matchesSearch && matchesCategory;
+    
+    let matchesSubcategory = true;
+    if (SUBCATEGORIES[activeCategory] && activeSubcategory !== 'all') {
+      matchesSubcategory = (drill.subcategory || '').toLowerCase() === activeSubcategory.toLowerCase();
+    }
+    
+    return matchesSearch && matchesCategory && matchesSubcategory;
   });
 
   // Filter Day Templates strictly (type === 'day')
@@ -80,12 +107,24 @@ export default function ExerciseLibrary({
         </div>
 
         {activeTab === 'exercises' && (
-          <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px] font-bold">
-            {['all', 'strength', 'power', 'speed', 'endurance', 'isometric', 'core', 'mobility'].map(cat => (
-              <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-2.5 py-1 rounded-full shrink-0 uppercase tracking-wider transition-colors ${activeCategory === cat ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200'}`}>
-                {cat}
-              </button>
-            ))}
+          <div className="space-y-2">
+            <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px] font-bold">
+              {['all', 'strength', 'power', 'speed', 'endurance', 'isometric', 'core', 'mobility'].map(cat => (
+                <button key={cat} onClick={() => { setActiveCategory(cat); setActiveSubcategory('all'); }} className={`px-2.5 py-1 rounded-full shrink-0 uppercase tracking-wider transition-colors ${activeCategory === cat ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300 hover:bg-slate-200'}`}>
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            {SUBCATEGORIES[activeCategory] && (
+              <div className="flex gap-1 overflow-x-auto pb-1.5 scrollbar-none text-[9px] font-black border-t border-slate-100 dark:border-slate-800/80 pt-2">
+                {Object.entries(SUBCATEGORIES[activeCategory]).map(([subKey, subLabel]) => (
+                  <button key={subKey} onClick={() => setActiveSubcategory(subKey)} className={`px-2.5 py-1 rounded-lg shrink-0 uppercase tracking-wider transition-all shadow-sm ${activeSubcategory === subKey ? 'bg-orange-500 text-white' : 'bg-white border border-slate-250 text-slate-500 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 hover:bg-slate-50'}`}>
+                    {subLabel}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -96,7 +135,7 @@ export default function ExerciseLibrary({
         {/* Tab 1: Exercises Module Archive */}
         {activeTab === 'exercises' && (
           <>
-            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', percentage: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
+            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
               <Plus className="w-4 h-4" /> Add Global Exercise
             </button>
             
@@ -108,6 +147,11 @@ export default function ExerciseLibrary({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{drill.type}</span>
+                      {drill.subcategory && (
+                        <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded">
+                          {SUBCATEGORIES[drill.type]?.[drill.subcategory] || drill.subcategory.replace('_', ' ')}
+                        </span>
+                      )}
                       <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{drill.title}</h5>
                     </div>
                     {drill.details && <p className="text-[10px] text-slate-400 mt-1 truncate">{drill.details}</p>}
