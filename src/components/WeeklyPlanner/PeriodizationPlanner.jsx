@@ -56,6 +56,18 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
 
   // Local Athlete View states
   const [activeMacroDetail, setActiveMacroDetail] = useState(null);
+  
+  // States for editing deployed Macro and Mesocycles
+  const [isEditingMacroName, setIsEditingMacroName] = useState(false);
+  const [macroEditName, setMacroEditName] = useState('');
+  const [showMesoEditModal, setShowMesoEditModal] = useState(false);
+  const [editingMesoId, setEditingMesoId] = useState(null);
+  const [mesoFormName, setMesoFormName] = useState('');
+  const [mesoFormStartWeek, setMesoFormStartWeek] = useState(1);
+  const [mesoFormDuration, setMesoFormDuration] = useState(4);
+  const [mesoFormColor, setMesoFormColor] = useState(PHASE_COLORS[0].hex);
+  const [mesoFormProgramId, setMesoFormProgramId] = useState('');
+  const [mesoFormCloneDrills, setMesoFormCloneDrills] = useState(false);
 
   // Helper to parse name and deficit protocol
   const getCleanNameAndDeficit = (fullName) => {
@@ -202,7 +214,198 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
     }
   };
 
-  // Create Periodization Master Template
+  // Helpers for editing deployed Macro and Mesocycles
+  const getMacroMesos = (macro) => {
+    if (!macro) return [];
+    return deployments.filter(d => 
+      d.program_type === 'meso' && 
+      d.start_date >= macro.start_date && 
+      d.end_date <= macro.end_date
+    );
+  };
+
+  const handleStartEditMacroName = () => {
+    const { name } = getCleanNameAndDeficit(activeMacroDetail.program_name);
+    setMacroEditName(name || '');
+    setIsEditingMacroName(true);
+  };
+
+  const handleSaveMacroName = async () => {
+    if (!macroEditName.trim()) {
+      handleToast('الرجاء كتابة اسم!');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const { deficit } = getCleanNameAndDeficit(activeMacroDetail.program_name);
+      const newFullName = deficit ? `[${deficit}] ${macroEditName}` : macroEditName;
+      
+      const { error } = await supabase
+        .from('periodization_deployments')
+        .update({ program_name: newFullName })
+        .eq('id', activeMacroDetail.id);
+
+      if (!error) {
+        handleToast('تم تحديث اسم الدورة الكبرى!');
+        setActiveMacroDetail({ ...activeMacroDetail, program_name: newFullName });
+        setIsEditingMacroName(false);
+        await fetchLocalDeployments();
+        if (refreshDeploymentsCallback) refreshDeploymentsCallback();
+      } else {
+        throw error;
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء تحديث الاسم.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenMesoEditModal = (meso = null) => {
+    if (meso) {
+      // Edit mode: pre-populate
+      setEditingMesoId(meso.id);
+      setMesoFormName(meso.program_name);
+      setMesoFormColor(meso.color || PHASE_COLORS[0].hex);
+      setMesoFormProgramId(meso.program_id || '');
+      setMesoFormCloneDrills(false); // default false when editing to avoid accidental overwrite
+      
+      // Calculate startWeek and duration based on activeMacroDetail start date
+      const macroStart = new Date(activeMacroDetail.start_date + 'T00:00:00');
+      const mesoStart = new Date(meso.start_date + 'T00:00:00');
+      const mesoEnd = new Date(meso.end_date + 'T00:00:00');
+      
+      const startWeekNum = Math.round((mesoStart - macroStart) / (1000 * 60 * 60 * 24 * 7)) + 1;
+      const durationNum = Math.round((mesoEnd - mesoStart) / (1000 * 60 * 60 * 24 * 7)) + 1;
+      
+      setMesoFormStartWeek(startWeekNum || 1);
+      setMesoFormDuration(durationNum || 4);
+    } else {
+      // Add mode: default values
+      setEditingMesoId(null);
+      setMesoFormName('');
+      setMesoFormColor(PHASE_COLORS[0].hex);
+      setMesoFormProgramId('');
+      setMesoFormStartWeek(1);
+      setMesoFormDuration(4);
+      setMesoFormCloneDrills(true); // default true when creating
+    }
+    setShowMesoEditModal(true);
+  };
+
+  const handleSaveMesoEditModal = async () => {
+    if (!mesoFormName.trim()) {
+      handleToast('الرجاء كتابة اسم الدورة المتوسطة!');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const weeks = getMacroWeeks(activeMacroDetail);
+      
+      // Check boundaries
+      const startWeekIdx = Number(mesoFormStartWeek) - 1;
+      const endWeekIdx = startWeekIdx + Number(mesoFormDuration) - 1;
+      
+      if (endWeekIdx >= weeks.length) {
+        handleToast('⚠️ الدورة المتوسطة تتجاوز عدد أسابيع الدورة الكبرى!');
+        setIsLoading(false);
+        return;
+      }
+      
+      const mStart = weeks[startWeekIdx].start;
+      const mEnd = weeks[endWeekIdx].end;
+      
+      // Check overlaps with other mesos (excluding the one being edited)
+      const allMesos = getMacroMesos(activeMacroDetail).filter(m => m.id !== editingMesoId);
+      const overlap = allMesos.find(m => 
+        (getDbDateStr(mStart) >= m.start_date && getDbDateStr(mStart) <= m.end_date) ||
+        (getDbDateStr(mEnd) >= m.start_date && getDbDateStr(mEnd) <= m.end_date)
+      );
+      
+      if (overlap) {
+        handleToast(`⚠️ تداخل مع دورة متوسطة أخرى: "${overlap.program_name}"`);
+        setIsLoading(false);
+        return;
+      }
+      
+      const payload = {
+        athlete_id: athlete.id,
+        program_name: mesoFormName,
+        program_type: 'meso',
+        start_date: getDbDateStr(mStart),
+        end_date: getDbDateStr(mEnd),
+        color: mesoFormColor,
+        program_id: mesoFormProgramId || null
+      };
+      
+      if (editingMesoId) {
+        // Update
+        const { error } = await supabase
+          .from('periodization_deployments')
+          .update(payload)
+          .eq('id', editingMesoId);
+        if (error) throw error;
+      } else {
+        // Insert
+        const { error } = await supabase
+          .from('periodization_deployments')
+          .insert([payload]);
+        if (error) throw error;
+      }
+      
+      // Optionally clone drills from program block
+      if (mesoFormCloneDrills && mesoFormProgramId) {
+        const program = programs.find(p => p.id === mesoFormProgramId);
+        if (program && program.weeks) {
+          for (let i = 0; i < program.weeks.length; i++) {
+            const futureWeekStart = new Date(mStart);
+            futureWeekStart.setDate(futureWeekStart.getDate() + (i * 7));
+            const weekTemplateObject = program.weeks[i].drills || {};
+            const targetBlockTitle = program.weeks[i].title || 'Meso-Template Workout';
+            
+            for (let j = 0; j < DAYS_OF_WEEK.length; j++) {
+              const dayDate = new Date(futureWeekStart);
+              dayDate.setDate(dayDate.getDate() + j);
+              
+              let clonedDrills = [];
+              if (weekTemplateObject && !Array.isArray(weekTemplateObject)) {
+                clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ 
+                  ...drill, 
+                  id: `deployedtpl-${Date.now()}-${i}-${j}-${idx}-${Math.random()}` 
+                }));
+              } else if (Array.isArray(weekTemplateObject)) {
+                clonedDrills = weekTemplateObject.map((drill, idx) => ({ 
+                  ...drill, 
+                  id: `deployedtpl-${Date.now()}-${i}-${j}-${idx}-${Math.random()}` 
+                }));
+              }
+              
+              await supabase.from('agilitylap_workouts').upsert({ 
+                athlete_id: athlete.id, 
+                workout_date: getDbDateStr(dayDate), 
+                workout_title: targetBlockTitle, 
+                drills: clonedDrills 
+              }, { onConflict: 'athlete_id,workout_date' });
+            }
+          }
+        }
+      }
+      
+      handleToast(editingMesoId ? 'تم تحديث الدورة المتوسطة بنجاح!' : 'تمت إضافة الدورة المتوسطة بنجاح!');
+      setShowMesoEditModal(false);
+      await fetchLocalDeployments();
+      if (refreshDeploymentsCallback) refreshDeploymentsCallback();
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء معالجة الدورة المتوسطة.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Create/Update Periodization Master Template
   const handleSaveMasterTemplate = async () => {
     if (!tplName.trim()) {
       handleToast('الرجاء كتابة اسم القالب!');
@@ -224,13 +427,24 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
         ]
       };
 
-      const { error } = await supabase
-        .from('agilitylap_programs')
-        .insert([payload]);
+      let error;
+      if (editingTemplateId) {
+        const res = await supabase
+          .from('agilitylap_programs')
+          .update(payload)
+          .eq('id', editingTemplateId);
+        error = res.error;
+      } else {
+        const res = await supabase
+          .from('agilitylap_programs')
+          .insert([payload]);
+        error = res.error;
+      }
 
       if (!error) {
-        handleToast(`تم حفظ القالب الدوري "${tplName}" بنجاح!`);
+        handleToast(editingTemplateId ? `تم تحديث القالب الدوري "${tplName}" بنجاح!` : `تم حفظ القالب الدوري "${tplName}" بنجاح!`);
         setShowCreateTemplate(false);
+        setEditingTemplateId(null);
         setTplName('');
         setTplMesos([]);
         setTplMicros({});
@@ -244,6 +458,26 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Pre-populate template designer for editing
+  const handleEditMasterTemplate = (template) => {
+    const details = template.weeks?.[0] || {};
+    setEditingTemplateId(template.id);
+    setTplName(template.program_name);
+    setTplDeficit(details.deficitProtocol || 'FDP');
+    setTplDurationWeeks(details.durationWeeks || 12);
+    setTplMesos(details.mesocycles || []);
+    setTplMicros(details.microcycles || {});
+    setShowCreateTemplate(true);
+  };
+
+  const handleCloseTemplateDesigner = () => {
+    setShowCreateTemplate(false);
+    setEditingTemplateId(null);
+    setTplName('');
+    setTplMesos([]);
+    setTplMicros({});
   };
 
   // Delete Master Template
@@ -842,12 +1076,23 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                           <Play className="w-3 h-3" /> تطبيق للاعب الفعلي
                         </button>
                         
-                        <button
-                          onClick={() => handleDeleteMasterTemplate(template.id, template.program_name)}
-                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => handleEditMasterTemplate(template)}
+                            className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-850 dark:hover:text-white rounded-lg transition-all"
+                            title="تعديل القالب / Edit Template"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDeleteMasterTemplate(template.id, template.program_name)}
+                            className="p-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-500 rounded-lg transition-all"
+                            title="حذف القالب / Delete Template"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -867,7 +1112,7 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                 <h3 className="text-base font-black text-slate-800 dark:text-white flex items-center gap-2">
                   <Layers className="w-5 h-5 text-orange-500" /> تصميم وإعداد قالب دوري عام جديد
                 </h3>
-                <button onClick={() => setShowCreateTemplate(false)} className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 rounded-full"><X className="w-4 h-4 dark:text-white"/></button>
+                <button onClick={handleCloseTemplateDesigner} className="p-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-750 rounded-full"><X className="w-4 h-4 dark:text-white"/></button>
               </div>
 
               {/* Modal Body */}
@@ -1093,7 +1338,7 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                   <Check className="w-4 h-4" /> حفظ القالب العام
                 </button>
                 <button
-                  onClick={() => setShowCreateTemplate(false)}
+                  onClick={handleCloseTemplateDesigner}
                   className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
                 >
                   إلغاء
@@ -1160,6 +1405,132 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                 <button
                   onClick={() => setShowDeployTemplateModal(false)}
                   className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+                >
+                  إلغاء
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL 4: Edit Deployed Mesocycle Modal */}
+        {showMesoEditModal && (
+          <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 font-sans" dir="rtl">
+              <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                <Layers className="w-5 h-5 text-orange-500" /> 
+                {editingMesoId ? 'تعديل الدورة المتوسطة المنشورة' : 'إضافة دورة متوسطة جديدة للاعب'}
+              </h3>
+
+              <div className="space-y-4 text-right">
+                {/* Name */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">اسم الدورة المتوسطة (Meso Name):</label>
+                  <input
+                    type="text"
+                    value={mesoFormName}
+                    onChange={(e) => setMesoFormName(e.target.value)}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                    placeholder="مثال: دورة القوة الانفجارية"
+                  />
+                </div>
+
+                {/* Start Week selection within Active Macro */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">أسبوع البداية في الدورة الكبرى:</label>
+                  <select
+                    value={mesoFormStartWeek}
+                    onChange={(e) => setMesoFormStartWeek(Number(e.target.value))}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                  >
+                    {activeMacroDetail && getMacroWeeks(activeMacroDetail).map((w, idx) => (
+                      <option key={idx} value={idx + 1}>الأسبوع {idx + 1}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Duration */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">المدة الزمنية (أسابيع):</label>
+                  <select
+                    value={mesoFormDuration}
+                    onChange={(e) => setMesoFormDuration(Number(e.target.value))}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                  >
+                    <option value={3}>3 أسابيع</option>
+                    <option value={4}>4 أسابيع</option>
+                    <option value={5}>5 أسابيع</option>
+                  </select>
+                </div>
+
+                {/* Color Selection */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">اللون المميز للمرحلة:</label>
+                  <div className="flex gap-2">
+                    {PHASE_COLORS.map((pc, idx) => (
+                      <button 
+                        key={idx}
+                        type="button"
+                        onClick={() => setMesoFormColor(pc.hex)}
+                        className={`w-6 h-6 rounded-full border transition-transform ${mesoFormColor === pc.hex ? 'scale-125 border-slate-900 dark:border-white' : 'border-transparent'}`}
+                        style={{ backgroundColor: pc.hex }}
+                        title={pc.label}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Link to Program Template */}
+                <div className="space-y-2.5 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-slate-700 dark:text-slate-350 flex items-center gap-1.5">
+                      <Dumbbell className="w-3.5 h-3.5 text-orange-500" /> ربط كتلة تمارين فعلية (Program Template)
+                    </span>
+                    <span className="text-[9.5px] bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400 font-black px-1.5 py-0.5 rounded-md">
+                      اختياري
+                    </span>
+                  </div>
+
+                  <select
+                    value={mesoFormProgramId}
+                    onChange={(e) => setMesoFormProgramId(e.target.value)}
+                    className="w-full text-xs bg-white dark:bg-slate-800 border dark:border-slate-700 p-2 rounded-xl outline-none"
+                  >
+                    <option value="">-- اختر برنامج تمارين لربطه --</option>
+                    {programs.filter(p => p.type === 'meso').map(p => (
+                      <option key={p.id} value={p.id}>{p.program_name} ({p.weeks?.length || 0} أسابيع)</option>
+                    ))}
+                  </select>
+
+                  {mesoFormProgramId && (
+                    <div className="flex items-center gap-2 mt-1">
+                      <input 
+                        type="checkbox" 
+                        id="meso-form-clone-chk"
+                        checked={mesoFormCloneDrills}
+                        onChange={(e) => setMesoFormCloneDrills(e.target.checked)}
+                        className="rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+                      />
+                      <label htmlFor="meso-form-clone-chk" className="text-[10px] font-bold text-slate-600 dark:text-slate-400 leading-tight">
+                        {editingMesoId ? 'إعادة استيراد وتنزيل التمارين إلى جدول اللاعب' : 'تنزيل وتعبئة جدول الرياضي الفعلي بالتمارين فور الحفظ'}
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={handleSaveMesoEditModal}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Check className="w-4 h-4" /> حفظ التغييرات
+                </button>
+                <button
+                  onClick={() => setShowMesoEditModal(false)}
+                  className="px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-650 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
                 >
                   إلغاء
                 </button>
