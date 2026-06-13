@@ -36,7 +36,8 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
   
   // Form values
   const [macroName, setMacroName] = useState('');
-  const [macroDuration, setMacroDuration] = useState(6); // 3, 6, 9 months
+  const [macroDuration, setMacroDuration] = useState(6); // 3, 6, 9, 12 months
+  const [macroDeficit, setMacroDeficit] = useState('FDP'); // FDP, EDP, RSD, HVRP
   const [macroGoal, setMacroGoal] = useState('General Preparation');
   const [macroColor, setMacroColor] = useState(PHASE_COLORS[0].hex);
   
@@ -144,6 +145,15 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
     return deployments.find(d => d.program_type === 'micro' && dateStr >= d.start_date && dateStr <= d.end_date);
   };
 
+  // Helper to parse name and deficit protocol
+  const getCleanNameAndDeficit = (fullName) => {
+    const match = (fullName || '').match(/^\[(FDP|EDP|RSD|HVRP)\]\s*(.*)$/);
+    if (match) {
+      return { deficit: match[1], name: match[2] };
+    }
+    return { deficit: null, name: fullName };
+  };
+
   // Add Macrocycle
   const handleCreateMacro = async () => {
     if (!macroName.trim()) {
@@ -160,17 +170,19 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
         startWeek.setDate(startWeek.getDate() + 7);
       }
       
-      // Duration in weeks: 3 months = 12 weeks, 6 months = 24 weeks, 9 months = 36 weeks
-      const totalWeeks = macroDuration === 3 ? 12 : macroDuration === 6 ? 24 : 36;
+      // Duration in weeks: 3 months = 12 weeks, 6 months = 24 weeks, 9 months = 36 weeks, 12 months = 48 weeks
+      const totalWeeks = macroDuration === 3 ? 12 : macroDuration === 6 ? 24 : macroDuration === 9 ? 36 : 48;
       
       const endWeek = new Date(startWeek);
       endWeek.setDate(endWeek.getDate() + (totalWeeks * 7) - 1); // Friday of the last week
+
+      const formattedMacroName = `[${macroDeficit}] ${macroName}`;
 
       const { data, error } = await supabase
         .from('periodization_deployments')
         .insert([{
           athlete_id: athlete.id,
-          program_name: macroName,
+          program_name: formattedMacroName,
           program_type: 'macro',
           start_date: getDbDateStr(startWeek),
           end_date: getDbDateStr(endWeek),
@@ -538,11 +550,25 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                                     Meso: {meso.program_name}
                                   </span>
                                 )}
-                                {macro && !meso && (
-                                  <span className="font-semibold text-slate-500 dark:text-slate-400 text-[10px] truncate">
-                                    Macro: {macro.program_name}
-                                  </span>
-                                )}
+                                {macro && !meso && (() => {
+                                  const { deficit, name } = getCleanNameAndDeficit(macro.program_name);
+                                  return (
+                                    <span className="font-semibold text-slate-500 dark:text-slate-400 text-[10px] truncate flex items-center gap-1">
+                                      Macro: 
+                                      {deficit && (
+                                        <span className={`px-1 py-0.2 rounded text-[7.5px] font-black text-white shrink-0 ${
+                                          deficit === 'FDP' ? 'bg-red-500' :
+                                          deficit === 'EDP' ? 'bg-violet-500' :
+                                          deficit === 'RSD' ? 'bg-cyan-500' :
+                                          'bg-amber-500 text-slate-950'
+                                        }`}>
+                                          {deficit}
+                                        </span>
+                                      )}
+                                      <span className="truncate">{name}</span>
+                                    </span>
+                                  );
+                                })()}
                               </div>
                               
                               <div className="flex items-center gap-1.5 shrink-0">
@@ -596,9 +622,24 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                       >
                         دورة كبرى نشطة / Macrocycle
                       </span>
-                      <h4 className="text-sm font-black text-slate-800 dark:text-white leading-tight">
-                        {activeMacroDetail.program_name}
-                      </h4>
+                      {(() => {
+                        const { deficit, name } = getCleanNameAndDeficit(activeMacroDetail.program_name);
+                        return (
+                          <h4 className="text-sm font-black text-slate-800 dark:text-white leading-tight flex items-center gap-1.5 flex-wrap">
+                            {deficit && (
+                              <span className={`px-2 py-0.5 rounded text-[8.5px] font-black text-white shrink-0 ${
+                                deficit === 'FDP' ? 'bg-red-500' :
+                                deficit === 'EDP' ? 'bg-violet-500' :
+                                deficit === 'RSD' ? 'bg-cyan-500' :
+                                'bg-amber-500 text-slate-950'
+                              }`}>
+                                {deficit}
+                              </span>
+                            )}
+                            <span>{name}</span>
+                          </h4>
+                        );
+                      })()}
                       <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-bold">
                         {new Date(activeMacroDetail.start_date + 'T00:00:00').toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', year: 'numeric' })} — {new Date(activeMacroDetail.end_date + 'T00:00:00').toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
@@ -750,6 +791,21 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                   />
                 </div>
 
+                {/* Deficit Protocol */}
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400">بروتوكول العجز البدني (Deficit Protocol):</label>
+                  <select
+                    value={macroDeficit}
+                    onChange={(e) => setMacroDeficit(e.target.value)}
+                    className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-250 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white"
+                  >
+                    <option value="FDP">Force Deficit Protocol (FDP) / عجز القوة القصوى</option>
+                    <option value="EDP">Elastic Deficit Protocol (EDP) / عجز الدورة المطاطية</option>
+                    <option value="RSD">Reactive & Stiffness Deficit (RSD) / عجز الصلابة الارتدادية</option>
+                    <option value="HVRP">High-Velocity RFD Deficit (HVRP) / عجز السرعة ومعدل القوة</option>
+                  </select>
+                </div>
+
                 {/* Duration */}
                 <div className="space-y-1">
                   <label className="text-xs font-bold text-slate-500 dark:text-slate-400">المدة الزمنية (أشهر):</label>
@@ -761,6 +817,7 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                     <option value={3}>3 أشهر (12 أسبوع إعدادي)</option>
                     <option value={6}>6 أشهر (24 أسبوع إعدادي)</option>
                     <option value={9}>9 أشهر (36 أسبوع إعدادي)</option>
+                    <option value={12}>12 شهراً (48 أسبوع إعدادي كامل)</option>
                   </select>
                 </div>
 

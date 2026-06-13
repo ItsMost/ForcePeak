@@ -201,6 +201,18 @@ export default function TimelineCard({
               </span>
             )}
 
+            {drill.targetVelocity && (
+              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+                V Target: {drill.targetVelocity} m/s
+              </span>
+            )}
+
+            {drill.velocityLoss && (
+              <span className="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+                V Loss: {drill.velocityLoss}
+              </span>
+            )}
+
             {drill.details && (
               <button 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowNotes(!showNotes); }} 

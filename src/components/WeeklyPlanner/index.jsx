@@ -2158,6 +2158,19 @@ export default function WeeklyPlanner() {
                 <div className="w-24"><label className="block text-xs font-bold text-slate-500 mb-1">Unit</label><select value={dayDrillModal.drill.unit || 'reps'} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, unit: e.target.value}})} className="w-full text-sm px-2 py-2 border rounded-xl outline-none"><option value="reps">Reps</option><option value="sec">Sec</option><option value="min">Min</option><option value="jumps">Jumps</option><option value="meters">Meters</option></select></div>
                 <div className="flex-1"><label className="block text-xs font-bold text-slate-500 mb-1">Rest</label><input type="text" value={dayDrillModal.drill.rest || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, rest: e.target.value}})} className="w-full px-3 py-2 border rounded-xl outline-none" /></div>
               </div>
+
+              {/* VBT parameters (Velocity Based Training) */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">Target Velocity (m/s)</label>
+                  <input type="text" placeholder="e.g. 0.75" value={dayDrillModal.drill.targetVelocity || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, targetVelocity: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">Velocity Loss Limit (%)</label>
+                  <input type="text" placeholder="e.g. 20%" value={dayDrillModal.drill.velocityLoss || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, velocityLoss: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
               <div><label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label><input type="text" value={dayDrillModal.drill.title} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, title: e.target.value}})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" autoFocus /></div>
               <div><label className="block text-xs font-bold text-slate-500 mb-1">Notes</label><textarea value={dayDrillModal.drill.details} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, details: e.target.value}})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-blue-500" /></div>
             </div>
