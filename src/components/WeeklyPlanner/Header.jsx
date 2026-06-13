@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity
+  ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity,
+  Layers
 } from 'lucide-react';
 
 export default function Header({
@@ -13,7 +14,8 @@ export default function Header({
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal,
   weeklyStats,
   isOnline, syncStatus, onDelete,
-  onMoveAthlete
+  onMoveAthlete,
+  setShowPeriodizationPlanner
 }) {
   
   const [athleteSearch, setAthleteSearch] = useState('');
@@ -91,6 +93,14 @@ export default function Header({
             title="Monthly Plan Calendar"
           >
             <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
+          </button>
+
+          <button 
+            onClick={() => setShowPeriodizationPlanner(true)} 
+            className="p-1.5 bg-white dark:bg-slate-850 border border-slate-150 dark:border-slate-800/80 rounded-full hover:text-orange-500 transition-colors shadow-sm ml-1 shrink-0" 
+            title="Periodization Planner / مخطط الدورات التدريبية"
+          >
+            <Layers className="w-3.5 h-3.5 text-slate-500" />
           </button>
         </div>
 

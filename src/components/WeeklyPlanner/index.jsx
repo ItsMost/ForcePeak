@@ -6,6 +6,7 @@ import Sidebar from './Sidebar.jsx';
 import TimelineCard from './TimelineCard.jsx';
 import ExerciseLibrary from './ExerciseLibrary.jsx';
 import AthleteProfileModal from './AthleteProfileModal.jsx';
+import PeriodizationPlanner from './PeriodizationPlanner.jsx';
 import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
 
@@ -133,6 +134,7 @@ export default function WeeklyPlanner() {
   const [toastMessage, setToastMessage] = useState(null);
   const [showAddAthleteModal, setShowAddAthleteModal] = useState(false);
   const [showMonthCalendar, setShowMonthCalendar] = useState(false);
+  const [showPeriodizationPlanner, setShowPeriodizationPlanner] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState({ isOpen: false, type: null, targetDay: null });
   const [saveTemplateModal, setSaveTemplateModal] = useState({ isOpen: false, day: null, name: '' });
@@ -1392,6 +1394,15 @@ export default function WeeklyPlanner() {
       
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
+      {showPeriodizationPlanner && selectedAthlete && (
+        <PeriodizationPlanner
+          athlete={selectedAthlete}
+          onClose={() => setShowPeriodizationPlanner(false)}
+          handleToast={handleToast}
+          programs={programs}
+          refreshDeploymentsCallback={() => fetchDeployments(selectedAthleteId)}
+        />
+      )}
 
       {showMonthCalendar && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden" onClick={() => setShowMonthCalendar(false)}>
@@ -2339,6 +2350,7 @@ export default function WeeklyPlanner() {
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal} weeklyStats={weeklyStats}
         isOnline={isOnline} syncStatus={syncStatus} onDelete={handleDeleteAthlete}
         onMoveAthlete={handleMoveAthlete}
+        setShowPeriodizationPlanner={setShowPeriodizationPlanner}
       />
 
       {/* ⚠️ Layout Control Panel */}
