@@ -10,6 +10,24 @@ import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
 
 const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
+const PHASE_COLORS = [
+  { bg: 'bg-blue-500/15', border: 'border-blue-400', text: 'text-blue-600 dark:text-blue-400', hex: '#3b82f6', label: 'blue' },
+  { bg: 'bg-violet-500/15', border: 'border-violet-400', text: 'text-violet-600 dark:text-violet-400', hex: '#8b5cf6', label: 'violet' },
+  { bg: 'bg-emerald-500/15', border: 'border-emerald-400', text: 'text-emerald-600 dark:text-emerald-400', hex: '#10b981', label: 'emerald' },
+  { bg: 'bg-amber-500/15', border: 'border-amber-400', text: 'text-amber-600 dark:text-amber-400', hex: '#f59e0b', label: 'amber' },
+  { bg: 'bg-rose-500/15', border: 'border-rose-400', text: 'text-rose-600 dark:text-rose-400', hex: '#f43f5e', label: 'rose' },
+  { bg: 'bg-cyan-500/15', border: 'border-cyan-400', text: 'text-cyan-600 dark:text-cyan-400', hex: '#06b6d4', label: 'cyan' },
+];
+const EXERCISE_TYPE_DOTS = {
+  power: { color: 'bg-orange-500', label: 'Power' },
+  strength: { color: 'bg-blue-500', label: 'Strength' },
+  core: { color: 'bg-emerald-500', label: 'Core' },
+  speed: { color: 'bg-yellow-500', label: 'Speed' },
+  mobility: { color: 'bg-purple-400', label: 'Mobility' },
+  isometric: { color: 'bg-cyan-500', label: 'Isometric' },
+  endurance: { color: 'bg-pink-500', label: 'Endurance' },
+  physical: { color: 'bg-slate-400', label: 'Physical' },
+};
 const SUBCATEGORIES = {
   core: {
     rotation: 'Rotation',
@@ -141,6 +159,7 @@ export default function WeeklyPlanner() {
     return DAYS_OF_WEEK.includes(todayName) ? todayName : 'Saturday';
   });
   const [fourWeekData, setFourWeekData] = useState([]);
+  const [deployments, setDeployments] = useState([]);
 
   const syncOfflineQueue = async () => {
     const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
@@ -299,6 +318,19 @@ export default function WeeklyPlanner() {
   };
   useEffect(() => { fetchLibraryData(); }, []);
 
+  const fetchDeployments = async (athleteId) => {
+    if (!athleteId) { setDeployments([]); return; }
+    const { data, error } = await supabase
+      .from('periodization_deployments')
+      .select('*')
+      .eq('athlete_id', athleteId)
+      .order('start_date', { ascending: true });
+    if (!error && data) setDeployments(data);
+    else setDeployments([]);
+  };
+  useEffect(() => { fetchDeployments(selectedAthleteId); }, [selectedAthleteId]);
+
+
   useEffect(() => {
     const fetchWeekData = async () => {
       if (!selectedAthleteId) return;
@@ -343,9 +375,14 @@ export default function WeeklyPlanner() {
         data.forEach(record => { 
           // An active plan day MUST contain actual drills saved (length > 0)
           const hasDrills = Array.isArray(record.drills) && record.drills.length > 0;
+          // Extract unique exercise types for colored dots
+          const types = hasDrills 
+            ? [...new Set(record.drills.map(d => (d.type || 'physical').toLowerCase()))]
+            : [];
           mWorkouts[record.workout_date] = { 
             title: record.workout_title, 
-            hasDrills: hasDrills 
+            hasDrills: hasDrills,
+            types: types
           }; 
         });
       }
@@ -610,6 +647,22 @@ export default function WeeklyPlanner() {
     const newSchedule = {}; const newTitles = {}; DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; });
     if (data) { data.forEach(record => { const dayName = JS_DAYS[new Date(record.workout_date).getDay()]; if (dayName) { newSchedule[dayName] = record.drills || []; newTitles[dayName] = record.workout_title || ''; } }); }
     setSchedule(newSchedule); setDayTitles(newTitles); setIsLoading(false); 
+
+    // Save deployment record for calendar visualization
+    const deployStartDate = getDbDateStr(new Date(currentWeekStart));
+    const deployEndDate = (() => { const d = new Date(currentWeekStart); d.setDate(d.getDate() + (program.weeks.length * 7) - 1); return getDbDateStr(d); })();
+    const colorIndex = deployments.length % PHASE_COLORS.length;
+    await supabase.from('periodization_deployments').insert([{
+      athlete_id: selectedAthleteId,
+      program_id: program.id,
+      program_name: program.program_name,
+      program_type: 'meso',
+      start_date: deployStartDate,
+      end_date: deployEndDate,
+      color: PHASE_COLORS[colorIndex].hex
+    }]);
+    fetchDeployments(selectedAthleteId);
+
     handleToast(`Meso-Block "${program.program_name}" deployed successfully!`);
   };
 
@@ -739,6 +792,30 @@ export default function WeeklyPlanner() {
       setSchedule(newSchedule); 
       setDayTitles(newTitles); 
       setIsLoading(false); 
+
+      // Save deployment records for each Meso block within the Macro
+      let weekOffset = 0;
+      for (let bi = 0; bi < blocksChain.length; bi++) {
+        const blockItem = blocksChain[bi];
+        const blockWeeks = blockItem.weeksCount || 4;
+        const blockStart = new Date(startBaseDate);
+        blockStart.setDate(blockStart.getDate() + (weekOffset * 7));
+        const blockEnd = new Date(blockStart);
+        blockEnd.setDate(blockEnd.getDate() + (blockWeeks * 7) - 1);
+        const colorIndex = bi % PHASE_COLORS.length;
+        await supabase.from('periodization_deployments').insert([{
+          athlete_id: selectedAthleteId,
+          program_id: macro.id,
+          program_name: blockItem.blockName || macro.program_name,
+          program_type: 'macro',
+          start_date: getDbDateStr(blockStart),
+          end_date: getDbDateStr(blockEnd),
+          color: PHASE_COLORS[colorIndex].hex
+        }]);
+        weekOffset += blockWeeks;
+      }
+      fetchDeployments(selectedAthleteId);
+
       handleToast(`Macro-Cycle "${macro.program_name}" deployed across ${currentWeekOffset} weeks!`);
 
     } catch (err) {
@@ -1176,11 +1253,27 @@ export default function WeeklyPlanner() {
     const startDayObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     const startDay = startDayObj.getDay(); // Align with standard Sunday-first layout
     for (let i = 0; i < startDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-12 sm:h-24"></div>);
+      days.push(<div key={`empty-${i}`} className="h-12 sm:h-28"></div>);
     }
     const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const todayStr = getDbDateStr(new Date());
     const selectedStr = getDbDateStr(currentDate);
+
+    // Helper: find which deployment a date belongs to
+    const getDeploymentForDate = (dateStr) => {
+      return deployments.find(d => dateStr >= d.start_date && dateStr <= d.end_date);
+    };
+
+    // Helper: get week number within a deployment
+    const getWeekInDeployment = (dateStr, deployment) => {
+      if (!deployment) return null;
+      const start = new Date(deployment.start_date + 'T00:00:00');
+      const current = new Date(dateStr + 'T00:00:00');
+      const diffDays = Math.floor((current - start) / (1000 * 60 * 60 * 24));
+      const weekNum = Math.floor(diffDays / 7) + 1;
+      const totalWeeks = Math.ceil((new Date(deployment.end_date + 'T00:00:00') - start) / (1000 * 60 * 60 * 24) / 7);
+      return { week: weekNum, total: totalWeeks };
+    };
 
     for (let i = 1; i <= daysInMonth; i++) {
       const dateObj = new Date(currentDate.getFullYear(), currentDate.getMonth(), i);
@@ -1190,6 +1283,12 @@ export default function WeeklyPlanner() {
       const isActive = hasWorkoutSaved;
       const isToday = todayStr === dateStr;
       const isSelected = selectedStr === dateStr;
+      const deployment = getDeploymentForDate(dateStr);
+      const weekInfo = getWeekInDeployment(dateStr, deployment);
+      const exerciseTypes = (dayData && dayData.types) || [];
+      
+      // Determine phase color styling
+      const phaseColor = deployment ? PHASE_COLORS.find(pc => pc.hex === deployment.color) || PHASE_COLORS[0] : null;
       
       days.push(
         <button 
@@ -1198,27 +1297,40 @@ export default function WeeklyPlanner() {
             const newDate = new Date(currentDate);
             newDate.setDate(i);
             setCurrentDate(newDate);
-
-            // Switch active day on mobile view so the clicked day is shown instantly!
             const dayOfWeekName = JS_DAYS[newDate.getDay()];
             if (DAYS_OF_WEEK.includes(dayOfWeekName)) {
               setActiveMobileDay(dayOfWeekName);
             }
-
             setShowMonthCalendar(false);
           }} 
           className={`relative flex flex-col items-center justify-center transition-all active:scale-95 group
-            h-12 sm:h-24 w-full rounded-2xl sm:p-2.5 sm:flex sm:flex-col sm:items-start sm:justify-start sm:border
+            h-12 sm:h-28 w-full rounded-2xl sm:p-2.5 sm:flex sm:flex-col sm:items-start sm:justify-start sm:border
             ${isSelected 
               ? 'bg-orange-500 text-white sm:bg-orange-500/10 sm:text-slate-800 sm:dark:text-white sm:border-orange-500 sm:border-2' 
-              : isActive 
-                ? 'bg-emerald-500/10 dark:bg-emerald-500/5 text-[#00c58d] sm:bg-emerald-500/[0.02] sm:border-[#00c58d] sm:border-2' 
-                : 'bg-transparent text-slate-800 dark:text-slate-200 sm:border-slate-100 sm:dark:border-slate-800 sm:bg-white sm:dark:bg-slate-900/50 sm:hover:bg-slate-50'
+              : deployment && !isActive
+                ? `${phaseColor.bg} sm:${phaseColor.border} sm:border`
+                : isActive 
+                  ? deployment 
+                    ? `${phaseColor.bg} sm:${phaseColor.border} sm:border-2`
+                    : 'bg-emerald-500/10 dark:bg-emerald-500/5 text-[#00c58d] sm:bg-emerald-500/[0.02] sm:border-[#00c58d] sm:border-2'
+                  : 'bg-transparent text-slate-800 dark:text-slate-200 sm:border-slate-100 sm:dark:border-slate-800 sm:bg-white sm:dark:bg-slate-900/50 sm:hover:bg-slate-50'
             }
           `}
         >
-          {/* Top right green active dot (visible on desktop) */}
-          {isActive && !isSelected && (
+          {/* Phase left accent bar for desktop */}
+          {deployment && (
+            <span className="absolute left-0 top-2 bottom-2 w-1 rounded-full hidden sm:block" style={{ backgroundColor: deployment.color }}></span>
+          )}
+
+          {/* Week badge within deployment (top right, desktop only) */}
+          {weekInfo && !isSelected && (
+            <span className="absolute top-1.5 right-1.5 text-[8px] font-black uppercase tracking-wider hidden sm:block opacity-60" style={{ color: deployment.color }}>
+              W{weekInfo.week}/{weekInfo.total}
+            </span>
+          )}
+
+          {/* Top right green active dot (visible on desktop, only when no deployment) */}
+          {isActive && !isSelected && !deployment && (
             <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] absolute top-2 right-2 hidden sm:block"></span>
           )}
 
@@ -1229,28 +1341,45 @@ export default function WeeklyPlanner() {
               : isToday
                 ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 border border-orange-350 dark:border-orange-800'
                 : isActive
-                  ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                  ? deployment
+                    ? 'bg-white/80 dark:bg-slate-800/80'
+                    : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                   : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 sm:group-hover:bg-slate-100'
             }
-          `}>
+          `} style={isActive && deployment && !isSelected ? { color: deployment.color } : {}}>
             {i}
           </span>
           
-          {/* Bottom active dot indicator on mobile */}
-          {isActive && !isSelected && (
-            <span className="w-1.5 h-1.5 rounded-full bg-[#00c58d] mt-1 sm:hidden"></span>
+          {/* Exercise type dots (desktop only, replaces single green dot) */}
+          {isActive && exerciseTypes.length > 0 && !isSelected && (
+            <div className="hidden sm:flex items-center gap-0.5 mt-1 flex-wrap">
+              {exerciseTypes.slice(0, 4).map((type, ti) => {
+                const dotInfo = EXERCISE_TYPE_DOTS[type] || EXERCISE_TYPE_DOTS.physical;
+                return <span key={ti} className={`w-1.5 h-1.5 rounded-full ${dotInfo.color}`} title={dotInfo.label}></span>;
+              })}
+              {exerciseTypes.length > 4 && (
+                <span className="text-[7px] font-bold text-slate-400">+{exerciseTypes.length - 4}</span>
+              )}
+            </div>
           )}
 
-          {/* Bottom Plan Status Text Label (hidden on mobile to prevent clutter) */}
-          <span className={`text-[9px] font-black uppercase tracking-widest sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block 
+          {/* Bottom active dot indicator on mobile */}
+          {isActive && !isSelected && (
+            <span className="w-1.5 h-1.5 rounded-full mt-1 sm:hidden" style={{ backgroundColor: deployment ? deployment.color : '#00c58d' }}></span>
+          )}
+
+          {/* Bottom Plan Status Text Label (hidden on mobile) */}
+          <span className={`text-[8px] font-black uppercase tracking-wider sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block 
             ${isSelected 
               ? 'text-orange-600 dark:text-orange-400' 
-              : isActive 
-                ? 'text-[#00c58d]' 
-                : 'text-slate-400 dark:text-slate-650'
+              : deployment
+                ? '' 
+                : isActive 
+                  ? 'text-[#00c58d]' 
+                  : 'text-slate-400 dark:text-slate-650'
             }
-          `}>
-            ${isSelected ? 'Selected' : isActive ? 'Active Plan' : 'Rest/Off'}
+          `} style={deployment && !isSelected ? { color: deployment.color } : {}}>
+            {isSelected ? 'Selected' : deployment ? deployment.program_name.substring(0, 12) : isActive ? 'Active Plan' : 'Rest/Off'}
           </span>
         </button>
       );
@@ -1313,6 +1442,47 @@ export default function WeeklyPlanner() {
                 Go to Today
               </button>
             </div>
+
+            {/* Periodization Roadmap Bar */}
+            {deployments.length > 0 && (
+              <div className="mb-5 p-4 bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+                    <BarChart3 className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Periodization Roadmap</span>
+                </div>
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
+                  {deployments.map((dep, di) => {
+                    const startD = new Date(dep.start_date + 'T00:00:00');
+                    const endD = new Date(dep.end_date + 'T00:00:00');
+                    const weeks = Math.ceil((endD - startD) / (1000 * 60 * 60 * 24) / 7);
+                    const isCurrentMonth = startD.getMonth() === currentDate.getMonth() && startD.getFullYear() === currentDate.getFullYear()
+                      || endD.getMonth() === currentDate.getMonth() && endD.getFullYear() === currentDate.getFullYear();
+                    return (
+                      <div 
+                        key={dep.id || di} 
+                        className={`flex-1 min-w-[80px] p-2.5 rounded-xl border-2 transition-all cursor-default ${isCurrentMonth ? 'opacity-100 shadow-sm' : 'opacity-50'}`}
+                        style={{ 
+                          borderColor: dep.color, 
+                          backgroundColor: dep.color + '15'
+                        }}
+                      >
+                        <div className="text-[10px] font-black truncate" style={{ color: dep.color }}>
+                          {dep.program_name}
+                        </div>
+                        <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                          {weeks}W · {startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        </div>
+                        <div className="text-[8px] font-black uppercase tracking-wider mt-1 opacity-60" style={{ color: dep.color }}>
+                          {dep.program_type}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Grid weekdays headers */}
             <div className="grid grid-cols-7 gap-1 sm:gap-4 text-center mb-3">
