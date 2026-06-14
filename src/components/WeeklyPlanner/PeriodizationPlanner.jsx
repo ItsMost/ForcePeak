@@ -26,6 +26,479 @@ const PHASE_COLORS = [
   { hex: '#06b6d4', border: 'border-cyan-500', bg: 'bg-cyan-500/10', text: 'text-cyan-500', label: 'Cyan (Transition)' }
 ];
 
+const SYSTEM_PRESETS = [
+  { id: 'sys-fdp-meso', program_name: '✨ [FDP] بروتوكول القوة الافتراضي / Default Max Strength', type: 'meso' },
+  { id: 'sys-edp-meso', program_name: '✨ [EDP] بروتوكول القدرة الانفجارية / Default Elastic SSC', type: 'meso' },
+  { id: 'sys-rsd-meso', program_name: '✨ [RSD] بروتوكول الصلابة والارتداد / Default Stiffness Plyos', type: 'meso' },
+  { id: 'sys-hvrp-meso', program_name: '✨ [HVRP] بروتوكول السرعة العالية / Default High-Velocity RFD', type: 'meso' },
+];
+
+const getSystemPresetMeso = (programId) => {
+  const protocol = programId.replace('sys-', '').replace('-meso', '').toUpperCase(); // FDP, EDP, RSD, HVRP
+  
+  if (protocol === 'FDP') {
+    return {
+      id: programId,
+      program_name: 'Max Strength Protocol (FDP)',
+      type: 'meso',
+      weeks: [
+        {
+          title: "أسبوع 1: التكيف العصبي والقوة القصوى / Week 1: Max Strength & Neural Prep",
+          drills: {
+            Saturday: [
+              { title: "Back Squat / سكوات خلفي (VBT)", type: "strength", details: "السرعة المستهدفة: 0.40 m/s | حد خسارة السرعة: 10% VL", sets: "4", reps: "5", rest: "3-4 min" },
+              { title: "Bench Press / بنش برس (VBT)", type: "strength", details: "السرعة المستهدفة: 0.45 m/s | حد خسارة السرعة: 12% VL", sets: "4", reps: "5", rest: "3 min" },
+              { title: "Romanian Deadlift / رفعة رومانية", type: "strength", details: "تركيز على التثبيت والتحكم اللامركزي", sets: "3", reps: "6", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Deadlift / رفعة مميتة (VBT)", type: "strength", details: "السرعة المستهدفة: 0.35 m/s | حد خسارة السرعة: 10% VL", sets: "3", reps: "4", rest: "4 min" },
+              { title: "Military Press / ضغط عسكري كتف", type: "strength", details: "زيادة الحمل التدريجي", sets: "4", reps: "6", rest: "2.5 min" },
+              { title: "Weighted Pull-ups / عقلة بوزن", type: "strength", details: "سحب قوي مع تحكم في النزول", sets: "3", reps: "5", rest: "2 min" }
+            ],
+            Wednesday: [
+              { title: "Leg Press / مكبس أرجل ثقيل", type: "strength", details: "قوة قصوى ميكانيكية", sets: "4", reps: "6", rest: "3 min" },
+              { title: "Incline Dumbbell Press / بنش دمبل مائل", type: "strength", details: "تفعيل ألياف الصدر العلوية", sets: "3", reps: "8", rest: "2 min" },
+              { title: "Heavy Farmers Walk / مشي المزارع ثقيل", type: "strength", details: "ثبات الجذع وقوة القبضة | 30 متر", sets: "3", reps: "1", rest: "2 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 2: زيادة الكثافة وتفعيل الوحدات الحركية / Week 2: High Intensity & Motor Unit Recruitment",
+          drills: {
+            Saturday: [
+              { title: "Back Squat / سكوات خلفي (VBT)", type: "strength", details: "السرعة المستهدفة: 0.38 m/s | حد خسارة السرعة: 10% VL", sets: "4", reps: "4", rest: "4 min" },
+              { title: "Bench Press / بنش برس (VBT)", type: "strength", details: "السرعة المستهدفة: 0.42 m/s | حد خسارة السرعة: 12% VL", sets: "4", reps: "4", rest: "3 min" },
+              { title: "Romanian Deadlift / رفعة رومانية", type: "strength", details: "زيادة طفيفة في الوزن", sets: "3", reps: "5", rest: "2.5 min" }
+            ],
+            Monday: [
+              { title: "Deadlift / رفعة مميتة (VBT)", type: "strength", details: "السرعة المستهدفة: 0.32 m/s | حد خسارة السرعة: 10% VL", sets: "4", reps: "3", rest: "4 min" },
+              { title: "Military Press / ضغط عسكري كتف", type: "strength", details: "قوة تفجيرية بالأكتاف", sets: "4", reps: "5", rest: "3 min" },
+              { title: "Weighted Pull-ups / عقلة بوزن", type: "strength", details: "تكرار منخفض بوزن أعلى", sets: "4", reps: "4", rest: "2.5 min" }
+            ],
+            Wednesday: [
+              { title: "Leg Press / مكبس أرجل ثقيل", type: "strength", details: "زيادة التحميل", sets: "4", reps: "5", rest: "3 min" },
+              { title: "Incline Dumbbell Press / بنش دمبل مائل", type: "strength", details: "أقصى انقباض عضلي", sets: "3", reps: "6", rest: "2 min" },
+              { title: "Heavy Farmers Walk / مشي المزارع ثقيل", type: "strength", details: "قوة قبضة قصوى | 30 متر", sets: "4", reps: "1", rest: "2 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 3: ذروة التحميل والمقاومة القصوى / Week 3: Peak Overload & Max Resistance",
+          drills: {
+            Saturday: [
+              { title: "Back Squat / سكوات خلفي (VBT)", type: "strength", details: "السرعة المستهدفة: 0.35 m/s | حد خسارة السرعة: 10% VL", sets: "5", reps: "3", rest: "4 min" },
+              { title: "Bench Press / بنش برس (VBT)", type: "strength", details: "السرعة المستهدفة: 0.38 m/s | حد خسارة السرعة: 10% VL", sets: "5", reps: "3", rest: "4 min" },
+              { title: "Romanian Deadlift / رفعة رومانية", type: "strength", details: "أقصى تحكم في النزول", sets: "3", reps: "4", rest: "3 min" }
+            ],
+            Monday: [
+              { title: "Deadlift / رفعة مميتة (VBT)", type: "strength", details: "السرعة المستهدفة: 0.30 m/s | حد خسارة السرعة: 10% VL", sets: "3", reps: "2", rest: "5 min" },
+              { title: "Military Press / ضغط عسكري كتف", type: "strength", details: "تكرارات منخفضة بوزن أقصى", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Weighted Pull-ups / عقلة بوزن", type: "strength", details: "أقصى وزن مضاف", sets: "4", reps: "3", rest: "3 min" }
+            ],
+            Wednesday: [
+              { title: "Leg Press / مكبس أرجل ثقيل", type: "strength", details: "أقصى دفع ممكن", sets: "4", reps: "4", rest: "4 min" },
+              { title: "Incline Dumbbell Press / بنش دمبل مائل", type: "strength", details: "أقصى وزن للدمبلز", sets: "4", reps: "5", rest: "2.5 min" },
+              { title: "Heavy Farmers Walk / مشي المزارع ثقيل", type: "strength", details: "مشي المزارع | 20 متر بوزن أقصى", sets: "3", reps: "1", rest: "3 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 4: تقليل الحمل والتكيف الاستشفائي / Week 4: Deload & Supercompensation",
+          drills: {
+            Saturday: [
+              { title: "Back Squat / سكوات خلفي (VBT)", type: "strength", details: "تخفيض الحمل 40% | سرعة عالية مع الحفاظ على التكنيك", sets: "3", reps: "3", rest: "3 min" },
+              { title: "Bench Press / بنش برس (VBT)", type: "strength", details: "تخفيض الحمل 40% | سرعة وتكنيك ممتاز", sets: "3", reps: "3", rest: "3 min" }
+            ],
+            Monday: [
+              { title: "Deadlift / رفعة مميتة (VBT)", type: "strength", details: "تخفيض الحمل 40% | سحب حركي سلس وسريع", sets: "2", reps: "3", rest: "3 min" },
+              { title: "Military Press / ضغط عسكري كتف", type: "strength", details: "حمل خفيف للاستشفاء الحركي", sets: "3", reps: "4", rest: "2.5 min" }
+            ],
+            Wednesday: [
+              { title: "Leg Press / مكبس أرجل خفيف", type: "strength", details: "استشفاء وتدفق دموي", sets: "3", reps: "6", rest: "2 min" },
+              { title: "Farmers Walk / مشي المزارع معتدل", type: "strength", details: "مشي خفيف للجذع | 30 متر", sets: "2", reps: "1", rest: "2 min" }
+            ]
+          }
+        }
+      ]
+    };
+  } else if (protocol === 'EDP') {
+    return {
+      id: programId,
+      program_name: 'Elastic/SSC Protocol (EDP)',
+      type: 'meso',
+      weeks: [
+        {
+          title: "أسبوع 1: القدرة الديناميكية والتنشيط / Week 1: Dynamic Power & Activation",
+          drills: {
+            Saturday: [
+              { title: "Loaded Squat Jump / قفز القرفصاء بالوزن (VBT)", type: "power", details: "السرعة المستهدفة: 0.85-0.95 m/s | الحمل: 30% 1RM", sets: "4", reps: "5", rest: "3 min" },
+              { title: "Power Clean / الباور كلين (VBT)", type: "power", details: "السرعة المستهدفة: 0.90 m/s | تركيز تفجيري", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Countermovement Jump (CMJ)", type: "power", details: "قفز بدون وزن مع أقصى ارتفاع", sets: "3", reps: "6", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / رفعة تفجيرية بالبار السداسي", type: "power", details: "السرعة المستهدفة: 0.80 m/s | الحمل: 50% 1RM", sets: "4", reps: "4", rest: "3 min" },
+              { title: "Push Press / ضغط علوي متفجر (VBT)", type: "power", details: "السرعة المستهدفة: 1.00 m/s", sets: "4", reps: "4", rest: "2.5 min" },
+              { title: "Medicine Ball Chest Pass / رمي كرة طبية", type: "power", details: "أقصى قوة دفع أفقية للصدر", sets: "3", reps: "8", rest: "1.5 min" }
+            ],
+            Wednesday: [
+              { title: "Kettlebell Swing / أرجحة الكيتل بيل", type: "power", details: "أقصى امتداد تفجيري للحوض", sets: "4", reps: "10", rest: "2 min" },
+              { title: "Broad Jump / قفز عريض", type: "power", details: "أقصى مسافة أفقية مع هبوط سليم", sets: "3", reps: "5", rest: "2 min" },
+              { title: "Rotational MB Throw / رمي جانبي تفجيري", type: "power", details: "قوة الدوران للجذع والوسط", sets: "3", reps: "6", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 2: تراكم الطاقة والقوة المتفجرة / Week 2: Power Accumulation & Elastic SSC",
+          drills: {
+            Saturday: [
+              { title: "Loaded Squat Jump / قفز القرفصاء بالوزن (VBT)", type: "power", details: "السرعة المستهدفة: 0.82-0.90 m/s | الحمل: 35% 1RM", sets: "4", reps: "4", rest: "3 min" },
+              { title: "Power Clean / الباور كلين (VBT)", type: "power", details: "السرعة المستهدفة: 0.95 m/s", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Dumbbell Jump Squat / قفز دمبلز", type: "power", details: "قفز متفجر مستمر", sets: "3", reps: "5", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / رفعة تفجيرية بالبار السداسي", type: "power", details: "السرعة المستهدفة: 0.85 m/s | الحمل: 45% 1RM", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Push Press / ضغط علوي متفجر (VBT)", type: "power", details: "السرعة المستهدفة: 1.05 m/s", sets: "4", reps: "3", rest: "2.5 min" },
+              { title: "Medicine Ball Overhead Throw / رمي خلفي علوي", type: "power", details: "أقصى قوة دفع خلفي عمودي", sets: "3", reps: "6", rest: "1.5 min" }
+            ],
+            Wednesday: [
+              { title: "Kettlebell Swing / أرجحة الكيتل بيل", type: "power", details: "أرجحة سريعة ثقيلة", sets: "4", reps: "8", rest: "2 min" },
+              { title: "Triple Jump / وثب ثلاثي متتالي", type: "power", details: "تقليل وقت التلامس بالربط", sets: "3", reps: "3", rest: "2 min" },
+              { title: "Rotational MB Throw / رمي جانبي تفجيري", type: "power", details: "قوة الدوران السريعة للوركين", sets: "3", reps: "6", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 3: ذروة القدرة والحمل الباليستي / Week 3: Peak Power & Ballistic Load",
+          drills: {
+            Saturday: [
+              { title: "Loaded Squat Jump / قفز القرفصاء بالوزن (VBT)", type: "power", details: "السرعة المستهدفة: 0.80-0.88 m/s | الحمل: 40% 1RM", sets: "5", reps: "3", rest: "4 min" },
+              { title: "Power Clean / الباور كلين (VBT)", type: "power", details: "السرعة المستهدفة: 1.00 m/s | أقصى سرعة التقاط", sets: "4", reps: "2", rest: "3.5 min" },
+              { title: "Countermovement Jump (CMJ) (Weighted)", type: "power", details: "قفز بدمبل خفيف بأقصى نية", sets: "3", reps: "4", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / رفعة تفجيرية بالبار السداسي", type: "power", details: "السرعة المستهدفة: 0.90 m/s | الحمل: 40% 1RM", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Push Press / ضغط علوي متفجر (VBT)", type: "power", details: "السرعة المستهدفة: 1.10 m/s", sets: "5", reps: "2", rest: "3 min" },
+              { title: "Medicine Ball Chest Pass / رمي كرة طبية", type: "power", details: "تفعيل الوحدات الحركية السريعة للصدر", sets: "4", reps: "5", rest: "1.5 min" }
+            ],
+            Wednesday: [
+              { title: "Banded Kettlebell Swing / أرجحة كيتل بيل بالمطاط", type: "power", details: "سحب مطاطي لزيادة السرعة اللامركزية", sets: "4", reps: "8", rest: "2 min" },
+              { title: "Hurdle Jumps / قفز الحواجز التفاعلي", type: "power", details: "قفز حواجز متتالي مع تقليل زمن التلامس", sets: "3", reps: "5", rest: "2.5 min" },
+              { title: "Rotational MB Throw / رمي جانبي تفجيري", type: "power", details: "أقصى قوة دفع بالستية للوسط", sets: "4", reps: "5", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 4: استشفاء وتسهيل عصبي / Week 4: Deload & Supercompensation",
+          drills: {
+            Saturday: [
+              { title: "Loaded Squat Jump / قفز القرفصاء خفيف جداً", type: "power", details: "حمل 15% | سرعة قصوى لتخفيف الضغط", sets: "3", reps: "3", rest: "3 min" },
+              { title: "Countermovement Jump (CMJ)", type: "power", details: "قفز بدون وزن لتسريع التكنيك", sets: "3", reps: "4", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / سحب تفجيري خفيف", type: "power", details: "حمل 30% | سرعة وتألق حركي", sets: "3", reps: "3", rest: "3 min" },
+              { title: "Medicine Ball Chest Pass / رمي كرة طبية خفيفة", type: "power", details: "رمي سريع جداً بدون جهد أقصى", sets: "3", reps: "5", rest: "1.5 min" }
+            ],
+            Wednesday: [
+              { title: "Kettlebell Swing / أرجحة كيتل بيل خفيفة", type: "power", details: "استشفاء حركي للحوض", sets: "3", reps: "6", rest: "2 min" },
+              { title: "Broad Jump / قفز عريض معتدل", type: "power", details: "تركيز على سلاسة الهبوط والتوازن", sets: "2", reps: "3", rest: "2 min" }
+            ]
+          }
+        }
+      ]
+    };
+  } else if (protocol === 'RSD') {
+    return {
+      id: programId,
+      program_name: 'Reactive/Stiffness Protocol (RSD)',
+      type: 'meso',
+      weeks: [
+        {
+          title: "أسبوع 1: صلابة الكاحل وامتصاص الصدمات / Week 1: Ankle Stiffness & Shock Absorption",
+          drills: {
+            Saturday: [
+              { title: "Ankle Pogo Jumps / قفز البوجو للكاحل", type: "isometric", details: "زمن التلامس: < 180ms | صلابة الكاحل وركبة ممدودة", sets: "3", reps: "15", rest: "1.5 min" },
+              { title: "Depth Jumps / قفز العمق (ارتفاع 30سم)", type: "power", details: "القفز الفوري لأعلى بمجرد لمس الأرض", sets: "4", reps: "5", rest: "2.5 min" },
+              { title: "Single Leg Box Drop / سقوط على رجل واحدة", type: "isometric", details: "سقوط من صندوق وثبات تام لمنع الامتصاص الزائد", sets: "3", reps: "5", rest: "1.5 min" }
+            ],
+            Monday: [
+              { title: "Continuous Hurdle Hops / قفز الحواجز المتتالي", type: "power", details: "حواجز بارتفاع متوسط | تقليل زمن الأرض", sets: "3", reps: "6", rest: "2 min" },
+              { title: "Lateral Bound with Stick / وثب جانبي وثبات", type: "power", details: "وثب جانبي مع ثبات ثانيتين على رجل واحدة", sets: "3", reps: "6", rest: "1.5 min" },
+              { title: "Split Squat Jump / قفز الاسبليت سكوات التفاعلي", type: "power", details: "تغيير سريع للقدمين في الهواء", sets: "3", reps: "5", rest: "2 min" }
+            ],
+            Wednesday: [
+              { title: "Band-Assisted Pogos / بوجو بمساعدة المطاط", type: "power", details: "سحب مطاطي لأعلى لتقليل الحمل وزيادة التلامس السريع", sets: "3", reps: "12", rest: "1.5 min" },
+              { title: "Single-Leg Pogo Jump / بوجو رجل واحدة", type: "isometric", details: "صلابة الكاحل الفردية", sets: "3", reps: "8", rest: "1.5 min" },
+              { title: "Medicine Ball Slam / رمي تفجيري سفلي", type: "power", details: "رمي سريع مع ثبات الجذع", sets: "3", reps: "8", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 2: زيادة شدة الارتداد وتقليل زمن التلامس / Week 2: Decreasing Contact Time & Elastic Build",
+          drills: {
+            Saturday: [
+              { title: "Ankle Pogo Jumps / قفز البوجو للكاحل", type: "isometric", details: "زمن التلامس: < 160ms | أقصى صلابة ممكنة", sets: "3", reps: "15", rest: "1.5 min" },
+              { title: "Depth Jumps / قفز العمق (ارتفاع 40سم)", type: "power", details: "زمن التلامس < 200ms | قفز عمودي أقصى", sets: "4", reps: "4", rest: "3 min" },
+              { title: "Single Leg Box Drop / سقوط على رجل واحدة", type: "isometric", details: "سقوط من صندوق أعلى قليلاً وثبات تام", sets: "3", reps: "4", rest: "1.5 min" }
+            ],
+            Monday: [
+              { title: "Continuous Hurdle Hops / قفز الحواجز المتتالي", type: "power", details: "حواجز أعلى قليلاً | ارتداد متفجر", sets: "4", reps: "5", rest: "2.5 min" },
+              { title: "Lateral Bound with Stick / وثب جانبي وثبات", type: "power", details: "زيادة مسافة الوثب الجانبي", sets: "3", reps: "5", rest: "1.5 min" },
+              { title: "Split Squat Jump / قفز الاسبليت سكوات التفاعلي", type: "power", details: "قوة تفجيرية في وضعية مقصية", sets: "3", reps: "5", rest: "2 min" }
+            ],
+            Wednesday: [
+              { title: "Band-Assisted Pogos / بوجو بمساعدة المطاط", type: "power", details: "زيادة شدة المطاط لزيادة التلامس السريع", sets: "3", reps: "12", rest: "1.5 min" },
+              { title: "Single-Leg Pogo Jump / بوجو رجل واحدة", type: "isometric", details: "أقصى سرعة وقوة ارتداد", sets: "3", reps: "10", rest: "1.5 min" },
+              { title: "Medicine Ball Slam / رمي تفجيري سفلي", type: "power", details: "رمي الكرة بأقصى قوة وسرعة للأرض", sets: "3", reps: "6", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 3: ذروة الصلابة التفاعلية والبلايومتركس المكثف / Week 3: Peak Reactive Stiffness & Max Plyos",
+          drills: {
+            Saturday: [
+              { title: "Ankle Pogo Jumps / قفز البوجو للكاحل (المحمل)", type: "isometric", details: "مسك دمبلز خفيفة جداً (5-10 كجم) | حافظ على صلابة الكاحل", sets: "4", reps: "10", rest: "2 min" },
+              { title: "Depth Jumps / قفز العمق (ارتفاع 50سم)", type: "power", details: "أقصى عمق للاعبين النخبة | زمن التلامس < 190ms", sets: "5", reps: "3", rest: "3.5 min" },
+              { title: "Single-Leg Depth Jump / قفز العمق رجل واحدة", type: "power", details: "سقوط من صندوق منخفض والقفز الفوري برجل واحدة", sets: "3", reps: "3", rest: "2.5 min" }
+            ],
+            Monday: [
+              { title: "Continuous Hurdle Hops / قفز الحواجز التفاعلي", type: "power", details: "أقصى سرعة ربط بين الحواجز بارتفاع كبير", sets: "4", reps: "5", rest: "3 min" },
+              { title: "Lateral Bound with Double Hop / وثب جانبي مع قفز إضافي", type: "power", details: "وثب جانبي ثم قفزة بوجو سريعة فورا على رجل واحدة", sets: "3", reps: "4", rest: "2 min" },
+              { title: "Split Squat Jump / قفز الاسبليت سكوات التفاعلي", type: "power", details: "أقصى ارتفاع للقفز المتبادل", sets: "4", reps: "4", rest: "2.5 min" }
+            ],
+            Wednesday: [
+              { title: "Band-Assisted Pogos / بوجو بمساعدة المطاط", type: "power", details: "أسرع تلامس للأرض (الهدف < 130ms)", sets: "4", reps: "10", rest: "1.5 min" },
+              { title: "Single-Leg Pogo Jump / بوجو رجل واحدة", type: "isometric", details: "بوجو فردي متفجر", sets: "4", reps: "8", rest: "1.5 min" },
+              { title: "Medicine Ball Slam / رمي تفجيري سفلي", type: "power", details: "أقصى تسارع ورمي بالستي", sets: "4", reps: "5", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 4: خفض الكثافة واستشفاء المفاصل / Week 4: Deload & Joint Recovery",
+          drills: {
+            Saturday: [
+              { title: "Ankle Pogo Jumps / بوجو كاحل معتدل", type: "isometric", details: "قفز بوجو خفيف جداً للترطيب الوتر الحركي", sets: "3", reps: "10", rest: "1.5 min" },
+              { title: "Single Leg Box Drop / سقوط خفيف للثبات", type: "isometric", details: "سقوط من صندوق منخفض للتركيز على وضع الركبة", sets: "3", reps: "4", rest: "1.5 min" }
+            ],
+            Monday: [
+              { title: "Hurdle Hops / قفز حواجز منخفضة", type: "power", details: "حواجز منخفضة جداً للتعافي والتكنيك السلس", sets: "3", reps: "4", rest: "2 min" },
+              { title: "Lateral Bound with Stick / وثب جانبي خفيف", type: "power", details: "توازن وحركة هبوط سلسة", sets: "3", reps: "4", rest: "1.5 min" }
+            ],
+            Wednesday: [
+              { title: "Band-Assisted Pogos / بوجو بمساعدة المطاط", type: "power", details: "بوجو خفيف جداً بالمطاط", sets: "3", reps: "8", rest: "1.5 min" },
+              { title: "Medicine Ball Slam / رمي كرة خفيفة", type: "power", details: "رمي خفيف للاستشفاء", sets: "2", reps: "5", rest: "1.5 min" }
+            ]
+          }
+        }
+      ]
+    };
+  } else if (protocol === 'HVRP') {
+    return {
+      id: programId,
+      program_name: 'High-Velocity/RFD Protocol (HVRP)',
+      type: 'meso',
+      weeks: [
+        {
+          title: "أسبوع 1: السرعة العصبية ومعدل القوة / Week 1: Neuromuscular Speed & RFD",
+          drills: {
+            Saturday: [
+              { title: "Speed Squat / سكوات سريع (VBT)", type: "speed", details: "السرعة المستهدفة: 1.15-1.25 m/s | الحمل: 35-45% 1RM", sets: "5", reps: "3", rest: "3 min" },
+              { title: "Speed Bench Press / بنش سريع (VBT)", type: "speed", details: "السرعة المستهدفة: 1.20-1.30 m/s | الحمل: 35-40% 1RM", sets: "5", reps: "3", rest: "3 min" },
+              { title: "Banded Kettlebell Swings / أرجحة كيتل بيل بالمطاط", type: "speed", details: "سرعة قصوى ونية دفع تفجيرية", sets: "4", reps: "8", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / سحب سريع بالبار السداسي", type: "speed", details: "السرعة المستهدفة: 1.10 m/s | الحمل: 40% 1RM", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Medicine Ball Rotational Slams / رمي جانبي تفجيري", type: "speed", details: "أقصى سرعة نقل طاقة للجذع", sets: "3", reps: "6", rest: "1.5 min" },
+              { title: "Dynamic Clapping Push-ups / ضغط بالستوري بالتصفيق", type: "speed", details: "أقصى قدرة دفع علوية تفاعلية", sets: "3", reps: "5", rest: "2 min" }
+            ],
+            Wednesday: [
+              { title: "Assisted Jumps / قفز بمساعدة المطاط", type: "speed", details: "القفز بسرعة هواء أعلى من الطبيعي", sets: "4", reps: "6", rest: "2 min" },
+              { title: "Dumbbell Shrugs (Speed) / هز أكتاف تفجيري بالدمبل", type: "speed", details: "سرعة رفع الكتف لتوليد القوة للسرعة", sets: "3", reps: "8", rest: "1.5 min" },
+              { title: "Underhand Med Ball Throw / رمي أمامي سفلي لأعلى", type: "speed", details: "أقصى سرعة انطلاق بالستية", sets: "3", reps: "5", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 2: السرعة والبالستية العالية / Week 2: Ballistics & Dynamic Velocity",
+          drills: {
+            Saturday: [
+              { title: "Speed Squat / سكوات سريع (VBT)", type: "speed", details: "السرعة المستهدفة: 1.20-1.30 m/s | الحمل: 35% 1RM", sets: "6", reps: "3", rest: "3 min" },
+              { title: "Speed Bench Press / بنش سريع (VBT)", type: "speed", details: "السرعة المستهدفة: 1.25-1.35 m/s | الحمل: 35% 1RM", sets: "6", reps: "3", rest: "3 min" },
+              { title: "Banded Kettlebell Swings / أرجحة كيتل بيل بالمطاط", type: "speed", details: "زيادة سرعة الدفع والمطاط", sets: "4", reps: "6", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / سحب سريع بالبار السداسي", type: "speed", details: "السرعة المستهدفة: 1.15 m/s | الحمل: 35% 1RM", sets: "4", reps: "3", rest: "3 min" },
+              { title: "Medicine Ball Rotational Slams / رمي جانبي تفجيري", type: "speed", details: "رمي سريع جداً للوسط", sets: "4", reps: "6", rest: "1.5 min" },
+              { title: "Dynamic Clapping Push-ups / ضغط بالستوري بالتصفيق", type: "speed", details: "تصفيق مزدوج في الهواء إن أمكن", sets: "3", reps: "4", rest: "2.5 min" }
+            ],
+            Wednesday: [
+              { title: "Assisted Jumps / قفز بمساعدة المطاط", type: "speed", details: "أقصى ارتفاع وسرعة قفز", sets: "4", reps: "5", rest: "2.5 min" },
+              { title: "Dumbbell Shrugs (Speed) / هز أكتاف تفجيري بالدمبل", type: "speed", details: "تكرار سريع جداً لمد الأوتار", sets: "3", reps: "8", rest: "1.5 min" },
+              { title: "Underhand Med Ball Throw / رمي أمامي سفلي لأعلى", type: "speed", details: "أقصى نية تسارع للرمي", sets: "4", reps: "4", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 3: ذروة التسهيل العصبي والسرعة المطلقة / Week 3: Peak Neural Facilitation & Max Velocity",
+          drills: {
+            Saturday: [
+              { title: "Speed Squat / سكوات سريع (VBT)", type: "speed", details: "السرعة المستهدفة: 1.25-1.35 m/s | الحمل: 30% 1RM", sets: "6", reps: "2", rest: "4 min" },
+              { title: "Speed Bench Press / بنش سريع (VBT)", type: "speed", details: "السرعة المستهدفة: 1.30-1.40 m/s | الحمل: 30% 1RM", sets: "6", reps: "2", rest: "4 min" },
+              { title: "Banded Kettlebell Swings / أرجحة كيتل بيل بالمطاط", type: "speed", details: "أقصى أرجحة متفجرة ممكنة للكيتلبيل", sets: "4", reps: "6", rest: "2 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / سحب سريع بالبار السداسي", type: "speed", details: "السرعة المستهدفة: 1.20 m/s | الحمل: 30% 1RM", sets: "5", reps: "2", rest: "3.5 min" },
+              { title: "Medicine Ball Rotational Slams / رمي جانبي تفجيري", type: "speed", details: "أقصى تسارع بالستي للدوران", sets: "4", reps: "5", rest: "1.5 min" },
+              { title: "Dynamic Clapping Push-ups / ضغط بالستوري بالتصفيق", type: "speed", details: "دفع بالستي أقصى للصدر والذراعين", sets: "4", reps: "4", rest: "2.5 min" }
+            ],
+            Wednesday: [
+              { title: "Assisted Jumps / قفز بمساعدة المطاط", type: "speed", details: "السرعة القصوى المطلقة للتلامس والهواء", sets: "5", reps: "4", rest: "2.5 min" },
+              { title: "Dumbbell Shrugs (Speed) / هز أكتاف تفجيري بالدمبل", type: "speed", details: "أقصى سرعة انقباض لترابيس الرقبة", sets: "4", reps: "6", rest: "1.5 min" },
+              { title: "Underhand Med Ball Throw / رمي أمامي سفلي لأعلى", type: "speed", details: "أقصى قوة دفع بالستية عمودية", sets: "4", reps: "4", rest: "1.5 min" }
+            ]
+          }
+        },
+        {
+          title: "أسبوع 4: تقليص الحمل والسرعة المتجددة / Week 4: Deload & Speed Supercompensation",
+          drills: {
+            Saturday: [
+              { title: "Speed Squat / سكوات سريع خفيف", type: "speed", details: "تخفيض الحمل 30% | تركيز على مرونة الركبتين والسرعة", sets: "3", reps: "2", rest: "3 min" },
+              { title: "Speed Bench Press / بنش سريع خفيف", type: "speed", details: "سرعة ممتازة للذراعين بدون تعب", sets: "3", reps: "2", rest: "3 min" }
+            ],
+            Monday: [
+              { title: "Hex Bar Deadlift (Speed) / سحب سريع خفيف", type: "speed", details: "سحب سلس جداً وتألق عصبي", sets: "2", reps: "2", rest: "3 min" },
+              { title: "Medicine Ball Rotational Slams / رمي جانبي خفيف", type: "speed", details: "دوران خفيف للاستشفاء الحركي", sets: "2", reps: "4", rest: "1.5 min" }
+            ],
+            Wednesday: [
+              { title: "Assisted Jumps / قفز خفيف جداً بمطاط", type: "speed", details: "قفز تفاعلي خفيف للتعافي", sets: "3", reps: "4", rest: "2 min" },
+              { title: "Underhand Med Ball Throw / رمي خفيف لأعلى", type: "speed", details: "رمي خفيف للاستشفاء", sets: "2", reps: "3", rest: "1.5 min" }
+            ]
+          }
+        }
+      ]
+    };
+  }
+  return null;
+};
+
+const DEFICIT_GUIDELINES = {
+  FDP: {
+    title: "بروتوكول عجز القوة القصوى (FDP)",
+    englishTitle: "Max Force Deficit Protocol",
+    focus: "بناء أساس متين من القوة المطلقة والتحمل العضلي وتجنيد الوحدات الحركية السريعة.",
+    metrics: [
+      { label: "نوع الانقباض / Contraction", value: "Eccentric Control -> Concentric Acceleration" },
+      { label: "سرعة VBT المستهدفة / Velocity Target", value: "0.30 - 0.50 m/s" },
+      { label: "خسارة السرعة / Velocity Loss Limit", value: "10% - 15% (Strength/Hypertrophy)" },
+      { label: "زمن التلامس / Contact Time", value: "غير مؤثر (> 250ms)" },
+      { label: "الأحمال المقترحة / Load Target", value: "80% - 90% 1RM" }
+    ],
+    tips: [
+      "التركيز على التمارين المركبة الثقيلة (Squats, Bench Press, Deadlift).",
+      "الحفاظ على وقت راحة كافٍ (3-5 دقائق) بين المجموعات لضمان التعافي العصبي الكامل.",
+      "استخدم VBT لضبط الحمل اليومي: إذا كانت السرعة أعلى من 0.50 m/s، قم بزيادة الوزن."
+    ]
+  },
+  EDP: {
+    title: "بروتوكول عجز الدورة المطاطية (EDP)",
+    englishTitle: "Elastic SSC Deficit Protocol",
+    focus: "تطوير قدرة العضلات والأوتار على تخزين وإطلاق الطاقة المطاطية (الدورة المطاطية البطيئة).",
+    metrics: [
+      { label: "نوع الانقباض / Contraction", value: "Slow SSC (Stretch-Shortening Cycle)" },
+      { label: "سرعة VBT المستهدفة / Velocity Target", value: "0.75 - 1.00 m/s" },
+      { label: "خسارة السرعة / Velocity Loss Limit", value: "< 10% (Avoid fatigue, maintain power)" },
+      { label: "زمن التلامس / Contact Time", value: "معتدل (250ms - 400ms)" },
+      { label: "الأحمال المقترحة / Load Target", value: "30% - 60% 1RM (Loaded Jumps)" }
+    ],
+    tips: [
+      "تمارين القفز المحمل (Loaded Squat Jumps) والقفز العمودي CMJ.",
+      "تجنب الإجهاد العضلي التام؛ الهدف هو إنتاج أقصى قدرة انفجارية تفاعلية.",
+      "التركيز على سرعة الانتقال بين النزول والصعود (Amortization Phase)."
+    ]
+  },
+  RSD: {
+    title: "بروتوكول عجز الصلابة الارتدادية (RSD)",
+    englishTitle: "Reactive & Stiffness Deficit",
+    focus: "زيادة صلابة الكاحل والأوتار لتقليل زمن التلامس مع الأرض وزيادة معدل نقل القوة.",
+    metrics: [
+      { label: "نوع الانقباض / Contraction", value: "Fast SSC (Rapid Stretch-Shortening)" },
+      { label: "سرعة VBT المستهدفة / Velocity Target", value: "غير مطبق (تعتمد على ارتفاع القفز والزمن)" },
+      { label: "خسارة السرعة / Velocity Loss Limit", value: "تجنب هبوط الارتفاع أو زيادة زمن التلامس" },
+      { label: "زمن التلامس / Contact Time", value: "سريع جداً (< 200ms - 250ms)" },
+      { label: "مؤشر الارتداد / RSI Target", value: "> 2.50 (Reactive Strength Index)" }
+    ],
+    tips: [
+      "تمارين البلايومتركس السريعة (Depth Jumps, Hurdle Hops, Pogo Jumps).",
+      "يجب أن تكون الأرض صلبة والتلامس كأنه على سطح ساخن جداً.",
+      "توقف فوراً عند زيادة زمن التلامس عن 250 مللي ثانية."
+    ]
+  },
+  HVRP: {
+    title: "بروتوكول عجز السرعة ومعدل القوة (HVRP)",
+    englishTitle: "High-Velocity RFD Deficit",
+    focus: "تطوير أقصى سرعة ممكنة للجهاز العصبي ومعدل نمو القوة السريع بالأوزان الخفيفة.",
+    metrics: [
+      { label: "نوع الانقباض / Contraction", value: "Ballistic / High-Velocity Acceleration" },
+      { label: "سرعة VBT المستهدفة / Velocity Target", value: "1.10 - 1.30 m/s" },
+      { label: "خسارة السرعة / Velocity Loss Limit", value: "< 5% - 8% (Focus on maximum speed)" },
+      { label: "زمن التلامس / Contact Time", value: "سريع جداً" },
+      { label: "الأحمال المقترحة / Load Target", value: "0% - 30% 1RM (Light/Banded)" }
+    ],
+    tips: [
+      "تمارين دفع الدمبل الخفيف، تمارين الحبال المطاطية، ورمي الكرات الطبية.",
+      "التنفيذ بأقصى نية للحركة المتفجرة (Maximal Intent of Velocity).",
+      "فترات راحة كاملة لضمان أداء كل تكرار بأعلى سرعة ممكنة."
+    ]
+  }
+};
+
+const getMesoBlockConfig = (deficit, idx, totalBlocks) => {
+  const isLast = idx === totalBlocks - 1;
+  
+  const configs = {
+    FDP: [
+      { name: "تأسيس القوة والتحمل العضلي / Strength Base Prep", focus: "Hypertrophy & Work Capacity" },
+      { name: "تطوير القوة القصوى / Max Strength Build", focus: "Absolute Strength" },
+      { name: "تطوير القوة الانفجارية / Explosive Strength", focus: "RFD & Power" },
+      { name: "نقل القوة للسرعة / Force-Velocity Integration", focus: "Dynamic Effort" },
+      { name: "القدرة والسرعة القصوى / Power & Velocity Peak", focus: "High Velocity RFD" },
+      { name: "تحقيق الذروة والانتقال / Peaking & Taper", focus: "Maximum Velocity" }
+    ],
+    EDP: [
+      { name: "تحسين المرونة والقاعدة الهوائية / Elastic Base Prep", focus: "Tendon Elasticity" },
+      { name: "القوة الديناميكية / Dynamic Strength Base", focus: "Dynamic Effort Strength" },
+      { name: "تطوير الدورة المطاطية / Elastic SSC Development", focus: "Stretch-Shortening Cycle" },
+      { name: "القدرة الارتدادية / Ballistic Power", focus: "Ballistic Jump Power" },
+      { name: "السرعة المتفجرة / Explosive Speed", focus: "Unloaded SSC Power" },
+      { name: "ذروة الأداء والارتداد / Peak Reactive SSC", focus: "Taper & Max Elasticity" }
+    ],
+    RSD: [
+      { name: "تأسيس صلابة المفاصل / Joint Stiffness Base", focus: "Isometric & Eccentric Prep" },
+      { name: "تطوير الارتداد البطيء / Slow SSC Reactive Build", focus: "Slow SSC Plyometrics" },
+      { name: "تطوير الارتداد السريع / Fast SSC Reactive Build", focus: "Fast SSC Plyometrics" },
+      { name: "الصلابة الديناميكية والتحميل / Reactive Stiffness Load", focus: "High Intensity Drops" },
+      { name: "أقصى ارتداد تفجيري / Max Reactive Power", focus: "Elastic Velocity" },
+      { name: "ذروة الصلابة والسرعة / Peak Stiffness Taper", focus: "Taper & Reactive Speed" }
+    ],
+    HVRP: [
+      { name: "تأسيس السرعة والتسارع / Acceleration Base", focus: "Acceleration Mechanics" },
+      { name: "القوة السريعة والقدرة / Speed-Strength Build", focus: "Speed-Strength VBT" },
+      { name: "معدل نمو القوة السريع / Rapid RFD Development", focus: "Explosive RFD" },
+      { name: "التفجير الحركي والسرعة / Ballistic RFD & Velocity", focus: "Ballistic Velocity" },
+      { name: "السرعة القصوى المطلقة / Absolute Velocity Peak", focus: "Max Speed VBT" },
+      { name: "ذروة السرعة والتناقص / Peak Speed Taper", focus: "Taper & Velocity" }
+    ]
+  };
+
+  const protocolConfigs = configs[deficit] || configs.FDP;
+  if (totalBlocks <= 3) {
+    if (idx === 0) return protocolConfigs[0];
+    if (isLast) return protocolConfigs[5];
+    return protocolConfigs[2];
+  }
+  const configIdx = Math.min(idx, protocolConfigs.length - 1);
+  return protocolConfigs[configIdx];
+};
+
 export default function PeriodizationPlanner({ athlete, onClose, handleToast, programs, refreshDeploymentsCallback }) {
   const [activeTab, setActiveTab] = useState('roadmap'); // 'roadmap' or 'templates'
   const [deployments, setDeployments] = useState([]);
@@ -43,6 +516,8 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
   const [tplDeficit, setTplDeficit] = useState('FDP'); // FDP, EDP, RSD, HVRP
   const [tplDurationWeeks, setTplDurationWeeks] = useState(24); // 12, 24, 36, 48
   const [tplMicros, setTplMicros] = useState({}); // mapping: weekIndex -> 'Load' | 'Deload' | 'Test'
+  const [editingTemplateId, setEditingTemplateId] = useState(null);
+  const [showGuidancePanel, setShowGuidancePanel] = useState(true);
   
   // Meso blocks creation inside template
   const [tplMesos, setTplMesos] = useState([]); // list of mesos: { id, name, startWeek, durationWeeks, focus, color, programId }
@@ -357,7 +832,12 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
       
       // Optionally clone drills from program block
       if (mesoFormCloneDrills && mesoFormProgramId) {
-        const program = programs.find(p => p.id === mesoFormProgramId);
+        let program;
+        if (mesoFormProgramId.startsWith('sys-')) {
+          program = getSystemPresetMeso(mesoFormProgramId);
+        } else {
+          program = programs.find(p => p.id === mesoFormProgramId);
+        }
         if (program && program.weeks) {
           for (let i = 0; i < program.weeks.length; i++) {
             const futureWeekStart = new Date(mStart);
@@ -403,6 +883,46 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // 1-Click Auto-Periodization Generator
+  const handleAutoGeneratePeriodization = () => {
+    const generatedMesos = [];
+    const generatedMicros = {};
+    const numBlocks = Math.floor(tplDurationWeeks / 4);
+
+    for (let b = 0; b < numBlocks; b++) {
+      const startWeek = b * 4 + 1;
+      const { name, focus } = getMesoBlockConfig(tplDeficit, b, numBlocks);
+      const color = PHASE_COLORS[b % PHASE_COLORS.length].hex;
+      
+      generatedMesos.push({
+        id: Date.now() + b,
+        name: name,
+        startWeek: startWeek,
+        durationWeeks: 4,
+        focus: focus,
+        color: color,
+        programId: `sys-${tplDeficit.toLowerCase()}-meso`
+      });
+
+      // Fill micros for this 4-week block
+      for (let w = 0; w < 4; w++) {
+        const weekIdx = (startWeek - 1) + w;
+        let focusType = 'Load';
+        if (w === 3) {
+          focusType = 'Deload';
+        } else if (w === 2 && b === numBlocks - 1) {
+          // Last block's 3rd week is Test
+          focusType = 'Test';
+        }
+        generatedMicros[weekIdx] = focusType;
+      }
+    }
+    
+    setTplMesos(generatedMesos);
+    setTplMicros(generatedMicros);
+    handleToast('✨ تم التوليد الذكي التلقائي بنجاح! / Auto-periodization generated!');
   };
 
   // Create/Update Periodization Master Template
@@ -577,7 +1097,12 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
 
         // Copy daily exercises to athlete schedule (if a Meso Program Template is linked)
         if (meso.programId) {
-          const program = programs.find(p => p.id === meso.programId);
+          let program;
+          if (meso.programId.startsWith('sys-')) {
+            program = getSystemPresetMeso(meso.programId);
+          } else {
+            program = programs.find(p => p.id === meso.programId);
+          }
           if (program && program.weeks) {
             for (let i = 0; i < program.weeks.length; i++) {
               const futureWeekStart = new Date(mStart);
@@ -1105,7 +1630,7 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
         {/* MODAL 1: Create/Design Master Template */}
         {showCreateTemplate && (
           <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[150] flex items-center justify-center p-2 sm:p-6" dir="rtl">
-            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col font-sans">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-5xl lg:max-w-6xl max-h-[92vh] overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col font-sans">
               
               {/* Modal Header */}
               <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
@@ -1136,7 +1661,16 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                   <div className="grid grid-cols-2 gap-4">
                     {/* Deficit Protocol */}
                     <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-500 dark:text-slate-400">بروتوكول العجز البدني:</label>
+                      <div className="flex justify-between items-center">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400">بروتوكول العجز البدني:</label>
+                        <button
+                          type="button"
+                          onClick={() => setShowGuidancePanel(!showGuidancePanel)}
+                          className="text-[10px] text-orange-500 font-extrabold flex items-center gap-1 hover:underline shrink-0"
+                        >
+                          {showGuidancePanel ? 'إخفاء الإرشادات 📖' : 'عرض الإرشادات 📘'}
+                        </button>
+                      </div>
                       <select
                         value={tplDeficit}
                         onChange={(e) => setTplDeficit(e.target.value)}
@@ -1169,6 +1703,16 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                       </select>
                     </div>
                   </div>
+
+                  {/* Auto-Generate Button */}
+                  <button
+                    type="button"
+                    onClick={handleAutoGeneratePeriodization}
+                    className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-2xl font-black text-xs shadow-md shadow-orange-500/10 flex items-center justify-center gap-2 transition-all hover:scale-[1.01]"
+                  >
+                    <Sparkles className="w-4 h-4 text-white animate-pulse" />
+                    توليد تخطيط ذكي تلقائي / 1-Click Auto-Periodize
+                  </button>
 
                   {/* Add Mesocycle Block container */}
                   <div className="bg-slate-50 dark:bg-slate-900/60 p-4 border border-slate-200 dark:border-slate-700/60 rounded-2xl">
@@ -1262,8 +1806,13 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                             className="w-full text-[11px] p-2 border rounded-xl bg-white dark:bg-slate-800 dark:text-white outline-none"
                           >
                             <option value="">-- اختياري: اختر برنامج تمارين لربطه بالكتلة --</option>
-                            {programs.filter(p => p.type === 'meso').map(p => (
-                              <option key={p.id} value={p.id}>{p.program_name} ({p.weeks?.length || 0} أسابيع)</option>
+                            {[
+                              ...SYSTEM_PRESETS,
+                              ...programs.filter(p => p.type === 'meso')
+                            ].map(p => (
+                              <option key={p.id} value={p.id}>
+                                {p.program_name} {p.weeks ? `(${p.weeks.length} أسابيع)` : '(4 أسابيع)'}
+                              </option>
                             ))}
                           </select>
                         </div>
@@ -1310,22 +1859,80 @@ export default function PeriodizationPlanner({ athlete, onClose, handleToast, pr
                             )}
                           </div>
 
-                          {/* Set Micro focus */}
-                          <select
-                            value={activeFocus}
-                            onChange={(e) => setTplMicros({ ...tplMicros, [weekIndex]: e.target.value })}
-                            className="text-[10px] bg-white dark:bg-slate-800 border p-1 rounded-lg font-bold"
-                          >
-                            <option value="None">- لا دورة صغرى -</option>
-                            <option value="Load">شحن / Load</option>
-                            <option value="Deload">استشفاء / Deload</option>
-                            <option value="Test">اختبار / Test</option>
-                          </select>
+                          {/* Set Micro focus (Click-to-Toggle pills) */}
+                          <div className="flex items-center gap-0.5 bg-slate-200/65 dark:bg-slate-800 p-0.5 rounded-lg shrink-0 border border-slate-300/30">
+                            {[
+                              { key: 'None', label: 'بدون', colorActive: 'bg-slate-500 text-white shadow-sm font-black', colorInactive: 'text-slate-500 dark:text-slate-400 hover:bg-slate-300/40 dark:hover:bg-slate-700' },
+                              { key: 'Load', label: 'شحن', colorActive: 'bg-amber-500 text-white font-black shadow-sm shadow-amber-500/20', colorInactive: 'text-amber-600 dark:text-amber-400 hover:bg-amber-500/10' },
+                              { key: 'Deload', label: 'استشفاء', colorActive: 'bg-emerald-500 text-white font-black shadow-sm shadow-emerald-500/20', colorInactive: 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10' },
+                              { key: 'Test', label: 'اختبار', colorActive: 'bg-blue-500 text-white font-black shadow-sm shadow-blue-500/20', colorInactive: 'text-blue-600 dark:text-blue-400 hover:bg-blue-500/10' }
+                            ].map(btn => {
+                              const isActive = activeFocus === btn.key;
+                              return (
+                                <button
+                                  key={btn.key}
+                                  type="button"
+                                  onClick={() => setTplMicros({ ...tplMicros, [weekIndex]: btn.key })}
+                                  className={`px-1.5 py-0.5 rounded text-[8.5px] font-black transition-all ${isActive ? btn.colorActive : btn.colorInactive}`}
+                                  title={btn.key}
+                                >
+                                  {btn.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
+
+                {/* Sports Science Guidance Panel */}
+                {showGuidancePanel && (
+                  <div className="w-full lg:w-72 border-r border-slate-200 dark:border-slate-700 pr-0 lg:pr-6 flex flex-col transition-all">
+                    <div className="bg-slate-50 dark:bg-slate-900/60 p-4 border border-slate-200 dark:border-slate-700/60 rounded-2xl h-full flex flex-col justify-between">
+                      {(() => {
+                        const guide = DEFICIT_GUIDELINES[tplDeficit] || DEFICIT_GUIDELINES.FDP;
+                        return (
+                          <div className="space-y-3.5 text-right">
+                            <div className="flex items-center gap-1.5 pb-2 border-b border-slate-200 dark:border-slate-800">
+                              <HelpCircle className="w-4 h-4 text-orange-500" />
+                              <h5 className="text-xs font-black text-slate-800 dark:text-white leading-tight">
+                                {guide.title}
+                                <span className="block text-[9.5px] text-slate-450 dark:text-slate-500 font-bold mt-0.5">{guide.englishTitle}</span>
+                              </h5>
+                            </div>
+                            
+                            <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                              💡 {guide.focus}
+                            </p>
+
+                            <div className="space-y-2 border-t border-b border-slate-100 dark:border-slate-800 py-3">
+                              {guide.metrics.map((m, mIdx) => (
+                                <div key={mIdx} className="flex flex-col gap-0.5 text-[10px]">
+                                  <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[9px]">{m.label}</span>
+                                  <span className="font-bold text-slate-700 dark:text-slate-350">{m.value}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="space-y-1.5">
+                              <span className="text-[9.5px] font-extrabold text-orange-500 block">💡 توصيات علمية هامة:</span>
+                              <ul className="list-disc list-inside space-y-1 text-[9.5px] text-slate-500 dark:text-slate-400 leading-relaxed pr-1 font-medium">
+                                {guide.tips.map((tip, tIdx) => (
+                                  <li key={tIdx} className="text-right list-none relative pr-3 before:content-['•'] before:absolute before:right-0 before:text-orange-500">
+                                    {tip}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
               </div>
 
               {/* Modal Footer */}
