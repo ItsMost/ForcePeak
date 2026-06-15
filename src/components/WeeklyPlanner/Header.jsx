@@ -188,10 +188,34 @@ export default function Header({
         )}
 
         {/* 4. Far Right switcher and tools */}
-        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 order-3 sm:order-4 w-full lg:w-auto mt-1 lg:mt-0 justify-end flex-1 lg:flex-initial">
+        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 order-3 sm:order-4 w-full lg:w-auto mt-2 lg:mt-0 justify-between sm:justify-end flex-1 lg:flex-initial flex-wrap sm:flex-nowrap">
           
+          {/* Sync Status Indicator Pill */}
+          {syncStatus && (
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/50 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0 bg-slate-50 dark:bg-slate-900/50">
+              {syncStatus === 'synced' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  <span className="text-green-600 dark:text-green-400 hidden xs:inline">متصل / Synced</span>
+                </>
+              )}
+              {syncStatus === 'syncing' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
+                  <span className="text-amber-600 dark:text-amber-400 hidden xs:inline">جاري المزامنة / Syncing</span>
+                </>
+              )}
+              {syncStatus === 'offline' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
+                  <span className="text-red-600 dark:text-red-400 hidden xs:inline">أوفلاين / Offline</span>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Athlete switcher pill */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center flex-1 sm:flex-initial">
             <button 
               onClick={() => { setIsAthleteDropdownOpen(!isAthleteDropdownOpen); setAthleteSearch(''); }} 
               className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
@@ -199,14 +223,14 @@ export default function Header({
               <div className="w-6 h-6 rounded-lg bg-orange-500 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
                 {selectedAthlete?.name && !isEditingBlock ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
               </div>
-              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[100px]">
+              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
                 {isEditingBlock ? 'Live: None' : (selectedAthlete?.name || 'No Athlete')}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             
             {isAthleteDropdownOpen && (
-              <div className="absolute top-full mt-2 w-full sm:w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
+              <div className="absolute top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
                 <div className="px-3 pb-3 mb-2 border-b border-slate-150 dark:border-slate-700">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2 w-4 h-4 text-slate-400" />
@@ -278,7 +302,7 @@ export default function Header({
           <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-0.5 hidden sm:block shrink-0"></div>
 
           {/* Block Template switcher pill */}
-          <div className="relative flex items-center">
+          <div className="relative flex items-center flex-1 sm:flex-initial">
             <button 
               onClick={() => { setIsBlockDropdownOpen(!isBlockDropdownOpen); setBlockSearch(''); }} 
               className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
@@ -286,14 +310,14 @@ export default function Header({
               <div className="w-6 h-6 rounded-lg bg-violet-600 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
                 <Layers className="w-3.5 h-3.5 text-white" />
               </div>
-              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[100px]">
+              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
                 {selectedBlockId && blockData ? blockData.program_name || 'Block Program' : 'Live Athlete Plan'}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isBlockDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
             
             {isBlockDropdownOpen && (
-              <div className="absolute top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
+              <div className="absolute top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
                 <div className="px-3 pb-3 mb-2 border-b border-slate-150 dark:border-slate-700">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2 w-4 h-4 text-slate-400" />
@@ -354,7 +378,7 @@ export default function Header({
           {/* Library and tools buttons */}
           <button 
             onClick={() => setSaveWeekTemplateModal({ isOpen: true, name: '' })} 
-            className="p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
+            className="hidden sm:inline-flex p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
             title="Save Week Template / حفظ الأسبوع"
           >
             <BookmarkPlus className="w-4 h-4" />
@@ -370,7 +394,7 @@ export default function Header({
 
           <button 
             onClick={() => setShowProfileModal(true)} 
-            className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
+            className="hidden sm:inline-flex p-2 text-slate-400 dark:text-slate-500 hover:text-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
             title="View Athlete Profile"
           >
             <User className="w-4 h-4" />
@@ -378,7 +402,7 @@ export default function Header({
 
           <button 
             onClick={() => setShowAddAthleteModal(true)} 
-            className="p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
+            className="hidden sm:inline-flex p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
             title="Add New Athlete"
           >
             <UserPlus className="w-4 h-4" />
@@ -386,7 +410,7 @@ export default function Header({
 
           <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-0.5 hidden sm:block shrink-0"></div>
 
-          <button onClick={() => setIsMobileView(!isMobileView)} className={`p-2 rounded-xl border transition-all shrink-0 shadow-sm ${isMobileView ? 'text-blue-500 bg-blue-50 dark:bg-blue-950/20 border-blue-200' : 'text-slate-400 dark:text-slate-500 hover:text-blue-500 bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800'}`} title="Mobile View Toggle">
+          <button onClick={() => setIsMobileView(!isMobileView)} className="hidden md:inline-flex p-2 rounded-xl border transition-all shrink-0 shadow-sm text-slate-400 dark:text-slate-500 hover:text-blue-500 bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800" title="Mobile View Toggle">
             {isMobileView ? <Monitor className="w-4 h-4" /> : <Smartphone className="w-4 h-4" />}
           </button>
           

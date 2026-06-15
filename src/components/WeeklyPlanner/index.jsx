@@ -10,7 +10,7 @@ import PeriodizationPlanner from './PeriodizationPlanner.jsx';
 import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
 
-const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
+const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', plyometric: 'Plyometric', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
 const PHASE_COLORS = [
   { bg: 'bg-blue-500/15', border: 'border-blue-400', text: 'text-blue-600 dark:text-blue-400', hex: '#3b82f6', label: 'blue' },
   { bg: 'bg-violet-500/15', border: 'border-violet-400', text: 'text-violet-600 dark:text-violet-400', hex: '#8b5cf6', label: 'violet' },
@@ -21,6 +21,7 @@ const PHASE_COLORS = [
 ];
 const EXERCISE_TYPE_DOTS = {
   power: { color: 'bg-orange-500', label: 'Power' },
+  plyometric: { color: 'bg-indigo-500', label: 'Plyometric' },
   strength: { color: 'bg-blue-500', label: 'Strength' },
   core: { color: 'bg-emerald-500', label: 'Core' },
   speed: { color: 'bg-yellow-500', label: 'Speed' },
@@ -44,6 +45,11 @@ const SUBCATEGORIES = {
     upper_body: 'Upper Body',
     double_leg: 'Double Leg (Lower)',
     single_leg: 'Single Leg (Lower)'
+  },
+  plyometric: {
+    upper_body: 'Upper Body',
+    double_leg: 'Double Leg',
+    single_leg: 'Single Leg'
   }
 };
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
