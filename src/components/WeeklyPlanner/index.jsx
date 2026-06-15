@@ -102,6 +102,41 @@ const getBezierPath = (points) => {
   return path;
 };
 
+const distributeWeeksToPhases = (numWeeks) => {
+  if (numWeeks <= 4) {
+    return [
+      Math.max(0, numWeeks >= 1 ? 1 : 0),
+      Math.max(0, numWeeks >= 2 ? 1 : 0),
+      Math.max(0, numWeeks >= 3 ? 1 : 0),
+      Math.max(0, numWeeks >= 4 ? 1 : 0)
+    ];
+  }
+  let base = Math.round(numWeeks * 0.40);
+  let strength = Math.round(numWeeks * 0.27);
+  let power = Math.round(numWeeks * 0.20);
+  let peak = numWeeks - (base + strength + power);
+  
+  if (base <= 0) base = 1;
+  if (strength <= 0) strength = 1;
+  if (power <= 0) power = 1;
+  if (peak <= 0) peak = 1;
+  
+  let currentSum = base + strength + power + peak;
+  while (currentSum !== numWeeks) {
+    if (currentSum < numWeeks) {
+      base++;
+      currentSum++;
+    } else {
+      if (base > 1) base--;
+      else if (strength > 1) strength--;
+      else if (power > 1) power--;
+      else if (peak > 1) peak--;
+      currentSum--;
+    }
+  }
+  return [base, strength, power, peak];
+};
+
 export default function WeeklyPlanner() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
@@ -157,7 +192,7 @@ export default function WeeklyPlanner() {
   const [printMode, setPrintMode] = useState('landscape');
   const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
 
-  const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' });
+  const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' });
   const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
   const [macroConfirmModal, setMacroConfirmModal] = useState({ isOpen: false, macro: null, startDate: '' });
   const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
@@ -1131,13 +1166,12 @@ export default function WeeklyPlanner() {
     if (!selectedAthleteId) return;
 
     // Destructure modal properties correctly to prevent ReferenceError.
-    // Note: Storing Meso & Macro programs inside 'agilitylap_programs' requires adding the following columns to the table:
-    // - type TEXT DEFAULT 'meso' (to partition micro/meso/macro blocks)
-    // - tags TEXT (for seasonal cycle tags)
-    // - "blocksChain" JSONB (for Macro-Cycle links sequence in camelCase)
-    const { programName = '', startDate = '', endDate = '', tags = '' } = bulkSaveModal;
+    const { programName = '', startDate = '', endDate = '', tags = '', saveType = 'meso', deficitProtocol = 'FDP', level = 'Beginner' } = bulkSaveModal;
 
-    if (!programName.trim()) { handleToast('Please enter Meso-Block name!'); return; }
+    if (!programName.trim()) { 
+      handleToast(saveType === 'macro_block' ? 'Please enter Macrocycle name!' : 'Please enter Meso-Block name!'); 
+      return; 
+    }
     if (!startDate || !endDate) { handleToast('Please select start and end dates!'); return; }
     
     const start = new Date(startDate);
@@ -1145,7 +1179,7 @@ export default function WeeklyPlanner() {
     if (end < start) { handleToast('End date must be after start date!'); return; }
 
     setIsLoading(true);
-    setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' });
+    setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' });
 
     try {
       // Query workouts for selected athlete in range
@@ -1205,31 +1239,69 @@ export default function WeeklyPlanner() {
         });
       }
 
-      // Route dynamically based on calculated week count:
-      if (numWeeks < 3) {
-        // Micro-Cycles (1 or 2 weeks): Save each week separately as a week template inside agilitylap_templates
-        const templatesToInsert = compiledWeeks.map((w, idx) => ({
-          template_name: numWeeks === 1 ? programName : `${programName} - W${idx + 1}`,
-          template_type: 'week',
-          drills: w.drills
-        }));
+      // Route dynamically based on saveType:
+      if (saveType === 'macro_block') {
+        const [baseWeeks, strengthWeeks, powerWeeks, peakWeeks] = distributeWeeksToPhases(numWeeks);
 
-        const { error: insertError } = await supabase
-          .from('agilitylap_templates')
-          .insert(templatesToInsert);
+        const baseSlice = compiledWeeks.slice(0, baseWeeks);
+        const strengthSlice = compiledWeeks.slice(baseWeeks, baseWeeks + strengthWeeks);
+        const powerSlice = compiledWeeks.slice(baseWeeks + strengthWeeks, baseWeeks + strengthWeeks + powerWeeks);
+        const peakSlice = compiledWeeks.slice(baseWeeks + strengthWeeks + powerWeeks);
 
-        if (insertError) throw insertError;
+        const phases = [
+          {
+            name: 'بناء الأساس / Base Building',
+            durationWeeks: baseWeeks,
+            weeks: baseSlice.map((w, idx) => ({
+              weekIndex: idx,
+              type: 'None',
+              title: w.title || '',
+              drills: w.drills || {}
+            }))
+          },
+          {
+            name: 'القوة القصوى / Max Strength',
+            durationWeeks: strengthWeeks,
+            weeks: strengthSlice.map((w, idx) => ({
+              weekIndex: idx,
+              type: 'None',
+              title: w.title || '',
+              drills: w.drills || {}
+            }))
+          },
+          {
+            name: 'الـ POWER السريع / Rapid Power',
+            durationWeeks: powerWeeks,
+            weeks: powerSlice.map((w, idx) => ({
+              weekIndex: idx,
+              type: 'None',
+              title: w.title || '',
+              drills: w.drills || {}
+            }))
+          },
+          {
+            name: 'التجهيز للقفز (Peak) / Peak & Jump Prep',
+            durationWeeks: peakWeeks,
+            weeks: peakSlice.map((w, idx) => ({
+              weekIndex: idx,
+              type: 'None',
+              title: w.title || '',
+              drills: w.drills || {}
+            }))
+          }
+        ];
 
-        await fetchLibraryData(); // Cleanly sync library templates list in UI
-        setIsLoading(false);
-        handleToast(`Saved ${templatesToInsert.length} week(s) as Micro-Cycle Template(s)!`);
-
-      } else if (numWeeks >= 3 && numWeeks <= 6) {
-        // Meso-Cycles (3 to 6 weeks): Save as a standard Meso-Block program in agilitylap_programs
         const payload = {
           program_name: programName,
-          type: 'meso',
-          weeks: compiledWeeks
+          type: 'macro_block',
+          weeks: [
+            {
+              isMacroBlock: true,
+              deficitProtocol: deficitProtocol,
+              level: level,
+              phases: phases
+            }
+          ]
         };
 
         const { error: insertError } = await supabase.from('agilitylap_programs').insert([payload]);
@@ -1237,57 +1309,43 @@ export default function WeeklyPlanner() {
 
         await fetchLibraryData(); // Cleanly sync programs list in UI
         setIsLoading(false);
-        handleToast(`Meso-Cycle "${programName}" (${numWeeks} weeks) saved successfully!`);
+        handleToast(`Macrocycle "${programName}" (${numWeeks} weeks) saved successfully!`);
 
       } else {
-        // Macro-Cycles (7+ weeks):
-        // 1. Create a Meso-Block to store the actual workouts sequence
-        const mesoPayload = {
-          program_name: `${programName} (Meso)`,
-          type: 'meso',
-          weeks: compiledWeeks
-        };
+        // Meso-Block / standard saving logic
+        if (numWeeks < 3) {
+          // Micro-Cycles (1 or 2 weeks): Save each week separately as a week template inside agilitylap_templates
+          const templatesToInsert = compiledWeeks.map((w, idx) => ({
+            template_name: numWeeks === 1 ? programName : `${programName} - W${idx + 1}`,
+            template_type: 'week',
+            drills: w.drills
+          }));
 
-        const { data: mesoData, error: mesoError } = await supabase
-          .from('agilitylap_programs')
-          .insert([mesoPayload])
-          .select();
+          const { error: insertError } = await supabase
+            .from('agilitylap_templates')
+            .insert(templatesToInsert);
 
-        if (mesoError) throw mesoError;
-        if (!mesoData || mesoData.length === 0) {
-          throw new Error('Could not create reference Meso-Block for Macro-Cycle');
+          if (insertError) throw insertError;
+
+          await fetchLibraryData(); // Cleanly sync library templates list in UI
+          setIsLoading(false);
+          handleToast(`Saved ${templatesToInsert.length} week(s) as Micro-Cycle Template(s)!`);
+
+        } else {
+          // Meso-Cycles (3+ weeks): Save as a standard Meso-Block program in agilitylap_programs
+          const payload = {
+            program_name: programName,
+            type: 'meso',
+            weeks: compiledWeeks
+          };
+
+          const { error: insertError } = await supabase.from('agilitylap_programs').insert([payload]);
+          if (insertError) throw insertError;
+
+          await fetchLibraryData(); // Cleanly sync programs list in UI
+          setIsLoading(false);
+          handleToast(`Meso-Cycle "${programName}" (${numWeeks} weeks) saved successfully!`);
         }
-
-        const mesoId = mesoData[0].id;
-        const blocksChain = [
-          {
-            blockId: mesoId,
-            blockName: `${programName} (Meso)`,
-            weeksCount: numWeeks
-          }
-        ];
-
-        // 2. Create the Macro-Cycle referencing the Meso-Block
-        const macroPayload = {
-          program_name: programName,
-          type: 'macro',
-          tags: tags || '',
-          blocksChain: blocksChain,
-          weeks: [
-            {
-              isMacro: true,
-              blocksChain: blocksChain,
-              tags: tags || ''
-            }
-          ]
-        };
-
-        const { error: macroError } = await supabase.from('agilitylap_programs').insert([macroPayload]);
-        if (macroError) throw macroError;
-
-        await fetchLibraryData(); // Cleanly sync programs list in UI
-        setIsLoading(false);
-        handleToast(`Macro-Cycle "${programName}" (${numWeeks} weeks) saved successfully!`);
       }
 
     } catch (err) {
@@ -1764,53 +1822,99 @@ export default function WeeklyPlanner() {
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4"> <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> Save Week Block</h3> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-900 mb-6 outline-none focus:ring-2 focus:ring-orange-500" autoFocus /> <div className="flex justify-end gap-2"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold">Cancel</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold">Save</button> </div> </div> </div> )}
 
       {bulkSaveModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700">
-            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2"><CalendarIcon className="w-5 h-5 text-orange-500" /> Save Range as Meso-Block</h3>
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700 text-right">
+            <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
+              <CalendarIcon className="w-5 h-5 text-orange-500" />
+              {bulkSaveModal.saveType === 'macro_block' ? 'حفظ كدورة كبرى / Save as Macrocycle' : 'حفظ ككتلة متوسطة / Save as Meso-Block'}
+            </h3>
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Meso-Block Name</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">الاسم / Name</label>
                 <input 
                   type="text" 
                   value={bulkSaveModal.programName || ''} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, programName: e.target.value})} 
-                  placeholder="e.g. 4-Week Hypertrophy Block" 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                  placeholder={bulkSaveModal.saveType === 'macro_block' ? "e.g. 30-Week Deficit Season" : "e.g. 4-Week Hypertrophy Block"} 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
                   autoFocus 
                 />
               </div>
+
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Start Date</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">نوع الحفظ / Save As</label>
+                <select 
+                  value={bulkSaveModal.saveType || 'meso'} 
+                  onChange={(e) => setBulkSaveModal({...bulkSaveModal, saveType: e.target.value})} 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold"
+                >
+                  <option value="meso">كتلة متوسطة / Meso-Block</option>
+                  <option value="macro_block">دورة كبرى / Macrocycle</option>
+                </select>
+              </div>
+
+              {bulkSaveModal.saveType === 'macro_block' && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">بروتوكول العجز / Deficit Protocol</label>
+                    <select 
+                      value={bulkSaveModal.deficitProtocol || 'FDP'} 
+                      onChange={(e) => setBulkSaveModal({...bulkSaveModal, deficitProtocol: e.target.value})} 
+                      className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold"
+                    >
+                      <option value="FDP">FDP - عجز القوة (Force Deficit)</option>
+                      <option value="EDP">EDP - عجز الدورة المطاطية (Elastic/SSC)</option>
+                      <option value="RSD">RSD - عجز الصلابة الارتدادية (Reactive/Stiffness)</option>
+                      <option value="HVRP">HVRP - عجز السرعة ومعدل القوة (High-Velocity RFD)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">المستوى الرياضي / Level</label>
+                    <select 
+                      value={bulkSaveModal.level || 'Beginner'} 
+                      onChange={(e) => setBulkSaveModal({...bulkSaveModal, level: e.target.value})} 
+                      className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold"
+                    >
+                      <option value="Beginner">مبتدئ / Beginner</option>
+                      <option value="Intermediate">متوسط / Intermediate</option>
+                      <option value="Advanced">متقدم / Advanced</option>
+                    </select>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">تاريخ البداية / Start Date</label>
                 <input 
                   type="date" 
                   value={bulkSaveModal.startDate} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, startDate: e.target.value})} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">End Date</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">تاريخ النهاية / End Date</label>
                 <input 
                   type="date" 
                   value={bulkSaveModal.endDate} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, endDate: e.target.value})} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1">Tags (Optional)</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">الوسوم (اختياري) / Tags</label>
                 <input 
                   type="text" 
                   value={bulkSaveModal.tags || ''} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, tags: e.target.value})} 
                   placeholder="e.g. Strength, Power" 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
                 />
               </div>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">Cancel</button>
-              <button onClick={handleSaveRangeAsBlock} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">Save Block</button>
+            <div className="flex gap-3 flex-row-reverse">
+              <button onClick={handleSaveRangeAsBlock} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">حفظ القالب / Save</button>
+              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">إلغاء / Cancel</button>
             </div>
           </div>
         </div>
@@ -2686,7 +2790,7 @@ export default function WeeklyPlanner() {
           onShowStats={() => setShowStatsModal(true)}
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
           onExportPDF={handleExportPDF}
-          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '' })}
+          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' })}
           isEditingBlock={isEditingBlock}
           onDeployBlock={handleOpenDeployBlockModal}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
