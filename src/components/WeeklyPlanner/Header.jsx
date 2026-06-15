@@ -15,11 +15,58 @@ export default function Header({
   weeklyStats,
   isOnline, syncStatus, onDelete,
   onMoveAthlete,
-  setShowPeriodizationPlanner
+  setShowPeriodizationPlanner,
+  selectedBlockId, setSelectedBlockId, blockTemplates = [],
+  isEditingBlock, activeBlockPhaseIndex, activeBlockWeekIndex, blockData,
+  setActiveBlockWeekIndex, setActiveBlockPhaseIndex
 }) {
   
   const [athleteSearch, setAthleteSearch] = useState('');
   const filteredAthletes = athletes.filter(a => a.name.toLowerCase().includes(athleteSearch.toLowerCase()));
+
+  const [isBlockDropdownOpen, setIsBlockDropdownOpen] = useState(false);
+  const [blockSearch, setBlockSearch] = useState('');
+  const filteredBlocks = (blockTemplates || []).filter(b => 
+    (b.program_name || '').toLowerCase().includes(blockSearch.toLowerCase())
+  );
+
+  const handlePrevWeek = () => {
+    if (isEditingBlock) {
+      if (activeBlockWeekIndex > 0) {
+        setActiveBlockWeekIndex(activeBlockWeekIndex - 1);
+      }
+    } else {
+      setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)));
+    }
+  };
+
+  const handleNextWeek = () => {
+    if (isEditingBlock) {
+      const maxWeeks = blockData?.phases?.[activeBlockPhaseIndex]?.weeks?.length || 0;
+      if (activeBlockWeekIndex < maxWeeks - 1) {
+        setActiveBlockWeekIndex(activeBlockWeekIndex + 1);
+      }
+    } else {
+      setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)));
+    }
+  };
+
+  const handleGoToday = () => {
+    if (isEditingBlock) {
+      setActiveBlockWeekIndex(0);
+    } else {
+      setCurrentDate(new Date());
+    }
+  };
+
+  const getHeaderLabel = () => {
+    if (isEditingBlock && blockData) {
+      const phase = blockData.phases?.[activeBlockPhaseIndex];
+      const phaseName = phase?.name?.split('/')[0]?.trim() || `Phase ${activeBlockPhaseIndex + 1}`;
+      return `${blockData.program_name || 'Block'} > ${phaseName} > Week ${activeBlockWeekIndex + 1}`;
+    }
+    return getFormattedDateRange();
+  };
 
   // Compute exact weekly date range matching: "May 30 - Jun 5, 2026"
   const getFormattedDateRange = () => {
@@ -63,25 +110,25 @@ export default function Header({
         {/* 2. Center-Left date navigation capsule */}
         <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-full p-1 shadow-inner shrink-0 order-2">
           <button 
-            onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)))} 
+            onClick={handlePrevWeek} 
             className="p-1 rounded-full hover:bg-white dark:hover:bg-slate-850 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           
           <button 
-            onClick={() => setCurrentDate(new Date())} 
+            onClick={handleGoToday} 
             className="px-2.5 py-1 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-white rounded-full transition-all leading-none"
           >
-            Today
+            {isEditingBlock ? 'W1' : 'Today'}
           </button>
           
           <span className="text-xs md:text-sm font-black text-slate-800 dark:text-white px-2 select-none tracking-tight">
-            {getFormattedDateRange()}
+            {getHeaderLabel()}
           </span>
           
           <button 
-            onClick={() => setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)))} 
+            onClick={handleNextWeek} 
             className="p-1 rounded-full hover:bg-white dark:hover:bg-slate-850 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
           >
             <ChevronRight className="w-4 h-4" />
@@ -150,10 +197,10 @@ export default function Header({
               className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
             >
               <div className="w-6 h-6 rounded-lg bg-orange-500 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
-                {selectedAthlete?.name ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
+                {selectedAthlete?.name && !isEditingBlock ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
               </div>
-              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate">
-                {selectedAthlete?.name || 'No Athlete'}
+              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[100px]">
+                {isEditingBlock ? 'Live: None' : (selectedAthlete?.name || 'No Athlete')}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -174,17 +221,18 @@ export default function Header({
                       return (
                         <div 
                           key={athlete.id} 
-                          className={`flex items-center justify-between px-4 py-1.5 group/row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedAthlete?.id === athlete.id ? 'bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
+                          className={`flex items-center justify-between px-4 py-1.5 group/row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedAthlete?.id === athlete.id && !isEditingBlock ? 'bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
                         >
                           <button 
                             type="button"
                             onClick={() => { 
                               setSelectedAthleteId(athlete.id); 
+                              setSelectedBlockId(null);
                               setIsAthleteDropdownOpen(false); 
                               setAthleteSearch(''); 
                               handleToast(`Selected ${athlete.name}`); 
                             }} 
-                            className={`flex-1 text-left text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedAthlete?.id === athlete.id ? 'text-orange-500 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
+                            className={`flex-1 text-left text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedAthlete?.id === athlete.id && !isEditingBlock ? 'text-orange-500 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
                           >
                             {athlete.name}
                           </button>
@@ -221,6 +269,80 @@ export default function Header({
                     })
                   ) : (
                     <div className="px-4 py-3 text-xs text-center text-slate-500">No athletes found</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-0.5 hidden sm:block shrink-0"></div>
+
+          {/* Block Template switcher pill */}
+          <div className="relative flex items-center">
+            <button 
+              onClick={() => { setIsBlockDropdownOpen(!isBlockDropdownOpen); setBlockSearch(''); }} 
+              className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
+            >
+              <div className="w-6 h-6 rounded-lg bg-violet-600 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
+                <Layers className="w-3.5 h-3.5 text-white" />
+              </div>
+              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[100px]">
+                {selectedBlockId && blockData ? blockData.program_name || 'Block Program' : 'Live Athlete Plan'}
+              </span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isBlockDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isBlockDropdownOpen && (
+              <div className="absolute top-full mt-2 w-64 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
+                <div className="px-3 pb-3 mb-2 border-b border-slate-150 dark:border-slate-700">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2 w-4 h-4 text-slate-400" />
+                    <input type="text" placeholder="Search block template..." value={blockSearch} onChange={(e) => setBlockSearch(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full pl-8 pr-3 py-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white" autoFocus />
+                  </div>
+                </div>
+                <div className="max-h-60 overflow-y-auto">
+                  {/* Option to return to Athlete/Live Plan */}
+                  <div className="px-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBlockId(null);
+                        setIsBlockDropdownOpen(false);
+                        if (athletes.length > 0) {
+                          setSelectedAthleteId(athletes[0].id);
+                        }
+                        handleToast('Switched to Live Athlete Mode');
+                      }}
+                      className="w-full text-right px-3 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center gap-1.5"
+                    >
+                      <Activity className="w-3.5 h-3.5" /> العودة للمخطط الفعلي للاعبين
+                    </button>
+                  </div>
+                  <div className="w-full h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                  
+                  {filteredBlocks.length > 0 ? (
+                    filteredBlocks.map(block => (
+                      <div 
+                        key={block.id} 
+                        className={`flex items-center justify-between px-4 py-1.5 group/row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedBlockId === block.id ? 'bg-violet-50/50 dark:bg-violet-500/10' : ''}`}
+                      >
+                        <button 
+                          type="button"
+                          onClick={() => { 
+                            setSelectedBlockId(block.id); 
+                            setSelectedAthleteId(null);
+                            setIsBlockDropdownOpen(false); 
+                            setBlockSearch(''); 
+                            handleToast(`قالب: ${block.program_name}`); 
+                          }} 
+                          className={`flex-1 text-right text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedBlockId === block.id ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                          {block.program_name}
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-4 py-3 text-xs text-center text-slate-500">No blocks found</div>
                   )}
                 </div>
               </div>

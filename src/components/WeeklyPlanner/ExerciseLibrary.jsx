@@ -61,7 +61,7 @@ export default function ExerciseLibrary({
 
   // Filter Meso-Cycles (Blocks where type !== 'macro')
   const filteredMesoPrograms = (programs || []).filter(prog => {
-    if (prog.type === 'macro') return false;
+    if (prog.type === 'macro' || prog.type === 'macro_block') return false;
     const matchesName = (prog.program_name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const firstWeekTags = (prog.weeks?.[0]?.blockTags || '').toLowerCase();
     const matchesTags = firstWeekTags.includes(searchQuery.toLowerCase());

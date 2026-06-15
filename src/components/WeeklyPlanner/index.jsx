@@ -144,6 +144,12 @@ export default function WeeklyPlanner() {
   const [draggedItem, setDraggedItem] = useState(null);
   const [createProgramModal, setCreateProgramModal] = useState({ isOpen: false, name: '', tags: '', weeksChain: [''] });
   const [blockConfirmModal, setBlockConfirmModal] = useState({ isOpen: false, program: null });
+  const [selectedBlockId, setSelectedBlockId] = useState(null);
+  const [isEditingBlock, setIsEditingBlock] = useState(false);
+  const [activeBlockPhaseIndex, setActiveBlockPhaseIndex] = useState(0);
+  const [activeBlockWeekIndex, setActiveBlockWeekIndex] = useState(0);
+  const [blockData, setBlockData] = useState(null);
+  const [deployBlockModal, setDeployBlockModal] = useState({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
 
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
@@ -333,7 +339,95 @@ export default function WeeklyPlanner() {
   useEffect(() => { fetchDeployments(selectedAthleteId); }, [selectedAthleteId]);
 
 
+  // Effect to load the selected Block Template details and initialize its phases/weeks
   useEffect(() => {
+    const fetchSelectedBlock = async () => {
+      if (!selectedBlockId) {
+        setIsEditingBlock(false);
+        setBlockData(null);
+        return;
+      }
+      setIsLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('agilitylap_programs')
+          .select('*')
+          .eq('id', selectedBlockId)
+          .single();
+        if (!error && data) {
+          let details = data.weeks?.[0] || {};
+          if (data.type === 'macro_block') {
+            if (!details.phases) {
+              details.phases = [
+                { name: 'بناء الأساس / Base Building', durationWeeks: 12, weeks: [] },
+                { name: 'القوة القصوى / Max Strength', durationWeeks: 8, weeks: [] },
+                { name: 'الـ POWER السريع / Rapid Power', durationWeeks: 6, weeks: [] },
+                { name: 'التجهيز للقفز (Peak) / Peak & Jump Prep', durationWeeks: 4, weeks: [] }
+              ];
+              details.phases.forEach(phase => {
+                if (!phase.weeks || phase.weeks.length === 0) {
+                  phase.weeks = Array.from({ length: phase.durationWeeks }, (_, idx) => ({
+                    weekIndex: idx,
+                    type: 'None',
+                    title: '',
+                    drills: (() => {
+                      const d = {}; DAYS_OF_WEEK.forEach(day => d[day] = []); return d;
+                    })()
+                  }));
+                }
+              });
+            }
+            setBlockData(details);
+            setIsEditingBlock(true);
+            setActiveBlockPhaseIndex(0);
+            setActiveBlockWeekIndex(0);
+
+            // Directly initialize weekly schedule for the first week
+            const phase = details.phases?.[0];
+            const week = phase?.weeks?.[0];
+            const newSchedule = {};
+            const newTitles = {};
+            DAYS_OF_WEEK.forEach(day => {
+              newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
+              newTitles[day] = week?.title || '';
+            });
+            setSchedule(newSchedule);
+            setDayTitles(newTitles);
+            setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+            setHistoryIndex(0);
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSelectedBlock();
+  }, [selectedBlockId]);
+
+  // Effect to load template drills when switching weeks or phases inside the template block
+  useEffect(() => {
+    if (!isEditingBlock || !blockData) return;
+    setIsLoading(true);
+    const phase = blockData.phases?.[activeBlockPhaseIndex];
+    const week = phase?.weeks?.[activeBlockWeekIndex];
+    const newSchedule = {};
+    const newTitles = {};
+    DAYS_OF_WEEK.forEach(day => {
+      newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
+      newTitles[day] = week?.title || '';
+    });
+    setSchedule(newSchedule);
+    setDayTitles(newTitles);
+    setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+    setHistoryIndex(0);
+    setIsLoading(false);
+  }, [activeBlockPhaseIndex, activeBlockWeekIndex]);
+
+  // Standard Athlete Live plan week fetcher (only executes if NOT in template block editing mode)
+  useEffect(() => {
+    if (isEditingBlock) return;
     const fetchWeekData = async () => {
       if (!selectedAthleteId) return;
       setIsLoading(true);
@@ -353,16 +447,17 @@ export default function WeeklyPlanner() {
       setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
       setHistoryIndex(0); setIsLoading(false);
     }; fetchWeekData();
-  }, [selectedAthleteId, weekStartDateStr]);
+  }, [selectedAthleteId, weekStartDateStr, isEditingBlock]);
 
   useEffect(() => {
+    if (isEditingBlock) return;
     if (!showMonthCalendar) {
-      setMonthWorkouts({}); // Instantly clear state when closed to prevent stale data flashing next time
+      setMonthWorkouts({});
       return;
     }
     const fetchMonthData = async () => {
       if (!selectedAthleteId) return;
-      setMonthWorkouts({}); // Clear state immediately before fetching new athlete data
+      setMonthWorkouts({});
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       const { data, error } = await supabase
@@ -375,9 +470,7 @@ export default function WeeklyPlanner() {
       const mWorkouts = {};
       if (data && !error) {
         data.forEach(record => { 
-          // An active plan day MUST contain actual drills saved (length > 0)
           const hasDrills = Array.isArray(record.drills) && record.drills.length > 0;
-          // Extract unique exercise types for colored dots
           const types = hasDrills 
             ? [...new Set(record.drills.map(d => (d.type || 'physical').toLowerCase()))]
             : [];
@@ -391,14 +484,48 @@ export default function WeeklyPlanner() {
       setMonthWorkouts(mWorkouts);
     };
     fetchMonthData();
-  }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar]);
+  }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar, isEditingBlock]);
 
   const autoSaveDay = async (day, drillsToSave, titleToSave) => {
-    if (!selectedAthleteId) return;
-    const dateStr = getDbDateStr(weekDatesFull[DAYS_OF_WEEK.indexOf(day)]);
     const finalTitle = titleToSave !== undefined ? titleToSave : (dayTitles[day] || '');
     const finalDrills = drillsToSave !== undefined ? drillsToSave : (schedule[day] || []);
-    
+
+    if (isEditingBlock) {
+      if (!selectedBlockId || !blockData) return;
+      const updatedBlockData = { ...blockData };
+      if (!updatedBlockData.phases) return;
+      const phase = updatedBlockData.phases[activeBlockPhaseIndex];
+      if (!phase || !phase.weeks) return;
+      const week = phase.weeks[activeBlockWeekIndex];
+      if (!week) return;
+
+      week.drills = {
+        ...(week.drills || {}),
+        [day]: finalDrills.map(d => ({ ...d }))
+      };
+      week.title = finalTitle;
+
+      setBlockData(updatedBlockData);
+
+      try {
+        setSyncStatus('syncing');
+        const payload = { weeks: [updatedBlockData] };
+        const { error } = await supabase
+          .from('agilitylap_programs')
+          .update(payload)
+          .eq('id', selectedBlockId);
+        if (error) throw error;
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error(err);
+        setSyncStatus('offline');
+        handleToast('حدث خطأ أثناء حفظ القالب تلقائياً');
+      }
+      return;
+    }
+
+    if (!selectedAthleteId) return;
+    const dateStr = getDbDateStr(weekDatesFull[DAYS_OF_WEEK.indexOf(day)]);
     const payload = { 
       athlete_id: selectedAthleteId, 
       workout_date: dateStr, 
@@ -1170,6 +1297,112 @@ export default function WeeklyPlanner() {
     }
   };
 
+  const handleOpenDeployBlockModal = () => {
+    if (!selectedBlockId) return;
+    setDeployBlockModal({
+      isOpen: true,
+      blockId: selectedBlockId,
+      athleteId: selectedAthleteId || '',
+      startDate: ''
+    });
+  };
+
+  const executeDeployBlock = async () => {
+    const { blockId, athleteId, startDate } = deployBlockModal;
+    if (!blockId || !athleteId || !startDate) {
+      handleToast('الرجاء اختيار اللاعب وتاريخ البداية!');
+      return;
+    }
+
+    setIsLoading(true);
+    setDeployBlockModal({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
+
+    try {
+      const { data: program, error: prgErr } = await supabase
+        .from('agilitylap_programs')
+        .select('*')
+        .eq('id', blockId)
+        .single();
+      
+      if (prgErr || !program) throw new Error('Could not fetch block template details');
+
+      const details = program.weeks?.[0] || {};
+      const phases = details.phases || [];
+      if (phases.length === 0) {
+        throw new Error('القالب لا يحتوي على أي فترات أو أسابيع!');
+      }
+
+      const start = new Date(startDate);
+      let currentWeekStart = new Date(start);
+
+      const workoutsToUpsert = [];
+      let totalWeeksDeployed = 0;
+
+      for (let pIdx = 0; pIdx < phases.length; pIdx++) {
+        const phase = phases[pIdx];
+        const weeks = phase.weeks || [];
+
+        for (let wIdx = 0; wIdx < weeks.length; wIdx++) {
+          const week = weeks[wIdx];
+          const drills = week.drills || {};
+
+          for (let dIdx = 0; dIdx < DAYS_OF_WEEK.length; dIdx++) {
+            const dayName = DAYS_OF_WEEK[dIdx];
+            const targetDate = new Date(currentWeekStart);
+            targetDate.setDate(targetDate.getDate() + dIdx);
+
+            const dayDrills = (drills[dayName] || []).map((drill, idx) => ({
+              ...drill,
+              id: `deployed-${Date.now()}-${pIdx}-${wIdx}-${dIdx}-${idx}-${Math.random()}`
+            }));
+
+            workoutsToUpsert.push({
+              athlete_id: athleteId,
+              workout_date: getDbDateStr(targetDate),
+              workout_title: week.title || phase.name?.split('/')[0]?.trim() || 'Block Workout',
+              drills: dayDrills
+            });
+          }
+
+          currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+          totalWeeksDeployed++;
+        }
+      }
+
+      if (workoutsToUpsert.length > 0) {
+        const { error: upsertErr } = await supabase
+          .from('agilitylap_workouts')
+          .upsert(workoutsToUpsert, { onConflict: 'athlete_id,workout_date' });
+        if (upsertErr) throw upsertErr;
+      }
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + (totalWeeksDeployed * 7) - 1);
+
+      await supabase.from('periodization_deployments').insert([{
+        athlete_id: athleteId,
+        program_id: blockId,
+        program_name: program.program_name,
+        start_date: getDbDateStr(start),
+        end_date: getDbDateStr(end),
+        deficit_protocol: details.deficitProtocol || 'FDP',
+        level: details.level || 'Beginner',
+        phases_durations: phases.map(p => p.durationWeeks)
+      }]);
+
+      handleToast(`تم تطبيق القالب "${program.program_name}" بنجاح على اللاعب لمدة ${totalWeeksDeployed} أسبوعاً!`);
+      
+      if (selectedAthleteId === athleteId) {
+        setCurrentDate(new Date(start));
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء تطبيق القالب الدوري.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleApplyDayTemplate = async (template, targetDay) => {
     if (!selectedAthleteId) return;
     setIsLoading(true);
@@ -1394,13 +1627,27 @@ export default function WeeklyPlanner() {
       
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
-      {showPeriodizationPlanner && selectedAthlete && (
+      {showPeriodizationPlanner && (
         <PeriodizationPlanner
           athlete={selectedAthlete}
           onClose={() => setShowPeriodizationPlanner(false)}
           handleToast={handleToast}
           programs={programs}
-          refreshDeploymentsCallback={() => fetchDeployments(selectedAthleteId)}
+          refreshDeploymentsCallback={async () => {
+            await fetchDeployments(selectedAthleteId);
+            await fetchLibraryData();
+          }}
+          selectedBlockId={selectedBlockId}
+          setSelectedBlockId={setSelectedBlockId}
+          isEditingBlock={isEditingBlock}
+          setIsEditingBlock={setIsEditingBlock}
+          activeBlockPhaseIndex={activeBlockPhaseIndex}
+          setActiveBlockPhaseIndex={setActiveBlockPhaseIndex}
+          activeBlockWeekIndex={activeBlockWeekIndex}
+          setActiveBlockWeekIndex={setActiveBlockWeekIndex}
+          blockData={blockData}
+          setBlockData={setBlockData}
+          athletes={athletes}
         />
       )}
 
@@ -2356,6 +2603,59 @@ export default function WeeklyPlanner() {
 
       {showAddAthleteModal && ( <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4"> <div className="bg-white rounded-3xl w-full max-w-md p-6"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><UserPlus className="w-5 h-5 text-orange-500" /> Add Athlete</h3> <div className="space-y-3 mb-6"> <div><label className="block text-xs font-medium text-slate-500 mb-1">Full Name</label><input type="text" value={newAthleteData.name} onChange={(e) => setNewAthleteData({...newAthleteData, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl" autoFocus /></div><div className="flex gap-3"><div className="flex-1"><label className="block text-xs font-medium text-slate-500 mb-1">Birth Year</label><input type="number" value={newAthleteData.birthYear} onChange={(e) => setNewAthleteData({...newAthleteData, birthYear: e.target.value})} className="w-full px-4 py-2 border rounded-xl" /></div><div className="flex-1"><label className="block text-xs font-medium text-slate-500 mb-1">Weight (kg)</label><input type="number" value={newAthleteData.weight} onChange={(e) => setNewAthleteData({...newAthleteData, weight: e.target.value})} className="w-full px-4 py-2 border rounded-xl" /></div></div> </div> <div className="flex justify-end gap-3"><button onClick={() => setShowAddAthleteModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-medium">Cancel</button><button onClick={handleAddAthlete} className="px-6 py-2 bg-orange-500 text-white rounded-xl font-medium">Add</button></div> </div> </div> )}
 
+      {deployBlockModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 font-sans">
+            <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> تطبيق ونشر قالب الكتلة الدوري على لاعب
+            </h3>
+            <div className="space-y-4 text-right">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">اختر اللاعب المستهدف:</label>
+                <select
+                  value={deployBlockModal.athleteId}
+                  onChange={(e) => setDeployBlockModal({ ...deployBlockModal, athleteId: e.target.value })}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                >
+                  <option value="">-- اختر لاعب --</option>
+                  {athletes.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">تاريخ بداية التطبيق (السبت):</label>
+                <input
+                  type="date"
+                  value={deployBlockModal.startDate}
+                  onChange={(e) => setDeployBlockModal({ ...deployBlockModal, startDate: e.target.value })}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  ⚠️ ملحوظة: سيتم نسخ كامل أسابيع الفترات التدريبية الأربعة تلقائياً بدءاً من هذا التاريخ بشكل متعاقب.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={executeDeployBlock}
+                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
+              >
+                تأكيد النشر والتطبيق
+              </button>
+              <button
+                onClick={() => setDeployBlockModal({ isOpen: false, blockId: null, athleteId: '', startDate: '' })}
+                className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-750 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Header 
         currentDate={currentDate} setCurrentDate={setCurrentDate} currentWeekStart={currentWeekStart} setShowMonthCalendar={setShowMonthCalendar}
         selectedAthlete={selectedAthlete} setSelectedAthleteId={setSelectedAthleteId} athletes={athletes} isAthleteDropdownOpen={isAthleteDropdownOpen} setIsAthleteDropdownOpen={setIsAthleteDropdownOpen}
@@ -2364,6 +2664,15 @@ export default function WeeklyPlanner() {
         isOnline={isOnline} syncStatus={syncStatus} onDelete={handleDeleteAthlete}
         onMoveAthlete={handleMoveAthlete}
         setShowPeriodizationPlanner={setShowPeriodizationPlanner}
+        selectedBlockId={selectedBlockId}
+        setSelectedBlockId={setSelectedBlockId}
+        blockTemplates={programs.filter(p => p.type === 'macro_block')}
+        isEditingBlock={isEditingBlock}
+        activeBlockPhaseIndex={activeBlockPhaseIndex}
+        activeBlockWeekIndex={activeBlockWeekIndex}
+        blockData={blockData}
+        setActiveBlockWeekIndex={setActiveBlockWeekIndex}
+        setActiveBlockPhaseIndex={setActiveBlockPhaseIndex}
       />
 
       {/* ⚠️ Layout Control Panel */}
@@ -2378,6 +2687,8 @@ export default function WeeklyPlanner() {
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
           onExportPDF={handleExportPDF}
           onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '' })}
+          isEditingBlock={isEditingBlock}
+          onDeployBlock={handleOpenDeployBlockModal}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
           
           {/* Premium Printed Report Header */}
@@ -2422,7 +2733,7 @@ export default function WeeklyPlanner() {
           {/* Desktop/Print Grid Layout */}
           <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-[1100px] xl:w-full min-w-full`}>
             {DAYS_OF_WEEK.map((day, index) => {
-              const fullDateStr = weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+              const fullDateStr = isEditingBlock ? "يوم تدريبي / Template Day" : weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
@@ -2438,7 +2749,7 @@ export default function WeeklyPlanner() {
                   <div className="flex items-start gap-1 md:gap-2 justify-between">
                     <div className="flex items-start gap-2 flex-1">
                       <div className="w-6.5 h-6.5 md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 shadow-sm">
-                        {weekDates[index]}
+                        {isEditingBlock ? `D${index + 1}` : weekDates[index]}
                       </div>
                       <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-[11px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full placeholder:text-slate-400" readOnly={isPreviewMode}/>
                     </div>
@@ -2532,7 +2843,7 @@ export default function WeeklyPlanner() {
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x snap-mandatory">
               {DAYS_OF_WEEK.map((day, index) => {
                 const isActive = activeMobileDay === day;
-                const dateStr = weekDates[index];
+                const dateStr = isEditingBlock ? `D${index + 1}` : weekDates[index];
                 const hasExercises = (schedule[day] || []).length > 0;
                 
                 return (
@@ -2559,7 +2870,7 @@ export default function WeeklyPlanner() {
             {(() => {
               const day = activeMobileDay;
               const index = DAYS_OF_WEEK.indexOf(day);
-              const fullDateStr = weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
+              const fullDateStr = isEditingBlock ? "يوم تدريبي / Template Day" : weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
@@ -2577,7 +2888,7 @@ export default function WeeklyPlanner() {
                     <div className="flex items-center gap-3 justify-between">
                       <div className="flex items-center gap-3 flex-1">
                         <div className="w-10 h-10 shrink-0 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-base font-black text-slate-700 dark:text-slate-250 bg-slate-50 dark:bg-slate-900 shadow-inner">
-                          {weekDates[index]}
+                          {isEditingBlock ? `D${index + 1}` : weekDates[index]}
                         </div>
                         <input 
                           type="text" 

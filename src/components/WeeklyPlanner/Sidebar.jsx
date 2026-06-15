@@ -1,9 +1,9 @@
-import React from 'react';
-import { Copy, ClipboardPaste, Undo2, Redo2, BarChart3, Trash2, FileDown, Eye, EyeOff, Calendar } from 'lucide-react';
+import { Copy, ClipboardPaste, Undo2, Redo2, BarChart3, Trash2, FileDown, Eye, EyeOff, Calendar, Play } from 'lucide-react';
 
 export default function Sidebar({
   isPreviewMode, setIsPreviewMode, onCopyWeek, onPasteWeek,
-  onUndo, onRedo, canUndo, canRedo, onShowStats, onClearWeek, onExportPDF, onBulkSave
+  onUndo, onRedo, canUndo, canRedo, onShowStats, onClearWeek, onExportPDF, onBulkSave,
+  isEditingBlock, onDeployBlock
 }) {
   return (
     <aside className="fixed bottom-0 left-0 w-full h-16 md:relative md:w-16 md:h-full bg-white dark:bg-slate-800 border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-row md:flex-col items-center justify-between px-2 sm:px-4 md:py-4 md:px-0 z-[100] shrink-0 print:hidden overflow-x-auto md:overflow-visible transition-colors duration-200">
@@ -39,6 +39,12 @@ export default function Sidebar({
         <button onClick={() => setIsPreviewMode(!isPreviewMode)} className={`p-2 md:p-3 rounded-xl transition-all ${isPreviewMode ? 'text-orange-500 bg-orange-50' : 'text-slate-400 hover:text-orange-500'}`} title="Toggle View">
           {isPreviewMode ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
         </button>
+
+        {isEditingBlock && (
+          <button onClick={onDeployBlock} className="p-2 md:p-3 text-violet-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 rounded-xl transition-all" title="Deploy Block to Athlete / تطبيق القالب على لاعب">
+            <Play className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Bottom/Right Controls */}
