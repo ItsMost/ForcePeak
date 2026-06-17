@@ -18,7 +18,18 @@ export default function Header({
   setShowPeriodizationPlanner,
   selectedBlockId, setSelectedBlockId, blockTemplates = [],
   isEditingBlock, activeBlockPhaseIndex, activeBlockWeekIndex, blockData,
-  setActiveBlockWeekIndex, setActiveBlockPhaseIndex
+  setActiveBlockWeekIndex, setActiveBlockPhaseIndex,
+  isEditingMeso,
+  activeMesoWeekIndex,
+  setActiveMesoWeekIndex,
+  mesoData,
+  isEditingMacro,
+  activeMacroWeekIndex,
+  setActiveMacroWeekIndex,
+  macroData,
+  macroWeeks,
+  onExitMeso,
+  onExitMacro
 }) {
   
   const [athleteSearch, setAthleteSearch] = useState('');
@@ -35,6 +46,14 @@ export default function Header({
       if (activeBlockWeekIndex > 0) {
         setActiveBlockWeekIndex(activeBlockWeekIndex - 1);
       }
+    } else if (isEditingMeso) {
+      if (activeMesoWeekIndex > 0) {
+        setActiveMesoWeekIndex(activeMesoWeekIndex - 1);
+      }
+    } else if (isEditingMacro) {
+      if (activeMacroWeekIndex > 0) {
+        setActiveMacroWeekIndex(activeMacroWeekIndex - 1);
+      }
     } else {
       setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() - 7)));
     }
@@ -46,6 +65,16 @@ export default function Header({
       if (activeBlockWeekIndex < maxWeeks - 1) {
         setActiveBlockWeekIndex(activeBlockWeekIndex + 1);
       }
+    } else if (isEditingMeso) {
+      const maxWeeks = mesoData?.weeks?.length || 0;
+      if (activeMesoWeekIndex < maxWeeks - 1) {
+        setActiveMesoWeekIndex(activeMesoWeekIndex + 1);
+      }
+    } else if (isEditingMacro) {
+      const maxWeeks = macroWeeks?.length || 0;
+      if (activeMacroWeekIndex < maxWeeks - 1) {
+        setActiveMacroWeekIndex(activeMacroWeekIndex + 1);
+      }
     } else {
       setCurrentDate(new Date(currentDate.setDate(currentDate.getDate() + 7)));
     }
@@ -54,6 +83,10 @@ export default function Header({
   const handleGoToday = () => {
     if (isEditingBlock) {
       setActiveBlockWeekIndex(0);
+    } else if (isEditingMeso) {
+      setActiveMesoWeekIndex(0);
+    } else if (isEditingMacro) {
+      setActiveMacroWeekIndex(0);
     } else {
       setCurrentDate(new Date());
     }
@@ -64,6 +97,14 @@ export default function Header({
       const phase = blockData.phases?.[activeBlockPhaseIndex];
       const phaseName = phase?.name?.split('/')[0]?.trim() || `Phase ${activeBlockPhaseIndex + 1}`;
       return `${blockData.program_name || 'Block'} > ${phaseName} > Week ${activeBlockWeekIndex + 1}`;
+    }
+    if (isEditingMeso && mesoData) {
+      return `${mesoData.program_name} > Week ${activeMesoWeekIndex + 1}`;
+    }
+    if (isEditingMacro && macroData) {
+      const currentWeekItem = macroWeeks?.[activeMacroWeekIndex];
+      const mesoNameLabel = currentWeekItem ? ` (${currentWeekItem.mesoName} W${currentWeekItem.mesoWeekIndex + 1})` : '';
+      return `${macroData.program_name} > Week ${activeMacroWeekIndex + 1}${mesoNameLabel}`;
     }
     return getFormattedDateRange();
   };
@@ -120,7 +161,7 @@ export default function Header({
             onClick={handleGoToday} 
             className="px-2.5 py-1 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-white rounded-full transition-all leading-none"
           >
-            {isEditingBlock ? 'W1' : 'Today'}
+            {isEditingBlock || isEditingMeso || isEditingMacro ? 'W1' : 'Today'}
           </button>
           
           <span className="text-xs md:text-sm font-black text-slate-800 dark:text-white px-2 select-none tracking-tight">
@@ -221,10 +262,10 @@ export default function Header({
               className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
             >
               <div className="w-6 h-6 rounded-lg bg-orange-500 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
-                {selectedAthlete?.name && !isEditingBlock ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
+                {selectedAthlete?.name && !(isEditingBlock || isEditingMeso || isEditingMacro) ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
               </div>
               <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
-                {isEditingBlock ? 'Live: None' : (selectedAthlete?.name || 'No Athlete')}
+                {isEditingBlock || isEditingMeso || isEditingMacro ? 'Template Mode' : (selectedAthlete?.name || 'No Athlete')}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -245,18 +286,20 @@ export default function Header({
                       return (
                         <div 
                           key={athlete.id} 
-                          className={`flex items-center justify-between px-4 py-1.5 group/row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedAthlete?.id === athlete.id && !isEditingBlock ? 'bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
+                          className={`flex items-center justify-between px-4 py-1.5 group/row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors ${selectedAthlete?.id === athlete.id && !(isEditingBlock || isEditingMeso || isEditingMacro) ? 'bg-orange-50/50 dark:bg-orange-500/10' : ''}`}
                         >
                           <button 
                             type="button"
                             onClick={() => { 
                               setSelectedAthleteId(athlete.id); 
                               setSelectedBlockId(null);
+                              if (onExitMeso) onExitMeso();
+                              if (onExitMacro) onExitMacro();
                               setIsAthleteDropdownOpen(false); 
                               setAthleteSearch(''); 
                               handleToast(`Selected ${athlete.name}`); 
                             }} 
-                            className={`flex-1 text-left text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedAthlete?.id === athlete.id && !isEditingBlock ? 'text-orange-500 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
+                            className={`flex-1 text-left text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedAthlete?.id === athlete.id && !(isEditingBlock || isEditingMeso || isEditingMacro) ? 'text-orange-500 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
                           >
                             {athlete.name}
                           </button>
@@ -372,6 +415,23 @@ export default function Header({
               </div>
             )}
           </div>
+
+          {/* Exit Edit button */}
+          {(isEditingBlock || isEditingMeso || isEditingMacro) && (
+            <button
+              onClick={() => {
+                if (isEditingBlock && setSelectedBlockId) setSelectedBlockId(null);
+                if (isEditingMeso && onExitMeso) onExitMeso();
+                if (isEditingMacro && onExitMacro) onExitMacro();
+                handleToast('Switched to Live Athlete Mode');
+              }}
+              className="px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
+              title="Exit Editing / العودة للاعبين"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>إنهاء التعديل / Exit Edit</span>
+            </button>
+          )}
 
           <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block shrink-0"></div>
 

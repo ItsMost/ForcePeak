@@ -35,7 +35,9 @@ export default function ExerciseLibrary({
   onApplyDayTemplate,
   onOpenCreateMacro,
   onApplyMacro,
-  onDeleteMacro
+  onDeleteMacro,
+  onEditProgram,
+  onEditMacro
 }) {
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
@@ -289,6 +291,7 @@ export default function ExerciseLibrary({
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => onApplyProgram(prog)} className="px-2 py-1 text-[10px] font-black bg-blue-500 hover:bg-blue-600 text-white rounded-lg shadow-sm transition-colors uppercase">Apply</button>
+                        <button onClick={() => onEditProgram && onEditProgram(prog)} className="px-2 py-1 text-[10px] font-black bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-sm transition-colors uppercase">Edit</button>
                         <button onClick={() => onDeleteProgram(prog.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>
@@ -347,6 +350,7 @@ export default function ExerciseLibrary({
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => onApplyMacro(macro)} className="px-2 py-1 text-[10px] font-black bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow-sm transition-colors uppercase">Apply</button>
+                        <button onClick={() => onEditMacro && onEditMacro(macro)} className="px-2 py-1 text-[10px] font-black bg-orange-500 hover:bg-orange-600 text-white rounded-lg shadow-sm transition-colors uppercase">Edit</button>
                         <button onClick={() => onDeleteMacro(macro.id)} className="opacity-0 group-hover:opacity-100 transition-opacity p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>

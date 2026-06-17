@@ -190,6 +190,19 @@ export default function WeeklyPlanner() {
   const [activeBlockPhaseIndex, setActiveBlockPhaseIndex] = useState(0);
   const [activeBlockWeekIndex, setActiveBlockWeekIndex] = useState(0);
   const [blockData, setBlockData] = useState(null);
+
+  const [selectedMesoId, setSelectedMesoId] = useState(null);
+  const [isEditingMeso, setIsEditingMeso] = useState(false);
+  const [activeMesoWeekIndex, setActiveMesoWeekIndex] = useState(0);
+  const [mesoData, setMesoData] = useState(null);
+
+  const [selectedMacroId, setSelectedMacroId] = useState(null);
+  const [isEditingMacro, setIsEditingMacro] = useState(false);
+  const [activeMacroWeekIndex, setActiveMacroWeekIndex] = useState(0);
+  const [macroData, setMacroData] = useState(null);
+  const [macroWeeks, setMacroWeeks] = useState([]);
+
+  const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
   const [deployBlockModal, setDeployBlockModal] = useState({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
 
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
@@ -466,9 +479,170 @@ export default function WeeklyPlanner() {
     setIsLoading(false);
   }, [activeBlockPhaseIndex, activeBlockWeekIndex]);
 
+  // Effect to load Meso-Cycle details when selectedMesoId changes
+  useEffect(() => {
+    const fetchSelectedMeso = async () => {
+      if (!selectedMesoId) {
+        setIsEditingMeso(false);
+        setMesoData(null);
+        return;
+      }
+      setIsLoading(true);
+      setIsEditingBlock(false);
+      setSelectedBlockId(null);
+      setIsEditingMacro(false);
+      setSelectedMacroId(null);
+      try {
+        const { data, error } = await supabase
+          .from('agilitylap_programs')
+          .select('*')
+          .eq('id', selectedMesoId)
+          .single();
+        if (!error && data) {
+          setMesoData(data);
+          setIsEditingMeso(true);
+          setActiveMesoWeekIndex(0);
+
+          const week = data.weeks?.[0];
+          const newSchedule = {};
+          const newTitles = {};
+          DAYS_OF_WEEK.forEach(day => {
+            newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
+            newTitles[day] = week?.title || '';
+          });
+          setSchedule(newSchedule);
+          setDayTitles(newTitles);
+          setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+          setHistoryIndex(0);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSelectedMeso();
+  }, [selectedMesoId]);
+
+  // Effect to load Meso drills when switching Meso weeks
+  useEffect(() => {
+    if (!isEditingMeso || !mesoData) return;
+    setIsLoading(true);
+    const week = mesoData.weeks?.[activeMesoWeekIndex];
+    const newSchedule = {};
+    const newTitles = {};
+    DAYS_OF_WEEK.forEach(day => {
+      newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
+      newTitles[day] = week?.title || '';
+    });
+    setSchedule(newSchedule);
+    setDayTitles(newTitles);
+    setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+    setHistoryIndex(0);
+    setIsLoading(false);
+  }, [activeMesoWeekIndex, mesoData]);
+
+  // Effect to load Macro-Cycle details and resolve weeks when selectedMacroId changes
+  useEffect(() => {
+    const fetchSelectedMacro = async () => {
+      if (!selectedMacroId) {
+        setIsEditingMacro(false);
+        setMacroData(null);
+        setMacroWeeks([]);
+        return;
+      }
+      setIsLoading(true);
+      setIsEditingBlock(false);
+      setSelectedBlockId(null);
+      setIsEditingMeso(false);
+      setSelectedMesoId(null);
+
+      try {
+        const { data, error } = await supabase
+          .from('agilitylap_programs')
+          .select('*')
+          .eq('id', selectedMacroId)
+          .single();
+        if (!error && data) {
+          setMacroData(data);
+          setIsEditingMacro(true);
+          setActiveMacroWeekIndex(0);
+
+          const blocksChain = data.weeks?.[0]?.blocksChain || [];
+          const resolvedWeeks = [];
+
+          for (let blockIndex = 0; blockIndex < blocksChain.length; blockIndex++) {
+            const blockItem = blocksChain[blockIndex];
+            const { data: progDetails, error: fetchErr } = await supabase
+              .from('agilitylap_programs')
+              .select('*')
+              .eq('id', blockItem.blockId)
+              .single();
+
+            if (!fetchErr && progDetails) {
+              const totalWeeksInBlock = progDetails.weeks?.length || 0;
+              for (let i = 0; i < totalWeeksInBlock; i++) {
+                resolvedWeeks.push({
+                  mesoId: blockItem.blockId,
+                  mesoName: blockItem.blockName,
+                  mesoWeekIndex: i,
+                  title: progDetails.weeks[i].title || '',
+                  drills: progDetails.weeks[i].drills || {}
+                });
+              }
+            }
+          }
+
+          setMacroWeeks(resolvedWeeks);
+
+          if (resolvedWeeks.length > 0) {
+            const week = resolvedWeeks[0];
+            const newSchedule = {};
+            const newTitles = {};
+            DAYS_OF_WEEK.forEach(day => {
+              newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
+              newTitles[day] = week?.title || '';
+            });
+            setSchedule(newSchedule);
+            setDayTitles(newTitles);
+            setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+            setHistoryIndex(0);
+          } else {
+            handleToast('Macro-Cycle has no Meso-cycles or they could not be loaded.');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSelectedMacro();
+  }, [selectedMacroId]);
+
+  // Effect to load Macro week drills when activeMacroWeekIndex changes
+  useEffect(() => {
+    if (!isEditingMacro || macroWeeks.length === 0) return;
+    setIsLoading(true);
+    const week = macroWeeks[activeMacroWeekIndex];
+    if (week) {
+      const newSchedule = {};
+      const newTitles = {};
+      DAYS_OF_WEEK.forEach(day => {
+        newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
+        newTitles[day] = week?.title || '';
+      });
+      setSchedule(newSchedule);
+      setDayTitles(newTitles);
+      setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+      setHistoryIndex(0);
+    }
+    setIsLoading(false);
+  }, [activeMacroWeekIndex, macroWeeks]);
+
   // Standard Athlete Live plan week fetcher (only executes if NOT in template block editing mode)
   useEffect(() => {
-    if (isEditingBlock) return;
+    if (isEditingBlock || isEditingMeso || isEditingMacro) return;
     const fetchWeekData = async () => {
       if (!selectedAthleteId) return;
       setIsLoading(true);
@@ -488,10 +662,10 @@ export default function WeeklyPlanner() {
       setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
       setHistoryIndex(0); setIsLoading(false);
     }; fetchWeekData();
-  }, [selectedAthleteId, weekStartDateStr, isEditingBlock]);
+  }, [selectedAthleteId, weekStartDateStr, isEditingBlock, isEditingMeso, isEditingMacro]);
 
   useEffect(() => {
-    if (isEditingBlock) return;
+    if (isEditingBlock || isEditingMeso || isEditingMacro) return;
     if (!showMonthCalendar) {
       setMonthWorkouts({});
       return;
@@ -525,7 +699,7 @@ export default function WeeklyPlanner() {
       setMonthWorkouts(mWorkouts);
     };
     fetchMonthData();
-  }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar, isEditingBlock]);
+  }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar, isEditingBlock, isEditingMeso, isEditingMacro]);
 
   const autoSaveDay = async (day, drillsToSave, titleToSave) => {
     const finalTitle = titleToSave !== undefined ? titleToSave : (dayTitles[day] || '');
@@ -2783,6 +2957,23 @@ export default function WeeklyPlanner() {
         blockData={blockData}
         setActiveBlockWeekIndex={setActiveBlockWeekIndex}
         setActiveBlockPhaseIndex={setActiveBlockPhaseIndex}
+        isEditingMeso={isEditingMeso}
+        activeMesoWeekIndex={activeMesoWeekIndex}
+        setActiveMesoWeekIndex={setActiveMesoWeekIndex}
+        mesoData={mesoData}
+        isEditingMacro={isEditingMacro}
+        activeMacroWeekIndex={activeMacroWeekIndex}
+        setActiveMacroWeekIndex={setActiveMacroWeekIndex}
+        macroData={macroData}
+        macroWeeks={macroWeeks}
+        onExitMeso={() => {
+          setSelectedMesoId(null);
+          fetchLibraryData();
+        }}
+        onExitMacro={() => {
+          setSelectedMacroId(null);
+          fetchLibraryData();
+        }}
       />
 
       {/* ⚠️ Layout Control Panel */}
@@ -2843,7 +3034,7 @@ export default function WeeklyPlanner() {
           {/* Desktop/Print Grid Layout */}
           <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-[1100px] xl:w-full min-w-full`}>
             {DAYS_OF_WEEK.map((day, index) => {
-              const fullDateStr = isEditingBlock ? "يوم تدريبي / Template Day" : weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+              const fullDateStr = isTemplateEditing ? "يوم تدريبي / Template Day" : weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
@@ -2858,8 +3049,8 @@ export default function WeeklyPlanner() {
                   </div>
                   <div className="flex items-start gap-1 md:gap-2 justify-between">
                     <div className="flex items-start gap-2 flex-1">
-                      <div className="w-6.5 h-6.5 md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 shadow-sm">
-                        {isEditingBlock ? `D${index + 1}` : weekDates[index]}
+                      <div className="w-6.5 h-6.5 md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-205 bg-white dark:bg-slate-900 shadow-sm">
+                        {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
                       </div>
                       <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-[11px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full placeholder:text-slate-400" readOnly={isPreviewMode}/>
                     </div>
@@ -2953,7 +3144,7 @@ export default function WeeklyPlanner() {
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x snap-mandatory">
               {DAYS_OF_WEEK.map((day, index) => {
                 const isActive = activeMobileDay === day;
-                const dateStr = isEditingBlock ? `D${index + 1}` : weekDates[index];
+                const dateStr = isTemplateEditing ? `D${index + 1}` : weekDates[index];
                 const hasExercises = (schedule[day] || []).length > 0;
                 
                 return (
@@ -2980,7 +3171,7 @@ export default function WeeklyPlanner() {
             {(() => {
               const day = activeMobileDay;
               const index = DAYS_OF_WEEK.indexOf(day);
-              const fullDateStr = isEditingBlock ? "يوم تدريبي / Template Day" : weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
+              const fullDateStr = isTemplateEditing ? "يوم تدريبي / Template Day" : weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
@@ -2998,7 +3189,7 @@ export default function WeeklyPlanner() {
                     <div className="flex items-center gap-3 justify-between">
                       <div className="flex items-center gap-3 flex-1">
                         <div className="w-10 h-10 shrink-0 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-base font-black text-slate-700 dark:text-slate-250 bg-slate-50 dark:bg-slate-900 shadow-inner">
-                          {isEditingBlock ? `D${index + 1}` : weekDates[index]}
+                          {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
                         </div>
                         <input 
                           type="text" 
@@ -3156,6 +3347,14 @@ export default function WeeklyPlanner() {
                onOpenCreateMacro={() => setCreateMacroModal({...createMacroModal, isOpen: true, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }]})}
                onApplyMacro={(macro) => setMacroConfirmModal({ isOpen: true, macro, startDate: getDbDateStr(new Date()) })}
                onDeleteMacro={handleDeleteProgramBlock}
+               onEditProgram={(prog) => {
+                 setSelectedMesoId(prog.id);
+                 handleToast(`Editing Meso-Cycle: ${prog.program_name}`);
+               }}
+               onEditMacro={(macro) => {
+                 setSelectedMacroId(macro.id);
+                 handleToast(`Editing Macro-Cycle: ${macro.program_name}`);
+               }}
              />
            </div>
         </div>
