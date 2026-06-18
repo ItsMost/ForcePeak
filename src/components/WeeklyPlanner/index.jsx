@@ -938,6 +938,14 @@ export default function WeeklyPlanner() {
     fetchFourWeekData();
   }, [selectedAthleteId, weekStartDateStr]);
 
+  useEffect(() => {
+    const elements = document.querySelectorAll('textarea[data-autoresize]');
+    elements.forEach(el => {
+      el.style.height = 'auto';
+      el.style.height = el.scrollHeight + 'px';
+    });
+  }, [dayTitles, activeMobileDay, schedule]);
+
   const handleSaveProgramBlock = async () => {
     if (!createProgramModal.name.trim()) return;
     const compiledWeeks = createProgramModal.weeksChain.map(tplId => {
@@ -3052,7 +3060,21 @@ export default function WeeklyPlanner() {
                       <div className="w-6.5 h-6.5 md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-205 bg-white dark:bg-slate-900 shadow-sm">
                         {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
                       </div>
-                      <input type="text" value={dayTitles[day] || ''} onChange={(e) => handleDayTitleChange(day, e.target.value)} placeholder="Add Workout Focus" className="text-[11px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full placeholder:text-slate-400" readOnly={isPreviewMode}/>
+                      <textarea
+                        data-autoresize
+                        value={dayTitles[day] || ''}
+                        onChange={(e) => handleDayTitleChange(day, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.blur();
+                          }
+                        }}
+                        placeholder="Add Workout Focus"
+                        rows={1}
+                        className="text-[11px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full placeholder:text-slate-400 resize-none overflow-hidden leading-tight py-0.5"
+                        readOnly={isPreviewMode}
+                      />
                     </div>
                     {!isPreviewMode && (
                       <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
@@ -3191,12 +3213,19 @@ export default function WeeklyPlanner() {
                         <div className="w-10 h-10 shrink-0 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-base font-black text-slate-700 dark:text-slate-250 bg-slate-50 dark:bg-slate-900 shadow-inner">
                           {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
                         </div>
-                        <input 
-                          type="text" 
+                        <textarea 
+                          data-autoresize
                           value={dayTitles[day] || ''} 
                           onChange={(e) => handleDayTitleChange(day, e.target.value)} 
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              e.target.blur();
+                            }
+                          }}
                           placeholder="Add Focus" 
-                          className="text-base font-bold text-slate-800 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400" 
+                          rows={1}
+                          className="text-base font-bold text-slate-800 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400 resize-none overflow-hidden leading-tight py-0.5" 
                           readOnly={isPreviewMode}
                         />
                       </div>
