@@ -938,6 +938,7 @@ export default function WeeklyPlanner() {
     fetchFourWeekData();
   }, [selectedAthleteId, weekStartDateStr]);
 
+  // Dynamic auto-resizing hook for day workout focus textareas to prevent title truncation
   useEffect(() => {
     const elements = document.querySelectorAll('textarea[data-autoresize]');
     elements.forEach(el => {
