@@ -4,26 +4,33 @@ import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, 
 const SUBCATEGORIES = {
   core: {
     all: 'All Core',
-    rotation: 'Rotation',
-    anti_rotation: 'Anti-Rotation',
-    extension: 'Extension',
-    flexion: 'Flexion',
     anti_extension: 'Anti-Extension',
+    anti_rotation: 'Anti-Rotation',
+    anti_lateral_flexion: 'Anti-Lateral Flexion',
     anti_flexion: 'Anti-Flexion',
-    lateral_flexion: 'Lat Flexion',
-    anti_lateral_flexion: 'Anti-Lat Flex'
+    dynamic_rotational: 'Dynamic / Rotational',
+    // Fallback/Legacy mappings
+    rotation: 'Dynamic / Rotational',
+    extension: 'Anti-Extension',
+    flexion: 'Anti-Flexion',
+    lateral_flexion: 'Anti-Lateral Flexion'
   },
   strength: {
     all: 'All Strength',
     upper_body: 'Upper Body',
-    double_leg: 'Double Leg',
-    single_leg: 'Single Leg'
+    double_leg: 'Bilateral (Double Leg)',
+    single_leg: 'Unilateral (Single Leg)'
   },
   plyometric: {
     all: 'All Plyo',
     upper_body: 'Upper Body',
-    double_leg: 'Double Leg',
-    single_leg: 'Single Leg'
+    double_leg: 'Bilateral (Double Leg)',
+    single_leg: 'Unilateral (Single Leg)'
+  },
+  power: {
+    all: 'All Power',
+    double_leg: 'Bilateral (Double Leg)',
+    single_leg: 'Unilateral (Single Leg)'
   }
 };
 

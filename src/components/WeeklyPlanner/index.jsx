@@ -32,24 +32,30 @@ const EXERCISE_TYPE_DOTS = {
 };
 const SUBCATEGORIES = {
   core: {
-    rotation: 'Rotation',
-    anti_rotation: 'Anti-Rotation',
-    extension: 'Extension',
-    flexion: 'Flexion',
     anti_extension: 'Anti-Extension',
+    anti_rotation: 'Anti-Rotation',
+    anti_lateral_flexion: 'Anti-Lateral Flexion',
     anti_flexion: 'Anti-Flexion',
-    lateral_flexion: 'Lateral Flexion',
-    anti_lateral_flexion: 'Anti-Lateral Flexion'
+    dynamic_rotational: 'Dynamic / Rotational',
+    // Fallbacks
+    rotation: 'Dynamic / Rotational',
+    extension: 'Anti-Extension',
+    flexion: 'Anti-Flexion',
+    lateral_flexion: 'Anti-Lateral Flexion'
   },
   strength: {
     upper_body: 'Upper Body',
-    double_leg: 'Double Leg (Lower)',
-    single_leg: 'Single Leg (Lower)'
+    double_leg: 'Bilateral (Double Leg)',
+    single_leg: 'Unilateral (Single Leg)'
   },
   plyometric: {
     upper_body: 'Upper Body',
-    double_leg: 'Double Leg',
-    single_leg: 'Single Leg'
+    double_leg: 'Bilateral (Double Leg)',
+    single_leg: 'Unilateral (Single Leg)'
+  },
+  power: {
+    double_leg: 'Bilateral (Double Leg)',
+    single_leg: 'Unilateral (Single Leg)'
   }
 };
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -206,7 +212,7 @@ export default function WeeklyPlanner() {
   const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
   const [deployBlockModal, setDeployBlockModal] = useState({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
@@ -1797,7 +1803,7 @@ export default function WeeklyPlanner() {
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
@@ -1814,14 +1820,15 @@ export default function WeeklyPlanner() {
       reps: addExerciseModal.reps, 
       rest: addExerciseModal.rest, 
       unit: addExerciseModal.unit,
-      distance: addExerciseModal.distance ? parseFloat(addExerciseModal.distance) : null
+      distance: addExerciseModal.distance ? parseFloat(addExerciseModal.distance) : null,
+      video_url: addExerciseModal.video_url || ''
     }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise updated'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '' }); handleToast('Exercise updated'); }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' }); handleToast('Exercise added'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '' }); handleToast('Exercise added'); }
     }
   };
 
@@ -2707,15 +2714,25 @@ export default function WeeklyPlanner() {
 
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label>
-                <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" autoFocus />
+                <input type="text" value={addExerciseModal.title} onChange={(e) => setAddExerciseModal({...addExerciseModal, title: e.target.value})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" autoFocus />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-500 mb-1">Video URL</label>
+                <input 
+                  type="text" 
+                  value={addExerciseModal.video_url || ''} 
+                  onChange={(e) => setAddExerciseModal({...addExerciseModal, video_url: e.target.value})} 
+                  placeholder="Paste video link here (e.g. YouTube, Vimeo)" 
+                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white font-medium mb-3" 
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label>
-                <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500" />
+                <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
+              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
               <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button>
             </div>
           </div>
