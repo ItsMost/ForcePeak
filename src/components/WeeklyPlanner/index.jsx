@@ -164,6 +164,7 @@ export default function WeeklyPlanner() {
   });
   
   const [dayTitles, setDayTitles] = useState({});
+  const [completedDays, setCompletedDays] = useState({});
   const [library, setLibrary] = useState({ drills: [], templates: [] }); 
   const [programs, setPrograms] = useState([]); 
   const [monthWorkouts, setMonthWorkouts] = useState({});
@@ -237,7 +238,8 @@ export default function WeeklyPlanner() {
           athlete_id: item.athlete_id,
           workout_date: item.workout_date,
           workout_title: item.workout_title,
-          drills: item.drills
+          drills: item.drills,
+          is_completed: item.is_completed || false
         }, { onConflict: 'athlete_id,workout_date' });
         if (error) hasError = true;
       } catch (err) {
@@ -315,8 +317,12 @@ export default function WeeklyPlanner() {
   const weekDatesFull = getDatesForWeek();
   const weekDates = weekDatesFull.map(d => d.getDate());
 
-  const pushToHistory = (newSchedule, newTitles) => {
-    const newState = { schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) };
+  const pushToHistory = (newSchedule, newTitles, newCompleted) => {
+    const newState = { 
+      schedule: JSON.parse(JSON.stringify(newSchedule)), 
+      titles: JSON.parse(JSON.stringify(newTitles)),
+      completed: JSON.parse(JSON.stringify(newCompleted !== undefined ? newCompleted : completedDays))
+    };
     const newHistory = history.slice(0, historyIndex + 1);
     newHistory.push(newState);
     if (newHistory.length > 50) newHistory.shift(); 
@@ -468,13 +474,16 @@ export default function WeeklyPlanner() {
     const week = phase?.weeks?.[activeBlockWeekIndex];
     const newSchedule = {};
     const newTitles = {};
+    const newCompleted = {};
     DAYS_OF_WEEK.forEach(day => {
       newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
       newTitles[day] = week?.title || '';
+      newCompleted[day] = false;
     });
     setSchedule(newSchedule);
     setDayTitles(newTitles);
-    setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+    setCompletedDays(newCompleted);
+    setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)), completed: JSON.parse(JSON.stringify(newCompleted)) }]);
     setHistoryIndex(0);
     setIsLoading(false);
   }, [activeBlockPhaseIndex, activeBlockWeekIndex]);
@@ -506,13 +515,16 @@ export default function WeeklyPlanner() {
           const week = data.weeks?.[0];
           const newSchedule = {};
           const newTitles = {};
+          const newCompleted = {};
           DAYS_OF_WEEK.forEach(day => {
             newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
             newTitles[day] = week?.title || '';
+            newCompleted[day] = false;
           });
           setSchedule(newSchedule);
           setDayTitles(newTitles);
-          setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+          setCompletedDays(newCompleted);
+          setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)), completed: JSON.parse(JSON.stringify(newCompleted)) }]);
           setHistoryIndex(0);
         }
       } catch (err) {
@@ -628,13 +640,16 @@ export default function WeeklyPlanner() {
     if (week) {
       const newSchedule = {};
       const newTitles = {};
+      const newCompleted = {};
       DAYS_OF_WEEK.forEach(day => {
         newSchedule[day] = (week?.drills?.[day] || []).map(d => ({ ...d }));
         newTitles[day] = week?.title || '';
+        newCompleted[day] = false;
       });
       setSchedule(newSchedule);
       setDayTitles(newTitles);
-      setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+      setCompletedDays(newCompleted);
+      setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)), completed: JSON.parse(JSON.stringify(newCompleted)) }]);
       setHistoryIndex(0);
     }
     setIsLoading(false);
@@ -649,17 +664,21 @@ export default function WeeklyPlanner() {
       const endStr = getDbDateStr(weekDatesFull[6]);
       const { data } = await supabase.from('agilitylap_workouts').select('*').eq('athlete_id', selectedAthleteId).gte('workout_date', weekStartDateStr).lte('workout_date', endStr);
 
-      const newSchedule = {}; const newTitles = {};
-      DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; });
+      const newSchedule = {}; const newTitles = {}; const newCompleted = {};
+      DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; newCompleted[day] = false; });
 
       if (data) {
         data.forEach(record => {
           const recordDate = new Date(record.workout_date); const dayName = JS_DAYS[recordDate.getDay()];
-          if (dayName && DAYS_OF_WEEK.includes(dayName)) { newSchedule[dayName] = record.drills || []; newTitles[dayName] = record.workout_title || ''; }
+          if (dayName && DAYS_OF_WEEK.includes(dayName)) { 
+            newSchedule[dayName] = record.drills || []; 
+            newTitles[dayName] = record.workout_title || ''; 
+            newCompleted[dayName] = record.is_completed || false;
+          }
         });
       }
-      setSchedule(newSchedule); setDayTitles(newTitles);
-      setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)) }]);
+      setSchedule(newSchedule); setDayTitles(newTitles); setCompletedDays(newCompleted);
+      setHistory([{ schedule: JSON.parse(JSON.stringify(newSchedule)), titles: JSON.parse(JSON.stringify(newTitles)), completed: JSON.parse(JSON.stringify(newCompleted)) }]);
       setHistoryIndex(0); setIsLoading(false);
     }; fetchWeekData();
   }, [selectedAthleteId, weekStartDateStr, isEditingBlock, isEditingMeso, isEditingMacro]);
@@ -701,9 +720,10 @@ export default function WeeklyPlanner() {
     fetchMonthData();
   }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar, isEditingBlock, isEditingMeso, isEditingMacro]);
 
-  const autoSaveDay = async (day, drillsToSave, titleToSave) => {
+  const autoSaveDay = async (day, drillsToSave, titleToSave, isCompletedToSave) => {
     const finalTitle = titleToSave !== undefined ? titleToSave : (dayTitles[day] || '');
     const finalDrills = drillsToSave !== undefined ? drillsToSave : (schedule[day] || []);
+    const finalCompleted = isCompletedToSave !== undefined ? isCompletedToSave : (completedDays[day] || false);
 
     if (isEditingBlock) {
       if (!selectedBlockId || !blockData) return;
@@ -745,7 +765,8 @@ export default function WeeklyPlanner() {
       athlete_id: selectedAthleteId, 
       workout_date: dateStr, 
       workout_title: finalTitle, 
-      drills: finalDrills 
+      drills: finalDrills,
+      is_completed: finalCompleted
     };
 
     if (!isOnline || (typeof navigator !== 'undefined' && !navigator.onLine)) {
@@ -773,8 +794,30 @@ export default function WeeklyPlanner() {
     }
   };
 
-  const handleUndo = () => { if (historyIndex > 0) { const newIndex = historyIndex - 1; const prevState = history[newIndex]; setSchedule(prevState.schedule); setDayTitles(prevState.titles); setHistoryIndex(newIndex); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, prevState.schedule[day], prevState.titles[day])); handleToast('Undo successful'); } };
-  const handleRedo = () => { if (historyIndex < history.length - 1) { const newIndex = historyIndex + 1; const nextState = history[newIndex]; setSchedule(nextState.schedule); setDayTitles(nextState.titles); setHistoryIndex(newIndex); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, nextState.schedule[day], nextState.titles[day])); handleToast('Redo successful'); } };
+  const handleUndo = () => { 
+    if (historyIndex > 0) { 
+      const newIndex = historyIndex - 1; 
+      const prevState = history[newIndex]; 
+      setSchedule(prevState.schedule); 
+      setDayTitles(prevState.titles); 
+      setCompletedDays(prevState.completed || {});
+      setHistoryIndex(newIndex); 
+      DAYS_OF_WEEK.forEach(day => autoSaveDay(day, prevState.schedule[day], prevState.titles[day], prevState.completed?.[day] || false)); 
+      handleToast('Undo successful'); 
+    } 
+  };
+  const handleRedo = () => { 
+    if (historyIndex < history.length - 1) { 
+      const newIndex = historyIndex + 1; 
+      const nextState = history[newIndex]; 
+      setSchedule(nextState.schedule); 
+      setDayTitles(nextState.titles); 
+      setCompletedDays(nextState.completed || {});
+      setHistoryIndex(newIndex); 
+      DAYS_OF_WEEK.forEach(day => autoSaveDay(day, nextState.schedule[day], nextState.titles[day], nextState.completed?.[day] || false)); 
+      handleToast('Redo successful'); 
+    } 
+  };
   const handleCopyExercise = (drill) => { setClipboard({ type: 'exercise', data: drill }); handleToast('Exercise copied'); };
   const handleCopyDay = (day) => { if (schedule[day].length === 0) { handleToast('No exercises to copy'); return; } setClipboard({ type: 'day', data: schedule[day] }); handleToast(`${day} workouts copied`); };
   const handleCopyWeek = () => { setClipboard({ type: 'week', data: { schedule, dayTitles } }); handleToast('Full week copied'); };
@@ -997,9 +1040,19 @@ export default function WeeklyPlanner() {
     }
     
     const { data } = await supabase.from('agilitylap_workouts').select('*').eq('athlete_id', selectedAthleteId).gte('workout_date', weekStartDateStr).lte('workout_date', getDbDateStr(weekDatesFull[6]));
-    const newSchedule = {}; const newTitles = {}; DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; });
-    if (data) { data.forEach(record => { const dayName = JS_DAYS[new Date(record.workout_date).getDay()]; if (dayName) { newSchedule[dayName] = record.drills || []; newTitles[dayName] = record.workout_title || ''; } }); }
-    setSchedule(newSchedule); setDayTitles(newTitles); setIsLoading(false); 
+    const newSchedule = {}; const newTitles = {}; const newCompleted = {}; DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; newCompleted[day] = false; });
+    if (data) { 
+      data.forEach(record => { 
+        const dayName = JS_DAYS[new Date(record.workout_date).getDay()]; 
+        if (dayName) { 
+          newSchedule[dayName] = record.drills || []; 
+          newTitles[dayName] = record.workout_title || ''; 
+          newCompleted[dayName] = record.is_completed || false;
+        } 
+      }); 
+    }
+    setSchedule(newSchedule); setDayTitles(newTitles); setCompletedDays(newCompleted); pushToHistory(newSchedule, newTitles, newCompleted); setIsLoading(false); 
+
 
     // Save deployment record for calendar visualization
     const deployStartDate = getDbDateStr(new Date(currentWeekStart));
@@ -1130,7 +1183,8 @@ export default function WeeklyPlanner() {
       
       const newSchedule = {}; 
       const newTitles = {}; 
-      DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; });
+      const newCompleted = {};
+      DAYS_OF_WEEK.forEach((day) => { newSchedule[day] = []; newTitles[day] = ''; newCompleted[day] = false; });
       
       if (refreshedWorkouts) { 
         refreshedWorkouts.forEach(record => { 
@@ -1138,12 +1192,15 @@ export default function WeeklyPlanner() {
           if (dayName) { 
             newSchedule[dayName] = record.drills || []; 
             newTitles[dayName] = record.workout_title || ''; 
+            newCompleted[dayName] = record.is_completed || false;
           } 
         }); 
       }
       
       setSchedule(newSchedule); 
       setDayTitles(newTitles); 
+      setCompletedDays(newCompleted);
+      pushToHistory(newSchedule, newTitles, newCompleted);
       setIsLoading(false); 
 
       // Save deployment records for each Meso block within the Macro
@@ -1275,7 +1332,42 @@ export default function WeeklyPlanner() {
 
   const handleDeleteExercise = (day, id) => { const updatedDrills = schedule[day].filter(w => w.id !== id); const newSchedule = { ...schedule, [day]: updatedDrills }; setSchedule(newSchedule); pushToHistory(newSchedule, dayTitles); autoSaveDay(day, updatedDrills, dayTitles[day]); };
   const handleDayTitleChange = (day, newTitle) => { const newTitles = { ...dayTitles, [day]: newTitle }; setDayTitles(newTitles); pushToHistory(schedule, newTitles); autoSaveDay(day, schedule[day], newTitle); };
-  const confirmDelete = () => { if (deleteConfirmation.type === 'week') { const emptySchedule = DAYS_OF_WEEK.reduce((acc, day) => ({...acc, [day]: []}), {}); setSchedule(emptySchedule); setDayTitles({}); pushToHistory(emptySchedule, {}); DAYS_OF_WEEK.forEach(day => autoSaveDay(day, [], '')); handleToast('Week cleared successfully'); } else if (deleteConfirmation.type === 'day' && deleteConfirmation.targetDay) { const tDay = deleteConfirmation.targetDay; const newSchedule = { ...schedule, [tDay]: [] }; const newTitles = { ...dayTitles, [tDay]: '' }; setSchedule(newSchedule); setDayTitles(newTitles); pushToHistory(newSchedule, newTitles); autoSaveDay(tDay, [], ''); handleToast(`${tDay} cleared`); } setDeleteConfirmation({ isOpen: false, type: null, targetDay: null }); };
+  
+  const handleToggleDayCompleted = async (day) => {
+    if (isTemplateEditing) return;
+    const currentVal = completedDays[day] || false;
+    const newVal = !currentVal;
+    const newCompleted = { ...completedDays, [day]: newVal };
+    setCompletedDays(newCompleted);
+    pushToHistory(schedule, dayTitles, newCompleted);
+    await autoSaveDay(day, schedule[day], dayTitles[day], newVal);
+    handleToast(newVal ? `${day} marked as completed!` : `${day} completion cleared.`);
+  };
+
+  const confirmDelete = () => { 
+    if (deleteConfirmation.type === 'week') { 
+      const emptySchedule = DAYS_OF_WEEK.reduce((acc, day) => ({...acc, [day]: []}), {}); 
+      const emptyCompleted = DAYS_OF_WEEK.reduce((acc, day) => ({...acc, [day]: false}), {});
+      setSchedule(emptySchedule); 
+      setDayTitles({}); 
+      setCompletedDays(emptyCompleted);
+      pushToHistory(emptySchedule, {}, emptyCompleted); 
+      DAYS_OF_WEEK.forEach(day => autoSaveDay(day, [], '', false)); 
+      handleToast('Week cleared successfully'); 
+    } else if (deleteConfirmation.type === 'day' && deleteConfirmation.targetDay) { 
+      const tDay = deleteConfirmation.targetDay; 
+      const newSchedule = { ...schedule, [tDay]: [] }; 
+      const newTitles = { ...dayTitles, [tDay]: '' }; 
+      const newCompleted = { ...completedDays, [tDay]: false };
+      setSchedule(newSchedule); 
+      setDayTitles(newTitles); 
+      setCompletedDays(newCompleted);
+      pushToHistory(newSchedule, newTitles, newCompleted); 
+      autoSaveDay(tDay, [], '', false); 
+      handleToast(`${tDay} cleared`); 
+    } 
+    setDeleteConfirmation({ isOpen: false, type: null, targetDay: null }); 
+  };
   const handleSaveTemplate = async () => { if(!saveTemplateModal.name.trim()) return; const drillsToSave = schedule[saveTemplateModal.day].map(d => ({...d})); const newTemplate = { template_name: saveTemplateModal.name, template_type: 'day', drills: drillsToSave }; const { data, error } = await supabase.from('agilitylap_templates').insert([newTemplate]).select(); if(!error && data) { const formatted = { id: data[0].id, title: data[0].template_name, type: data[0].template_type, drills: data[0].drills }; setLibrary(prev => ({ ...prev, templates: [formatted, ...prev.templates] })); setSaveTemplateModal({ isOpen: false, day: null, name: '' }); handleToast(`Saved Template`); } };
   const handleSaveWeekTemplate = async () => {
     if (!saveWeekTemplateModal.name.trim()) return;
@@ -1318,6 +1410,7 @@ export default function WeeklyPlanner() {
     setIsLoading(true);
     const newSchedule = {};
     const newTitles = {};
+    const newCompleted = {};
 
     DAYS_OF_WEEK.forEach(day => {
       let dayDrills = [];
@@ -1336,15 +1429,17 @@ export default function WeeklyPlanner() {
       }
       newSchedule[day] = dayDrills;
       newTitles[day] = template.title || '';
+      newCompleted[day] = false;
     });
 
     setSchedule(newSchedule);
     setDayTitles(newTitles);
-    pushToHistory(newSchedule, newTitles);
+    setCompletedDays(newCompleted);
+    pushToHistory(newSchedule, newTitles, newCompleted);
 
     // Save each day to database
     for (let day of DAYS_OF_WEEK) {
-      await autoSaveDay(day, newSchedule[day], newTitles[day]);
+      await autoSaveDay(day, newSchedule[day], newTitles[day], false);
     }
 
     setIsLoading(false);
@@ -3051,9 +3146,27 @@ export default function WeeklyPlanner() {
               return (
               <div key={day} className="flex flex-col w-full print:break-inside-avoid print:mb-0">
                 
-                <div className="mb-4 flex flex-col group border-b border-slate-200 dark:border-slate-800 pb-3 px-1 md:px-2 day-header select-none">
+                <div className={`mb-4 flex flex-col group border-b pb-3 px-1.5 md:px-2 day-header select-none transition-all duration-300 ${
+                  completedDays[day] 
+                    ? 'bg-green-500/10 dark:bg-green-500/5 border-green-200 dark:border-green-900/30 rounded-xl pt-2' 
+                    : 'border-slate-200 dark:border-slate-800'
+                }`}>
                   <div className="flex justify-between items-baseline mb-2">
-                    <span className="text-[9.5px] md:text-[10.5px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">{day}</span>
+                    <div className="flex items-center gap-1.5">
+                      {!isTemplateEditing && (
+                        <button
+                          onClick={() => handleToggleDayCompleted(day)}
+                          className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${
+                            completedDays[day]
+                              ? 'bg-green-500 border-green-500 text-white'
+                              : 'border-slate-300 dark:border-slate-600 hover:border-green-500 bg-white dark:bg-slate-900 text-transparent'
+                          }`}
+                        >
+                          <Check className="w-3 h-3 stroke-[3]" />
+                        </button>
+                      )}
+                      <span className="text-[9.5px] md:text-[10.5px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">{day}</span>
+                    </div>
                     <span className="text-[9px] md:text-[10px] font-bold text-slate-400/80 dark:text-slate-600">{fullDateStr}</span>
                   </div>
                   <div className="flex items-start gap-1 md:gap-2 justify-between">
@@ -3182,8 +3295,12 @@ export default function WeeklyPlanner() {
                     <span className="text-xl font-black mt-1">
                       {dateStr}
                     </span>
-                    {hasExercises && (
+                    {completedDays[day] && !isTemplateEditing ? (
+                      <Check className={`w-3.5 h-3.5 mt-1.5 ${isActive ? 'text-white' : 'text-green-500'}`} />
+                    ) : hasExercises ? (
                       <span className={`w-1.5 h-1.5 rounded-full mt-1.5 ${isActive ? 'bg-white' : 'bg-orange-500'}`}></span>
+                    ) : (
+                      <span className="w-1.5 h-1.5 mt-1.5 opacity-0"></span>
                     )}
                   </button>
                 );
@@ -3200,12 +3317,30 @@ export default function WeeklyPlanner() {
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
 
               return (
-                <div className="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-slate-100 dark:border-slate-700/80 shadow-md space-y-5 animate-fadeIn">
+                <div className={`rounded-3xl p-5 border shadow-md space-y-5 animate-fadeIn transition-all duration-300 ${
+                  completedDays[day]
+                    ? 'bg-green-500/[0.04] dark:bg-green-500/[0.02] border-green-500/30 dark:border-green-500/20'
+                    : 'bg-white dark:bg-slate-800 border-slate-100 dark:border-slate-700/80'
+                }`}>
                   
                   {/* Header of Active Day */}
                   <div className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/80">
                     <div className="flex justify-between items-baseline mb-2">
-                      <span className="text-xs font-black uppercase text-orange-500 tracking-widest">{day}</span>
+                      <div className="flex items-center gap-2">
+                        {!isTemplateEditing && (
+                          <button
+                            onClick={() => handleToggleDayCompleted(day)}
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                              completedDays[day]
+                                ? 'bg-green-500 border-green-500 text-white'
+                                : 'border-slate-350 dark:border-slate-600 hover:border-green-500 bg-white dark:bg-slate-900 text-transparent'
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </button>
+                        )}
+                        <span className="text-xs font-black uppercase text-orange-500 tracking-widest">{day}</span>
+                      </div>
                       <span className="text-xs text-slate-400">{fullDateStr}</span>
                     </div>
                     
