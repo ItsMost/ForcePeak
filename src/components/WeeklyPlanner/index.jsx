@@ -1242,6 +1242,23 @@ export default function WeeklyPlanner() {
   };
 
   const handleDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program cleared'); } };
+  const handleRenameProgramBlock = async (id, newName) => {
+    if (!newName || !newName.trim()) return;
+    const { error } = await supabase.from('agilitylap_programs').update({ program_name: newName.trim() }).eq('id', id);
+    if (!error) {
+      setPrograms(prev => prev.map(p => p.id === id ? { ...p, program_name: newName.trim() } : p));
+      if (mesoData && mesoData.id === id) {
+        setMesoData(prev => ({ ...prev, program_name: newName.trim() }));
+      }
+      if (macroData && macroData.id === id) {
+        setMacroData(prev => ({ ...prev, program_name: newName.trim() }));
+      }
+      handleToast('Name updated successfully');
+    } else {
+      console.error(error);
+      handleToast('Error updating name');
+    }
+  };
   const handleLibraryDragStart = (e, item, isTemplate = false) => { setDraggedItem({ source: 'library', item, isTemplate }); e.dataTransfer.effectAllowed = 'copy'; };
   const handleDragStartWrapper = (e, day, drill, index) => { setDraggedItem({ source: 'timeline', day, drill, index }); e.dataTransfer.effectAllowed = 'move'; };
   const handleDragOver = (e) => e.preventDefault();
@@ -1303,8 +1320,8 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '', video_url: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '', video_url: drill.video_url || '' }, isNew: false }); };
 
   const getCalculatedIntensityInModal = (modalDrill) => {
     if (!selectedAthlete || !modalDrill || !modalDrill.bwRatio) return null;
@@ -2823,8 +2840,9 @@ export default function WeeklyPlanner() {
                 </div>
               </div>
 
-              <div><label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label><input type="text" value={dayDrillModal.drill.title} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, title: e.target.value}})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" autoFocus /></div>
-              <div><label className="block text-xs font-bold text-slate-500 mb-1">Notes</label><textarea value={dayDrillModal.drill.details} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, details: e.target.value}})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-blue-500" /></div>
+              <div><label className="block text-xs font-bold text-slate-500 mb-1">Exercise Name</label><input type="text" value={dayDrillModal.drill.title} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, title: e.target.value}})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" autoFocus /></div>
+              <div><label className="block text-xs font-bold text-slate-500 mb-1">Video URL</label><input type="text" placeholder="e.g. https://youtube.com/..." value={dayDrillModal.drill.video_url || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, video_url: e.target.value}})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" /></div>
+              <div><label className="block text-xs font-bold text-slate-500 mb-1">Notes</label><textarea value={dayDrillModal.drill.details} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, details: e.target.value}})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" /></div>
             </div>
             <div className="pt-4 mt-4 border-t flex justify-between items-center">
                {!dayDrillModal.isNew ? ( <button onClick={() => { handleDeleteExercise(dayDrillModal.day, dayDrillModal.drill.id); setDayDrillModal({isOpen: false, day: null, drill: null, isNew: false}); }} className="px-4 py-2 text-red-500 font-bold text-sm flex gap-2"><Trash2 className="w-4 h-4"/> Delete</button> ) : <div></div>}
@@ -3529,6 +3547,7 @@ export default function WeeklyPlanner() {
                onOpenCreateMacro={() => setCreateMacroModal({...createMacroModal, isOpen: true, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }]})}
                onApplyMacro={(macro) => setMacroConfirmModal({ isOpen: true, macro, startDate: getDbDateStr(new Date()) })}
                onDeleteMacro={handleDeleteProgramBlock}
+               onRenameProgram={handleRenameProgramBlock}
                onEditProgram={(prog) => {
                  setSelectedMesoId(prog.id);
                  handleToast(`Editing Meso-Cycle: ${prog.program_name}`);

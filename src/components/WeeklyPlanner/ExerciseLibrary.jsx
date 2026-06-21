@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, Tag, Sparkles } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, Tag, Sparkles, Edit3 } from 'lucide-react';
 
 const SUBCATEGORIES = {
   core: {
@@ -44,10 +44,13 @@ export default function ExerciseLibrary({
   onApplyMacro,
   onDeleteMacro,
   onEditProgram,
-  onEditMacro
+  onEditMacro,
+  onRenameProgram
 }) {
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
+  const [editingProgramId, setEditingProgramId] = useState(null);
+  const [tempProgramName, setTempProgramName] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [activeSubcategory, setActiveSubcategory] = useState('all');
 
@@ -293,7 +296,45 @@ export default function ExerciseLibrary({
                   <div key={prog.id} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex flex-col gap-2 transition-all hover:border-orange-500/30">
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{prog.program_name}</h5>
+                        {editingProgramId === prog.id ? (
+                          <input 
+                            type="text" 
+                            value={tempProgramName} 
+                            onChange={(e) => setTempProgramName(e.target.value)} 
+                            onBlur={() => {
+                              if (tempProgramName.trim() && tempProgramName !== prog.program_name) {
+                                onRenameProgram(prog.id, tempProgramName);
+                              }
+                              setEditingProgramId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (tempProgramName.trim() && tempProgramName !== prog.program_name) {
+                                  onRenameProgram(prog.id, tempProgramName);
+                                }
+                                setEditingProgramId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingProgramId(null);
+                              }
+                            }}
+                            className="text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-1 py-0.5 rounded w-full outline-none focus:ring-1 focus:ring-orange-500"
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1.5 min-w-0 group/title">
+                            <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{prog.program_name}</h5>
+                            <button 
+                              onClick={() => {
+                                setEditingProgramId(prog.id);
+                                setTempProgramName(prog.program_name);
+                              }} 
+                              className="opacity-0 group-hover/title:opacity-100 p-0.5 text-slate-400 hover:text-orange-500 transition-opacity"
+                              title="Rename"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                         <p className="text-[10px] text-slate-400 font-medium mt-0.5">{prog.weeks?.length || 0} Weeks Meso-Block</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -352,7 +393,45 @@ export default function ExerciseLibrary({
                   <div key={macro.id} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 group flex flex-col gap-2 transition-all hover:border-indigo-500/30">
                     <div className="flex justify-between items-start gap-2">
                       <div className="min-w-0 flex-1">
-                        <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{macro.program_name}</h5>
+                        {editingProgramId === macro.id ? (
+                          <input 
+                            type="text" 
+                            value={tempProgramName} 
+                            onChange={(e) => setTempProgramName(e.target.value)} 
+                            onBlur={() => {
+                              if (tempProgramName.trim() && tempProgramName !== macro.program_name) {
+                                onRenameProgram(macro.id, tempProgramName);
+                              }
+                              setEditingProgramId(null);
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                if (tempProgramName.trim() && tempProgramName !== macro.program_name) {
+                                  onRenameProgram(macro.id, tempProgramName);
+                                }
+                                setEditingProgramId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingProgramId(null);
+                              }
+                            }}
+                            className="text-xs font-bold text-slate-800 dark:text-white bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 px-1 py-0.5 rounded w-full outline-none focus:ring-1 focus:ring-orange-500"
+                            autoFocus
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1.5 min-w-0 group/title">
+                            <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{macro.program_name}</h5>
+                            <button 
+                              onClick={() => {
+                                setEditingProgramId(macro.id);
+                                setTempProgramName(macro.program_name);
+                              }} 
+                              className="opacity-0 group-hover/title:opacity-100 p-0.5 text-slate-400 hover:text-orange-500 transition-opacity"
+                              title="Rename"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        )}
                         <p className="text-[10px] text-slate-400 font-medium mt-0.5">{macro.blocksChain?.length || 0} Meso-Cycles ({totalWeeks} Weeks)</p>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">

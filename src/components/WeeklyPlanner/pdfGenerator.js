@@ -286,7 +286,9 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           const noteLines = noteStr ? doc.splitTextToSize(noteStr, colTextWidth) : [];
           
           // Calculate exact height needed for this exercise card dynamically!
-          const titleHeight = titleLines.length * 4;
+          const hasVideo = !!(drill.video_url && drill.video_url.trim());
+          const videoHeight = hasVideo ? 4 : 0;
+          const titleHeight = titleLines.length * 4 + videoHeight;
           const noteHeight = noteLines.length * 3.2;
           const paddingY = 6;
           const rowHeight = Math.max(12, titleHeight + (noteStr ? (noteHeight + 2) : 0) + paddingY);
@@ -361,6 +363,20 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           titleLines.forEach((tLine, tIdx) => {
             doc.text(tLine, margin + 10, y + 5 + (tIdx * 4));
           });
+
+          if (hasVideo) {
+            doc.setFontSize(8);
+            doc.setFont(fName, 'bold');
+            doc.setTextColor(0, 102, 204);
+            doc.text('🎥 Watch Video', margin + 10, y + 5 + (titleLines.length * 4), {
+              link: { url: drill.video_url.trim() }
+            });
+            const linkTextWidth = doc.getTextWidth('🎥 Watch Video');
+            doc.setDrawColor(0, 102, 204);
+            doc.setLineWidth(0.15);
+            doc.line(margin + 10, y + 5 + (titleLines.length * 4) + 0.5, margin + 10 + linkTextWidth, y + 5 + (titleLines.length * 4) + 0.5);
+            doc.setFont(fName, 'bold');
+          }
 
           // Draw FULL Exercise Notes (Absolutely no truncation, wraps perfectly!)
           if (noteStr) {
@@ -596,7 +612,19 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           doc.setFont(fName, 'bold');
           doc.setTextColor(...C.primary);
           const drillTitle = safeTxt(drill.title || 'Drill');
-          doc.text(drillTitle.substring(0, 21), colX + 4.5, drillY + titleOffset);
+          const hasVideo = !!(drill.video_url && drill.video_url.trim());
+          if (hasVideo) {
+            doc.text(drillTitle.substring(0, 14), colX + 4.5, drillY + titleOffset);
+            doc.setFontSize(titleFontSize - 0.5);
+            doc.setTextColor(0, 102, 204);
+            doc.text('🎥 Link', colX + colWidth - 3, drillY + titleOffset, {
+              align: 'right',
+              link: { url: drill.video_url.trim() }
+            });
+            doc.setFont(fName, 'bold');
+          } else {
+            doc.text(drillTitle.substring(0, 21), colX + 4.5, drillY + titleOffset);
+          }
 
           // Workout Prescription Parameters (Sets x Reps)
           doc.setFontSize(paramFontSize);
