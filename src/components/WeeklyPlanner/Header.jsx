@@ -131,7 +131,7 @@ export default function Header({
   return (
     <header className="min-h-[64px] h-auto py-3 sm:py-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200 shadow-sm font-sans">
       
-      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-3 gap-x-4 w-full max-w-[1600px] mx-auto">
+      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-3 gap-x-4 w-full">
         
         {/* 1. Left branding block */}
         <div className="flex items-center gap-3 shrink-0 order-1 select-none">
@@ -194,34 +194,34 @@ export default function Header({
 
         {/* 3. Center-Right stats indicators pill */}
         {weeklyStats && (
-          <div className="hidden xl:flex items-center gap-3.5 px-4 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-150 dark:border-slate-850/80 order-4 lg:order-3">
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Load:</span>
-              <span className="text-xs font-black text-slate-800 dark:text-white leading-none">
+          <div className="hidden lg:flex items-center gap-5 px-6 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-150 dark:border-slate-850/80 order-4 lg:order-3 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Load:</span>
+              <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.load} AU
               </span>
             </div>
             
-            <span className={`px-2 py-0.5 rounded-full border text-[9px] font-black uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
+            <span className={`px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
               {weeklyStats.loadLabel}
             </span>
 
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
 
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Intensity:</span>
-              <span className="text-xs font-black text-blue-600 dark:text-blue-400 leading-none">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Intensity:</span>
+              <span className="text-sm md:text-base font-black text-blue-600 dark:text-blue-400 leading-none">
                 {weeklyStats.intensity}%
               </span>
             </div>
 
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
 
-            <div className="flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-full border border-pink-100 bg-pink-50/50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 text-[8.5px] font-black uppercase tracking-wider shadow-sm leading-none">
+            <div className="flex items-center gap-2.5">
+              <span className="px-2.5 py-1 rounded-full border border-pink-100 bg-pink-50/50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 text-[10px] font-black uppercase tracking-wider shadow-sm leading-none">
                 CNS: {weeklyStats.cnsPercentage}%
               </span>
-              <span className="px-2 py-0.5 rounded-full border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[8.5px] font-black uppercase tracking-wider shadow-sm leading-none">
+              <span className="px-2.5 py-1 rounded-full border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-wider shadow-sm leading-none">
                 Struct: {weeklyStats.structuralPercentage}%
               </span>
             </div>

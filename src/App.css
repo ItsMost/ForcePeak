@@ -11,17 +11,17 @@
 
 /* ---- 1. Root Background & Base Text ---- */
 .dark {
-  --pf-bg-base: #0c1220;
-  --pf-bg-surface: #111827;
-  --pf-bg-card: #162032;
-  --pf-bg-elevated: #1c2a42;
-  --pf-bg-input: #0f1a2e;
-  --pf-border: #1e3050;
-  --pf-border-subtle: #1a2740;
-  --pf-text-primary: #e8ecf4;
-  --pf-text-secondary: #a0aec0;
-  --pf-text-muted: #6b7b94;
-  --pf-accent: #f97316;
+  --pf-bg-base: #090d16;        /* Deep obsidian base background */
+  --pf-bg-surface: #0f172a;     /* Deep slate for header & sidebar */
+  --pf-bg-card: #1e293b;        /* Slate-800 for card backgrounds */
+  --pf-bg-elevated: #334155;    /* Slate-700 for active/dropdown states */
+  --pf-bg-input: #0f172a;       /* Inset input backgrounds */
+  --pf-border: #334155;         /* Crisp, high-visibility borders */
+  --pf-border-subtle: #1e293b;  /* Subtle divider lines */
+  --pf-text-primary: #f8fafc;   /* Slate-50, near-white for ultimate legibility */
+  --pf-text-secondary: #cbd5e1; /* Slate-300, bright gray-blue */
+  --pf-text-muted: #94a3b8;     /* Slate-400, brightened labels */
+  --pf-accent: #f97316;         /* Orange brand color */
 }
 
 /* Global dark page background — softer deep navy instead of harsh slate-900 */
@@ -258,6 +258,21 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-smoothing: antialiased;
+}
+
+.dark body {
+  letter-spacing: 0.015em !important;
+}
+
+/* Subtly increase weight and contrast of standard text on dark mode */
+.dark span,
+.dark p,
+.dark div,
+.dark label,
+.dark button {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ---- 23. Drag Over State ---- */
