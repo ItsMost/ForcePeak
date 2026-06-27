@@ -142,7 +142,7 @@ export default function TimelineCard({
       </div>
 
       {/* Exercise core detailed metadata descriptor block */}
-      <div className="flex-1 pt-0.5 min-w-0 pr-20 sm:pr-24">
+      <div className="flex-1 pt-0.5 min-w-0 pr-1.5">
         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
           
           {/* Superset Pill Indicator */}
@@ -185,7 +185,7 @@ export default function TimelineCard({
         {(drill.sets || (isMeters ? drill.distance : drill.reps) || drill.rest || drill.details) && (
           <div className="flex items-center gap-1.5 mt-1.5 mb-1.5 flex-wrap">
             {(drill.sets || (isMeters ? drill.distance : drill.reps)) && (
-              <>
+              <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
                 <span className="px-2 py-0.5 bg-slate-150/70 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 rounded-md font-black text-[9.5px] tracking-wider uppercase">
                   {drill.sets || '-'} Sets
                 </span>
@@ -193,7 +193,7 @@ export default function TimelineCard({
                 <span className="px-2 py-0.5 bg-slate-150/70 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 rounded-md font-black text-[9.5px] tracking-wider uppercase">
                   {(isMeters ? drill.distance : drill.reps) || '-'} {formatUnit(drill.unit)}
                 </span>
-              </>
+              </div>
             )}
             
             {drill.rest && (
