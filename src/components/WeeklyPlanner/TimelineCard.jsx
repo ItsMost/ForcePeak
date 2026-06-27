@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GripVertical, Edit2, Trash2, Dumbbell, Zap, Shield, Target, Copy, ArrowUp, ArrowDown, Timer, Activity, ClipboardList } from 'lucide-react';
+import { GripVertical, Edit2, Trash2, Dumbbell, Zap, Shield, Target, Copy, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Timer, Activity, ClipboardList } from 'lucide-react';
 
 const CATEGORY_STYLES = {
   mobility: { label: 'MOBILITY', color: 'text-rose-500 border-rose-500', bg: 'border-rose-100 bg-rose-50/50 dark:bg-rose-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
@@ -142,7 +142,7 @@ export default function TimelineCard({
       </div>
 
       {/* Exercise core detailed metadata descriptor block */}
-      <div className="flex-1 pt-0.5 min-w-0">
+      <div className="flex-1 pt-0.5 min-w-0 pr-20 sm:pr-24">
         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
           
           {/* Superset Pill Indicator */}
@@ -235,27 +235,43 @@ export default function TimelineCard({
 
         {/* Quick layout overlay control actions view state menu wrapper */}
         {!isPreviewMode && (
-          <div className="flex items-center justify-start flex-wrap gap-1 mt-3.5 opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
-            <button onClick={onMoveUp} className="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors bg-slate-100 dark:bg-slate-800 rounded shadow-sm" title="Move Up">
-              <ArrowUp className="w-3.5 h-3.5" />
+          <div className="absolute top-1.5 right-1.5 z-20 flex items-center gap-0.5 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700/80 px-2 py-0.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 print:hidden">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onMoveUp(); }} 
+              className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-250 transition-colors" 
+              title="Move Up"
+            >
+              <ChevronUp className="w-3.5 h-3.5" />
             </button>
-            <button onClick={onMoveDown} className="p-1 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors bg-slate-100 dark:bg-slate-800 rounded shadow-sm" title="Move Down">
-              <ArrowDown className="w-3.5 h-3.5" />
+            <button 
+              onClick={(e) => { e.stopPropagation(); onMoveDown(); }} 
+              className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-250 transition-colors" 
+              title="Move Down"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
             </button>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
-            <button onClick={() => onCopy && onCopy(drill)} className="p-1 text-slate-500 hover:text-green-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded shadow-sm" title="Copy Card Parameters">
+            <div className="w-px h-3.5 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
+            <button 
+              onClick={(e) => { e.stopPropagation(); onCopy && onCopy(drill); }} 
+              className="p-1 text-slate-400 dark:text-slate-500 hover:text-green-500 transition-colors" 
+              title="Copy Exercise"
+            >
               <Copy className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onEdit(day, drill)} className="p-1 text-slate-500 hover:text-blue-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded shadow-sm" title="Edit Parameters Modal">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onEdit(day, drill); }} 
+              className="p-1 text-slate-400 dark:text-slate-500 hover:text-blue-500 transition-colors" 
+              title="Edit Exercise"
+            >
               <Edit2 className="w-3.5 h-3.5" />
             </button>
-            <button onClick={() => onDelete(day, drill.id)} className="p-1 text-slate-500 hover:text-red-500 transition-colors bg-slate-100 dark:bg-slate-800 rounded shadow-sm" title="Delete Workflow Item">
+            <button 
+              onClick={(e) => { e.stopPropagation(); onDelete(day, drill.id); }} 
+              className="p-1 text-slate-400 dark:text-slate-500 hover:text-red-500 transition-colors" 
+              title="Delete Exercise"
+            >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-700 mx-0.5"></div>
-            <div className="p-1 text-slate-400 bg-slate-100 dark:bg-slate-800 rounded cursor-grab active:cursor-grabbing shadow-sm" title="Drag card block layout directly to rearrange days">
-              <GripVertical className="w-3.5 h-3.5" />
-            </div>
           </div>
         )}
       </div>
