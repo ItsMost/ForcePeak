@@ -6,6 +6,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
   const [formData, setFormData] = useState({
     id: athlete.id,
     name: athlete.name || '',
+    groupName: athlete.groupName || '',
     birthYear: athlete.birthYear || '',
     weight: athlete.weight || '',
     height: athlete.height || '',
@@ -69,16 +70,29 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               <div className="w-16 h-16 rounded-[20px] bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-orange-500/30 shrink-0">
                 {getInitials(formData.name)}
               </div>
-              <div className="flex-1">
-                <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME</label>
-                <input 
-                  type="text" 
-                  name="name" 
-                  value={formData.name} 
-                  onChange={handleChange} 
-                  placeholder="Enter Athlete Name"
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-orange-500/20 text-slate-800 dark:text-white font-bold text-sm outline-none transition-all" 
-                />
+              <div className="flex-1 space-y-3">
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME / الاسم الكامل</label>
+                  <input 
+                    type="text" 
+                    name="name" 
+                    value={formData.name} 
+                    onChange={handleChange} 
+                    placeholder="Enter Athlete Name"
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white font-bold text-sm outline-none focus:ring-2 focus:ring-orange-500/20 transition-all" 
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">ATHLETE GROUP / مجموعة اللاعب (مثال: Rehab, Sprinters)</label>
+                  <input 
+                    type="text" 
+                    name="groupName" 
+                    value={formData.groupName} 
+                    onChange={handleChange} 
+                    placeholder="e.g. Rehab, Sprinters, Group A"
+                    className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-white font-bold text-sm outline-none focus:ring-2 focus:ring-orange-500/20 transition-all" 
+                  />
+                </div>
               </div>
             </div>
 

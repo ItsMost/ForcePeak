@@ -105,8 +105,356 @@ export default function PeriodizationPlanner({
   const [isLoading, setIsLoading] = useState(false);
   const [blockTemplates, setBlockTemplates] = useState([]);
   
-  // Visual Navigation: Phase index being detailed (null = Macro View, 0-3 = Meso View)
   const [activeMesoPhaseIdx, setActiveMesoPhaseIdx] = useState(null);
+
+  // Seasons / Periodization Planner additions
+  const [activeTab, setActiveTab] = useState('block_designer');
+  const [stagedDeployments, setStagedDeployments] = useState([]);
+  const [athleteDeployments, setAthleteDeployments] = useState([]);
+
+  const fetchAthleteDeployments = async () => {
+    if (!athlete) return;
+    try {
+      const { data } = await supabase
+        .from('periodization_deployments')
+        .select('*')
+        .eq('athlete_id', athlete.id)
+        .order('start_date', { ascending: true });
+      setAthleteDeployments(data || []);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAthleteDeployments();
+  }, [athlete]);
+
+  const getMonthsAndWeeks = () => {
+    const list = [];
+    const now = new Date();
+    const startYear = now.getFullYear();
+    const startMonth = now.getMonth();
+
+    for (let m = 0; m < 12; m++) {
+      const monthDate = new Date(startYear, startMonth + m, 1);
+      const monthName = monthDate.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
+      const englishMonthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      const weeks = [];
+      const year = monthDate.getFullYear();
+      const month = monthDate.getMonth();
+      const numDays = new Date(year, month + 1, 0).getDate();
+
+      for (let day = 1; day <= numDays; day++) {
+        const d = new Date(year, month, day);
+        if (d.getDay() === 6) { // Saturday
+          const saturdayStr = getDbDateStr(d);
+          const friday = new Date(d);
+          friday.setDate(friday.getDate() + 6);
+          const rangeLabel = `${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' })} - ${friday.getDate()} ${friday.toLocaleDateString('en-US', { month: 'short' })}`;
+          weeks.push({
+            dateStr: saturdayStr,
+            rangeLabel
+          });
+        }
+      }
+
+      list.push({
+        monthName: `${monthName} / ${englishMonthName}`,
+        weeks
+      });
+    }
+    return list;
+  };
+
+  const handleDropWeek = (e, weekStartDateStr) => {
+    e.preventDefault();
+    const dataStr = e.dataTransfer.getData('application/json');
+    if (!dataStr) return;
+    const { programId, programName, weeksCount } = JSON.parse(dataStr);
+
+    const start = new Date(weekStartDateStr);
+    const end = new Date(start);
+    end.setDate(end.getDate() + (weeksCount * 7) - 1);
+
+    const newDeploy = {
+      id: `staged-${Date.now()}`,
+      athlete_id: athlete?.id,
+      program_id: programId,
+      program_name: programName,
+      start_date: getDbDateStr(start),
+      end_date: getDbDateStr(end),
+      color: PHASE_COLORS[(athleteDeployments.length + stagedDeployments.length) % PHASE_COLORS.length].hex,
+      isStaged: true
+    };
+
+    setStagedDeployments(prev => [...prev, newDeploy]);
+  };
+
+  const getDeployCoverStatus = (dep, dateStr) => {
+    const wSat = new Date(dateStr);
+    const start = new Date(dep.start_date);
+    const end = new Date(dep.end_date);
+    wSat.setHours(0,0,0,0);
+    start.setHours(0,0,0,0);
+    end.setHours(0,0,0,0);
+
+    if (wSat.toDateString() === start.toDateString()) {
+      return 'start';
+    }
+    if (wSat > start && wSat <= end) {
+      return 'continue';
+    }
+    return 'none';
+  };
+
+  const handleDeleteStaged = (id) => {
+    setStagedDeployments(prev => prev.filter(d => d.id !== id));
+  };
+
+  const handleDeleteSaved = async (id) => {
+    const { error } = await supabase
+      .from('periodization_deployments')
+      .delete()
+      .eq('id', id);
+    if (!error) {
+      setAthleteDeployments(prev => prev.filter(d => d.id !== id));
+      handleToast('تم إزالة الفترة التدريبية بنجاح.');
+      if (refreshDeploymentsCallback) refreshDeploymentsCallback(athlete.id);
+    } else {
+      handleToast('حدث خطأ أثناء حذف الفترة التدريبية');
+    }
+  };
+
+  const handleSaveSeasonPlan = async () => {
+    if (stagedDeployments.length === 0) {
+      handleToast('لا يوجد برامج جديدة لحفظها!');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      for (const dep of stagedDeployments) {
+        const { data: program } = await supabase
+          .from('agilitylap_programs')
+          .select('*')
+          .eq('id', dep.program_id)
+          .single();
+
+        if (!program || !program.weeks) continue;
+
+        const start = new Date(dep.start_date);
+
+        for (let i = 0; i < program.weeks.length; i++) {
+          const futureWeekStart = new Date(start);
+          futureWeekStart.setDate(futureWeekStart.getDate() + (i * 7));
+          const weekTemplateObject = program.weeks[i].drills || {};
+          const targetBlockTitle = program.weeks[i].title || 'Block Workout';
+
+          for (let j = 0; j < DAYS_OF_WEEK.length; j++) {
+            const dayDate = new Date(futureWeekStart);
+            dayDate.setDate(dayDate.getDate() + j);
+
+            let clonedDrills = [];
+            if (weekTemplateObject && !Array.isArray(weekTemplateObject)) {
+              clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ ...drill, id: `season-${Date.now()}-${i}-${j}-${idx}` }));
+            } else if (Array.isArray(weekTemplateObject)) {
+              clonedDrills = weekTemplateObject.map((drill, idx) => ({ ...drill, id: `season-${Date.now()}-${i}-${j}-${idx}` }));
+            }
+
+            await supabase.from('agilitylap_workouts').upsert({
+              athlete_id: athlete.id,
+              workout_date: getDbDateStr(dayDate),
+              workout_title: targetBlockTitle,
+              drills: clonedDrills
+            }, { onConflict: 'athlete_id,workout_date' });
+          }
+        }
+
+        await supabase.from('periodization_deployments').insert([{
+          athlete_id: athlete.id,
+          program_id: dep.program_id,
+          program_name: dep.program_name,
+          start_date: dep.start_date,
+          end_date: dep.end_date,
+          color: dep.color
+        }]);
+      }
+
+      handleToast('تم حفظ وتطبيق خطة الموسم بنجاح!');
+      setStagedDeployments([]);
+      fetchAthleteDeployments();
+      if (refreshDeploymentsCallback) refreshDeploymentsCallback(athlete.id);
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء حفظ وتطبيق خطة الموسم.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderSeasonPlanner = () => {
+    const calendarData = getMonthsAndWeeks();
+    const mesoBlocks = programs ? programs.filter(p => p.type !== 'macro_block') : [];
+
+    return (
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row h-full">
+        {/* Sidebar: Draggable Meso-Blocks */}
+        <div className="w-full md:w-72 border-b md:border-b-0 md:border-l border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-950 p-5 flex flex-col gap-5 overflow-y-auto shrink-0">
+          <div>
+            <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">البرامج المتاحة للسحب</h4>
+            <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Drag programs to timeline</p>
+          </div>
+
+          <div className="flex flex-col gap-2.5">
+            {mesoBlocks.length > 0 ? (
+              mesoBlocks.map(prog => (
+                <div
+                  key={prog.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('application/json', JSON.stringify({
+                      programId: prog.id,
+                      programName: prog.program_name,
+                      weeksCount: prog.weeks ? prog.weeks.length : 0
+                    }));
+                  }}
+                  className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl cursor-grab active:cursor-grabbing hover:border-orange-500 dark:hover:border-orange-500/50 transition-all select-none group"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-orange-500 shrink-0">
+                      <Dumbbell className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
+                      {prog.program_name}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8.5px] font-bold">
+                      {prog.weeks ? prog.weeks.length : 0} Weeks
+                    </span>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6">
+                <span className="text-[10px] text-slate-400">لا يوجد برامج Meso-Blocks متاحة.</span>
+              </div>
+            )}
+          </div>
+
+          {/* Staged list actions */}
+          {stagedDeployments.length > 0 && (
+            <div className="mt-auto bg-orange-50/50 dark:bg-orange-950/10 p-3 rounded-2xl border border-orange-100 dark:border-orange-900/20 flex flex-col gap-2">
+              <span className="text-[10px] font-bold text-orange-650 dark:text-orange-400 block text-center">لديك خطة دورية غير محفوظة!</span>
+              <button
+                onClick={handleSaveSeasonPlan}
+                className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-1.5"
+              >
+                <Save className="w-4 h-4" /> حفظ خطة الموسم التدريبية
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Annual Timeline Calendar Grid */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50 dark:bg-slate-900/40">
+          <div className="max-w-4xl mx-auto space-y-6">
+            <div className="flex justify-between items-center bg-white dark:bg-slate-800/80 p-4 border border-slate-200/50 dark:border-slate-800 rounded-2xl shadow-sm">
+              <div>
+                <h4 className="text-xs font-black text-slate-800 dark:text-white font-sans">الخطة السنوية والجدولة للاعب: {athlete ? athlete.name : ''}</h4>
+                <p className="text-[9px] font-bold text-slate-450 dark:text-slate-500 mt-0.5 uppercase tracking-wide">Annual periodization & schedule mapping</p>
+              </div>
+              {stagedDeployments.length > 0 && (
+                <span className="text-[9px] font-black uppercase bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/20 animate-pulse">غير محفوظ</span>
+              )}
+            </div>
+
+            <div className="bg-white dark:bg-slate-800/60 border border-slate-250 dark:border-slate-805 rounded-[24px] overflow-hidden shadow-sm">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                {calendarData.map((mon, mIdx) => (
+                  <div key={mIdx} className="p-4 flex flex-col md:flex-row gap-4">
+                    {/* Month Label */}
+                    <div className="w-full md:w-36 font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider md:pt-1">
+                      {mon.monthName}
+                    </div>
+
+                    {/* Weeks Column Grid */}
+                    <div className="flex-1 flex flex-col gap-2.5">
+                      {mon.weeks.map((wk, wIdx) => {
+                        const weekDeploys = athleteDeployments.concat(stagedDeployments).filter(dep => {
+                          const wSat = new Date(wk.dateStr);
+                          const start = new Date(dep.start_date);
+                          const end = new Date(dep.end_date);
+                          return wSat >= start && wSat <= end;
+                        });
+
+                        return (
+                          <div
+                            key={wIdx}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => handleDropWeek(e, wk.dateStr)}
+                            className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700/50 rounded-2xl transition-all gap-4 min-h-[50px] relative drop-zone"
+                          >
+                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 select-none">
+                              {wk.rangeLabel}
+                            </span>
+
+                            {/* Render mapped capsules */}
+                            <div className="flex-1 flex flex-col gap-1.5">
+                              {weekDeploys.map(dep => {
+                                const status = getDeployCoverStatus(dep, wk.dateStr);
+                                if (status === 'start') {
+                                  return (
+                                    <div
+                                      key={dep.id}
+                                      className="px-3.5 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center justify-between gap-3 text-white transition-all select-none animate-fadeIn"
+                                      style={{ backgroundColor: dep.color, borderColor: dep.color }}
+                                    >
+                                      <span className="truncate">{dep.program_name}</span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (dep.isStaged) {
+                                            handleDeleteStaged(dep.id);
+                                          } else {
+                                            if (confirm('هل أنت متأكد من حذف هذه الفترة التدريبية؟ سيتم إزالة السجلات المرتبطة بها.')) {
+                                              handleDeleteSaved(dep.id);
+                                            }
+                                          }
+                                        }}
+                                        className="p-1 hover:bg-white/20 rounded-md transition-all shrink-0"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  );
+                                } else if (status === 'continue') {
+                                  return (
+                                    <div
+                                      key={dep.id}
+                                      className="h-3 rounded-md w-full transition-all animate-fadeIn"
+                                      style={{ backgroundColor: dep.color, opacity: 0.25 }}
+                                      title={`Continuation of ${dep.program_name}`}
+                                    />
+                                  );
+                                }
+                                return null;
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // Modals inside Periodization Planner
   const [showCreateBlockModal, setShowCreateBlockModal] = useState(false);
@@ -465,8 +813,25 @@ export default function PeriodizationPlanner({
           </button>
         </div>
 
+        {/* Tab Selection Row */}
+        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 shrink-0 border-b border-slate-200 dark:border-slate-800">
+          <button
+            onClick={() => setActiveTab('block_designer')}
+            className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${activeTab === 'block_designer' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}
+          >
+            مصمم البرامج والكتل / Block Designer
+          </button>
+          <button
+            onClick={() => setActiveTab('season_planner')}
+            className={`flex-1 py-2 text-xs font-black rounded-xl transition-all ${activeTab === 'season_planner' ? 'bg-white dark:bg-slate-800 text-orange-500 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'}`}
+          >
+            مخطط الموسم السنوي / Season Planner
+          </button>
+        </div>
+
         {/* Modal Body Container */}
-        <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
+        {activeTab === 'block_designer' ? (
+          <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
           
           {/* Main Workspace (Left Area) */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col">
@@ -808,6 +1173,9 @@ export default function PeriodizationPlanner({
           </div>
 
         </div>
+      ) : (
+        renderSeasonPlanner()
+      )}
 
       </div>
 

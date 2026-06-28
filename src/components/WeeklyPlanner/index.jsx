@@ -379,6 +379,75 @@ export default function WeeklyPlanner() {
     localStorage.setItem('forcepeak_athlete_order', JSON.stringify(newOrderIds));
   };
 
+  const getAthleteActiveWeekAndPhase = (athleteId) => {
+    const deploys = allDeployments.filter(d => d.athlete_id === athleteId);
+    if (deploys.length === 0) return { weekLabel: 'No Active Block', phaseLabel: 'Off-Season' };
+
+    const now = new Date();
+    const activeDeploy = [...deploys].sort((a, b) => new Date(b.start_date) - new Date(a.start_date))[0];
+    if (!activeDeploy) return { weekLabel: 'No Active Block', phaseLabel: 'Off-Season' };
+
+    const start = new Date(activeDeploy.start_date);
+    const end = new Date(activeDeploy.end_date);
+    const totalDays = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    const totalWeeks = Math.ceil(totalDays / 7);
+
+    let currentWeekByDate = Math.floor((now - start) / (1000 * 60 * 60 * 24 * 7)) + 1;
+    if (currentWeekByDate < 1) currentWeekByDate = 1;
+    if (currentWeekByDate > totalWeeks) currentWeekByDate = totalWeeks;
+
+    let lastCompletedWeek = 0;
+    const athleteWorkouts = allWorkouts.filter(w => w.athlete_id === athleteId);
+
+    for (let w = 1; w <= totalWeeks; w++) {
+      const weekStart = new Date(start);
+      weekStart.setDate(weekStart.getDate() + (w - 1) * 7);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      const weekWorkouts = athleteWorkouts.filter(wk => {
+        const wkDate = new Date(wk.workout_date);
+        return wkDate >= weekStart && wkDate <= weekEnd;
+      });
+
+      const workoutsWithDrills = weekWorkouts.filter(wk => wk.drills && wk.drills.length > 0);
+      const isCompleted = workoutsWithDrills.length > 0 && workoutsWithDrills.every(wk => wk.is_completed);
+
+      if (isCompleted) {
+        lastCompletedWeek = w;
+      } else {
+        break;
+      }
+    }
+
+    let activeWeek = Math.max(currentWeekByDate, lastCompletedWeek + 1);
+    if (activeWeek > totalWeeks) activeWeek = totalWeeks;
+
+    const weekLabel = lastCompletedWeek >= activeWeek - 1 && lastCompletedWeek > 0
+      ? `Week ${lastCompletedWeek} Done, now in Week ${activeWeek}`
+      : `Week ${activeWeek} of ${totalWeeks}`;
+
+    return {
+      weekLabel,
+      phaseLabel: activeDeploy.deficit_protocol ? `${activeDeploy.program_name} (${activeDeploy.deficit_protocol})` : activeDeploy.program_name,
+      activeWeek,
+      totalWeeks
+    };
+  };
+
+  const handleQuickAssignGroup = async (athleteId, groupName) => {
+    const { error } = await supabase
+      .from('agilitylap_athletes')
+      .update({ group_name: groupName ? groupName.trim() : null })
+      .eq('id', athleteId);
+    if (!error) {
+      setAthletes(prev => prev.map(a => a.id === athleteId ? { ...a, groupName: groupName || '' } : a));
+      handleToast(groupName ? `تم ضم اللاعب للمجموعة: ${groupName}` : 'تم إزالة اللاعب من المجموعة');
+    } else {
+      handleToast('حدث خطأ أثناء تحديث مجموعة اللاعب');
+    }
+  };
+
   useEffect(() => { if (selectedAthleteId) localStorage.setItem('lastSelectedAthlete', selectedAthleteId); }, [selectedAthleteId]);
 
   const fetchLibraryData = async () => {
@@ -1074,6 +1143,7 @@ export default function WeeklyPlanner() {
       color: PHASE_COLORS[colorIndex].hex
     }]);
     fetchDeployments(selectedAthleteId);
+    fetchWorkoutsAndDeployments();
 
     handleToast(`Meso-Block "${program.program_name}" deployed successfully!`);
   };
@@ -2004,6 +2074,279 @@ export default function WeeklyPlanner() {
       );
     }
     return days;
+  };
+
+  const renderDashboard = () => {
+    const uniqueGroups = ['All', ...new Set(athletes.map(a => a.groupName).filter(Boolean))];
+    const filteredDashboardAthletes = athletes.filter(athlete => {
+      const matchesSearch = athlete.name.toLowerCase().includes(dashboardSearch.toLowerCase());
+      const matchesGroup = selectedDashboardGroup === 'All' || athlete.groupName === selectedDashboardGroup;
+      return matchesSearch && matchesGroup;
+    });
+
+    return (
+      <div className="flex-1 overflow-hidden flex flex-col md:flex-row h-[calc(100vh-64px)] bg-[#F4F5F7] dark:bg-slate-900 font-sans" dir="rtl">
+        {/* Left Side: Athletes Grid & Filters */}
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-6">
+          {/* Greeting / Summary Cards */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white leading-tight">
+                أهلاً بك كابتن! 👋
+              </h2>
+              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-semibold">
+                شاشة التحكم المركزية لإدارة اللاعبين والبرامج التدريبية
+              </p>
+            </div>
+            <button
+              onClick={() => setShowAddAthleteModal(true)}
+              className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-xs font-black shadow-md shadow-orange-500/10 flex items-center gap-2 self-start sm:self-auto transition-all"
+            >
+              <UserPlus className="w-4 h-4" /> إضافة لاعب جديد
+            </button>
+          </div>
+
+          {/* Quick Stats Row */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div className="bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-850/80 rounded-2xl p-4 shadow-sm">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">إجمالي اللاعبين</span>
+              <span className="text-2xl font-black text-slate-800 dark:text-white block mt-1">{athletes.length}</span>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-850/80 rounded-2xl p-4 shadow-sm">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">المجموعات الفعّالة</span>
+              <span className="text-2xl font-black text-slate-800 dark:text-white block mt-1">{uniqueGroups.length - 1}</span>
+            </div>
+            <div className="bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-850/80 rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">البرامج الجاهزة (Meso)</span>
+              <span className="text-2xl font-black text-slate-800 dark:text-white block mt-1">{programs.length}</span>
+            </div>
+          </div>
+
+          {/* Search & Groups Filter Bar */}
+          <div className="bg-white dark:bg-slate-850 p-4 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
+            {/* Search Input */}
+            <div className="relative w-full md:w-80">
+              <Search className="absolute right-3 top-3 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                placeholder="البحث عن لاعب..."
+                value={dashboardSearch}
+                onChange={(e) => setDashboardSearch(e.target.value)}
+                className="w-full pl-4 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+              />
+            </div>
+
+            {/* Groups Horizontal Tabs */}
+            <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none justify-start md:justify-end">
+              {uniqueGroups.map(grp => (
+                <button
+                  key={grp}
+                  onClick={() => setSelectedDashboardGroup(grp)}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all shrink-0 select-none ${selectedDashboardGroup === grp ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-150 dark:border-slate-800'}`}
+                >
+                  {grp === 'All' ? 'جميع اللاعبين / All' : grp}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Athletes List */}
+          <div className="flex flex-col gap-3">
+            {filteredDashboardAthletes.length > 0 ? (
+              filteredDashboardAthletes.map(athlete => {
+                const { weekLabel, phaseLabel } = getAthleteActiveWeekAndPhase(athlete.id);
+                return (
+                  <div
+                    key={athlete.id}
+                    onClick={() => {
+                      setSelectedAthleteId(athlete.id);
+                      setCurrentView('planner');
+                    }}
+                    className="bg-white dark:bg-slate-800 rounded-3xl border border-slate-150 dark:border-slate-800/80 p-4 md:p-5 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between items-start md:items-center gap-4 cursor-pointer hover:border-orange-200 dark:hover:border-orange-500/20 group/card"
+                  >
+                    {/* Athlete Details (Left) */}
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-500/10 shrink-0">
+                        {athlete.name ? athlete.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '?'}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="text-sm font-black text-slate-800 dark:text-white group-hover/card:text-orange-500 transition-colors truncate">
+                          {athlete.name}
+                        </h4>
+                        <div className="flex items-center gap-2 flex-wrap mt-1">
+                          {athlete.birthYear && (
+                            <span className="text-[10px] text-slate-400 font-bold">الميلاد: {athlete.birthYear}</span>
+                          )}
+                          {athlete.weight && (
+                            <span className="text-[10px] text-slate-400 font-bold">• الوزن: {athlete.weight} كجم</span>
+                          )}
+                          {athlete.groupName && (
+                            <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 text-[9px] font-black uppercase tracking-wider">
+                              {athlete.groupName}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Active Routine Info (Center) */}
+                    <div className="flex flex-col gap-1 min-w-0 md:max-w-xs w-full md:w-auto">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">البرنامج الفعّال:</span>
+                        <span className="text-[11px] font-black text-slate-700 dark:text-slate-350 truncate">{phaseLabel}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">مرحلة التقدم:</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/20 shadow-sm shrink-0">
+                          {weekLabel}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Quick Group & Block actions (Right) */}
+                    <div className="flex items-center gap-2.5 w-full md:w-auto justify-end shrink-0" onClick={e => e.stopPropagation()}>
+                      {/* Group Switcher Select Dropdown */}
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">المجموعة:</span>
+                        <select
+                          value={athlete.groupName || ''}
+                          onChange={(e) => handleQuickAssignGroup(athlete.id, e.target.value)}
+                          className="text-[10px] font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-500 dark:text-white w-28 font-sans"
+                        >
+                          <option value="">بلا مجموعة</option>
+                          <option value="Rehab">Rehab / تأهيل</option>
+                          <option value="Sprinters">Sprinters / سرعات</option>
+                          <option value="Group A">Group A / مجموعة أ</option>
+                          <option value="Group B">Group B / مجموعة ب</option>
+                          {athlete.groupName && !['Rehab', 'Sprinters', 'Group A', 'Group B'].includes(athlete.groupName) && (
+                            <option value={athlete.groupName}>{athlete.groupName}</option>
+                          )}
+                        </select>
+                      </div>
+
+                      {/* Quick Deploy Block button */}
+                      <button
+                        onClick={() => {
+                          setDeployBlockModal({
+                            isOpen: true,
+                            blockId: programs[0]?.id || '',
+                            athleteId: athlete.id,
+                            startDate: getDbDateStr(new Date())
+                          });
+                        }}
+                        className="px-3.5 py-2.5 bg-slate-50 hover:bg-orange-50 dark:bg-slate-900 dark:hover:bg-orange-950/20 text-slate-700 dark:text-slate-200 hover:text-orange-500 dark:hover:text-orange-400 border border-slate-200 dark:border-slate-750 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm flex items-center gap-1.5"
+                      >
+                        <Layers className="w-3.5 h-3.5" /> تطبيق برنامج
+                      </button>
+
+                      {/* Edit profile */}
+                      <button
+                        onClick={() => {
+                          setSelectedAthleteId(athlete.id);
+                          setShowProfileModal(true);
+                        }}
+                        className="p-2.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 text-slate-500 hover:text-slate-800 dark:hover:text-white border border-slate-200 dark:border-slate-750 rounded-xl transition-all shadow-sm"
+                        title="Edit Profile"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="bg-white dark:bg-slate-800/40 p-8 rounded-3xl text-center border border-dashed border-slate-250 dark:border-slate-800">
+                <span className="text-xs text-slate-400 dark:text-slate-500">لا يوجد لاعبين يطابقون خيارات البحث.</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right Side: Meso-Blocks directory sidebar */}
+        <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 flex flex-col gap-6 overflow-y-auto shrink-0">
+          <div>
+            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">
+              قوالب الدورات والبرامج
+            </h3>
+            <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-wide">
+              Meso-Blocks & Programs Directory
+            </p>
+          </div>
+
+          {/* Sidebar Actions */}
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => setCreateProgramModal({ isOpen: true, name: '', tags: '', weeksChain: [''] })}
+              className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md shadow-orange-500/10 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Plus className="w-4 h-4" /> إنشاء كتلة تدريب جديدة
+            </button>
+            <button
+              onClick={() => setShowPeriodizationPlanner(true)}
+              className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-black shadow-md shadow-violet-500/10 flex items-center justify-center gap-1.5 transition-all"
+            >
+              <Calendar className="w-4 h-4" /> مخطط الموسم السنوي (Planner)
+            </button>
+          </div>
+
+          <div className="w-full h-px bg-slate-100 dark:bg-slate-900"></div>
+
+          {/* Meso programs list */}
+          <div className="flex flex-col gap-3 flex-1">
+            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">قائمة البرامج المحفوظة ({programs.length})</span>
+            <div className="flex flex-col gap-2.5">
+              {programs.length > 0 ? (
+                programs.map(prog => (
+                  <div
+                    key={prog.id}
+                    className="p-3.5 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 flex flex-col gap-2.5 hover:border-slate-350 dark:hover:border-slate-700 transition-all"
+                  >
+                    <div>
+                      <h5 className="text-xs font-black text-slate-800 dark:text-white">{prog.program_name}</h5>
+                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-855 text-slate-600 dark:text-slate-400 text-[8.5px] font-bold">
+                          {prog.weeks ? prog.weeks.length : 0} أسابيع
+                        </span>
+                        {prog.weeks?.[0]?.blockTags && (
+                          <span className="text-[8.5px] text-orange-500 font-bold">{prog.weeks[0].blockTags}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setDeployBlockModal({
+                            isOpen: true,
+                            blockId: prog.id,
+                            athleteId: selectedAthleteId || '',
+                            startDate: getDbDateStr(new Date())
+                          });
+                        }}
+                        className="flex-1 py-1.5 bg-white dark:bg-slate-950 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-700 dark:text-slate-200 hover:text-orange-500 border border-slate-200 dark:border-slate-700 rounded-lg text-[9px] font-black uppercase transition-all flex items-center justify-center gap-1"
+                      >
+                        <Play className="w-3 h-3" /> تطبيق البرنامج
+                      </button>
+                      <button
+                        onClick={() => handleDeleteProgramBlock(prog.id)}
+                        className="p-1.5 bg-white dark:bg-slate-950 hover:bg-red-50 dark:hover:bg-red-950/20 text-slate-400 hover:text-red-500 border border-slate-200 dark:border-slate-700 rounded-lg transition-all"
+                        title="Delete Program"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-6">
+                  <span className="text-[10px] text-slate-400">لا يوجد برامج محفوظة حالياً.</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -3123,6 +3466,8 @@ export default function WeeklyPlanner() {
         setActiveMacroWeekIndex={setActiveMacroWeekIndex}
         macroData={macroData}
         macroWeeks={macroWeeks}
+        currentView={currentView}
+        setCurrentView={setCurrentView}
         onExitMeso={() => {
           setSelectedMesoId(null);
           fetchLibraryData();
@@ -3134,7 +3479,10 @@ export default function WeeklyPlanner() {
       />
 
       {/* ⚠️ Layout Control Panel */}
-      <div className="flex flex-col md:flex-row w-full h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible bg-[#F4F5F7] dark:bg-slate-900">
+      {currentView === 'dashboard' ? (
+        renderDashboard()
+      ) : (
+        <div className="flex flex-col md:flex-row w-full h-[calc(100vh-64px)] overflow-hidden relative print:h-auto print:overflow-visible bg-[#F4F5F7] dark:bg-slate-900">
         
         <Sidebar 
           isPreviewMode={isPreviewMode} setIsPreviewMode={setIsPreviewMode} 
@@ -3579,7 +3927,9 @@ export default function WeeklyPlanner() {
            </div>
         </div>
 
-      </div>
+        </div>
+      )}
+
     </div>
   );
 }

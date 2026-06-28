@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity,
-  Layers, TrendingUp
+  Layers, TrendingUp, LayoutDashboard
 } from 'lucide-react';
 
 export default function Header({
@@ -14,6 +14,7 @@ export default function Header({
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal,
   weeklyStats,
   isOnline, syncStatus, onDelete,
+  currentView, setCurrentView,
   onMoveAthlete,
   setShowPeriodizationPlanner,
   selectedBlockId, setSelectedBlockId, blockTemplates = [],
@@ -157,6 +158,13 @@ export default function Header({
               </div>
             )}
             <button 
+              onClick={() => setCurrentView(currentView === 'dashboard' ? 'planner' : 'dashboard')} 
+              className={`p-2 rounded-xl transition-all border shrink-0 ${currentView === 'dashboard' ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900 text-orange-500' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-orange-500 shadow-sm'}`}
+              title={currentView === 'dashboard' ? 'Open Planner' : 'Open Dashboard'}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+            </button>
+            <button 
               onClick={() => setShowLibrary(!showLibrary)} 
               className={`p-2 rounded-xl transition-all border shrink-0 ${showLibrary ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900 text-orange-500' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-orange-500 shadow-sm'}`} 
             >
@@ -296,17 +304,38 @@ export default function Header({
       <div className="hidden md:flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-3 gap-x-4 w-full">
         
         {/* 1. Left branding block */}
-        <div className="flex items-center gap-3 shrink-0 order-1 select-none">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
-            <Activity className="w-5 h-5 text-white" />
+        <div className="flex items-center gap-6 shrink-0 order-1">
+          <div className="flex items-center gap-3 select-none">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+              <Activity className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
+                Peak Force
+              </h1>
+              <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
+                PERFORMANCE CORE
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
-              Peak Force
-            </h1>
-            <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
-              PERFORMANCE CORE
-            </p>
+
+          {/* View Toggles */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-xl p-0.5 shadow-sm">
+            <button 
+              onClick={() => setCurrentView('dashboard')} 
+              className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${currentView === 'dashboard' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>الرئيسية / Dashboard</span>
+            </button>
+            <button 
+              onClick={() => { if (selectedAthlete) setCurrentView('planner'); }} 
+              disabled={!selectedAthlete}
+              className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${!selectedAthlete ? 'opacity-50 cursor-not-allowed' : ''} ${currentView === 'planner' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>المخطط / Weekly Planner</span>
+            </button>
           </div>
         </div>
 
