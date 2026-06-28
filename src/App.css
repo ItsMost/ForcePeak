@@ -11,13 +11,13 @@
 
 /* ---- 1. Root Background & Base Text ---- */
 .dark {
-  --pf-bg-base: #03060f;        /* Pitch black obsidian base background */
-  --pf-bg-surface: #070b14;     /* Ultra-dark slate for header & sidebar */
-  --pf-bg-card: #0c1220;        /* Deep midnight slate for card backgrounds */
-  --pf-bg-elevated: #1a2333;    /* Muted slate for active/dropdown states */
-  --pf-bg-input: #070b14;       /* Inset input backgrounds */
-  --pf-border: #152033;         /* Deep blue-gray border, very clean */
-  --pf-border-subtle: #0d1624;  /* Subtle divider lines */
+  --pf-bg-base: #0b0f19;        /* Deep obsidian-navy base background (softer by 2 degrees) */
+  --pf-bg-surface: #111726;     /* Deep slate for header & sidebar */
+  --pf-bg-card: #182030;        /* Midnight slate for card backgrounds (softer by 2 degrees) */
+  --pf-bg-elevated: #242d3d;    /* Muted slate for active/dropdown states */
+  --pf-bg-input: #111726;       /* Inset input backgrounds */
+  --pf-border: #212c3f;         /* Deep blue-gray border, very clean and blended */
+  --pf-border-subtle: #16202f;  /* Subtle divider lines */
   --pf-text-primary: #ffffff;   /* Pure white for ultimate legibility */
   --pf-text-secondary: #e2e8f0; /* Slate-200, bright gray-blue */
   --pf-text-muted: #64748b;     /* Slate-500, muted gray for labels */
@@ -60,8 +60,12 @@
 
 /* ---- 4. Borders — softer blue-tinted borders ---- */
 .dark .dark\:border-slate-800,
+.dark .dark\:border-slate-750,
 .dark .dark\:border-slate-700,
 .dark .border-slate-200,
+.dark .border-slate-150,
+.dark .dark\:border-slate-850,
+.dark .dark\:border-slate-850\/80,
 .dark .dark\:border-slate-800\/80 {
   border-color: var(--pf-border) !important;
 }
