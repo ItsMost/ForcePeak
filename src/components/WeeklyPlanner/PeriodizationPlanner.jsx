@@ -109,131 +109,188 @@ export default function PeriodizationPlanner({
 
   // Seasons / Periodization Planner additions
   const [activeTab, setActiveTab] = useState('block_designer');
+  const [seasonPlans, setSeasonPlans] = useState([]);
+  const [selectedSeasonId, setSelectedSeasonId] = useState(null);
+  const [selectedSeason, setSelectedSeason] = useState(null);
   const [stagedDeployments, setStagedDeployments] = useState([]);
-  const [athleteDeployments, setAthleteDeployments] = useState([]);
+  const [weekTags, setWeekTags] = useState({});
+  const [seasonStartDate, setSeasonStartDate] = useState(() => getDbDateStr(new Date()));
+  const [showNewSeasonModal, setShowNewSeasonModal] = useState(false);
+  const [newSeasonName, setNewSeasonName] = useState('');
+  const [newSeasonStartDate, setNewSeasonStartDate] = useState(() => getDbDateStr(new Date()));
+  const [showRenameSeasonModal, setShowRenameSeasonModal] = useState(false);
+  const [renameSeasonName, setRenameSeasonName] = useState('');
+  const [showDeploySeasonModal, setShowDeploySeasonModal] = useState(false);
+  const [deploySeasonAthleteId, setDeploySeasonAthleteId] = useState('');
+  const [deploySeasonStartDate, setDeploySeasonStartDate] = useState(() => getDbDateStr(new Date()));
 
-  const fetchAthleteDeployments = async () => {
-    if (!athlete) return;
+  const fetchSeasonPlans = async () => {
     try {
       const { data } = await supabase
-        .from('periodization_deployments')
+        .from('agilitylap_programs')
         .select('*')
-        .eq('athlete_id', athlete.id)
-        .order('start_date', { ascending: true });
-      setAthleteDeployments(data || []);
+        .eq('type', 'season_plan')
+        .order('created_at', { ascending: false });
+      setSeasonPlans(data || []);
+      if (data && data.length > 0 && !selectedSeasonId) {
+        setSelectedSeasonId(data[0].id);
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
   useEffect(() => {
-    fetchAthleteDeployments();
-  }, [athlete]);
+    fetchSeasonPlans();
+  }, []);
 
-  const getMonthsAndWeeks = () => {
-    const list = [];
-    const now = new Date();
-    const startYear = now.getFullYear();
-    const startMonth = now.getMonth();
-
-    for (let m = 0; m < 12; m++) {
-      const monthDate = new Date(startYear, startMonth + m, 1);
-      const monthName = monthDate.toLocaleDateString('ar-EG', { month: 'long', year: 'numeric' });
-      const englishMonthName = monthDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-      const weeks = [];
-      const year = monthDate.getFullYear();
-      const month = monthDate.getMonth();
-      const numDays = new Date(year, month + 1, 0).getDate();
-
-      for (let day = 1; day <= numDays; day++) {
-        const d = new Date(year, month, day);
-        if (d.getDay() === 6) { // Saturday
-          const saturdayStr = getDbDateStr(d);
-          const friday = new Date(d);
-          friday.setDate(friday.getDate() + 6);
-          const rangeLabel = `${d.getDate()} ${d.toLocaleDateString('en-US', { month: 'short' })} - ${friday.getDate()} ${friday.toLocaleDateString('en-US', { month: 'short' })}`;
-          weeks.push({
-            dateStr: saturdayStr,
-            rangeLabel
-          });
-        }
-      }
-
-      list.push({
-        monthName: `${monthName} / ${englishMonthName}`,
-        weeks
-      });
+  useEffect(() => {
+    if (!selectedSeasonId) {
+      setSelectedSeason(null);
+      setStagedDeployments([]);
+      setWeekTags({});
+      setSeasonStartDate(getDbDateStr(new Date()));
+      return;
     }
-    return list;
-  };
+    const active = seasonPlans.find(s => s.id === selectedSeasonId);
+    if (!active) return;
+    setSelectedSeason(active);
+    const details = active.weeks?.[0] || {};
+    setStagedDeployments(details.deployments || []);
+    setWeekTags(details.week_tags || {});
+    setSeasonStartDate(details.start_date || getDbDateStr(new Date()));
+  }, [selectedSeasonId, seasonPlans]);
 
-  const handleDropWeek = (e, weekStartDateStr) => {
-    e.preventDefault();
-    const dataStr = e.dataTransfer.getData('application/json');
-    if (!dataStr) return;
-    const { programId, programName, weeksCount } = JSON.parse(dataStr);
-
-    const start = new Date(weekStartDateStr);
-    const end = new Date(start);
-    end.setDate(end.getDate() + (weeksCount * 7) - 1);
-
-    const newDeploy = {
-      id: `staged-${Date.now()}`,
-      athlete_id: athlete?.id,
-      program_id: programId,
-      program_name: programName,
-      start_date: getDbDateStr(start),
-      end_date: getDbDateStr(end),
-      color: PHASE_COLORS[(athleteDeployments.length + stagedDeployments.length) % PHASE_COLORS.length].hex,
-      isStaged: true
-    };
-
-    setStagedDeployments(prev => [...prev, newDeploy]);
-  };
-
-  const getDeployCoverStatus = (dep, dateStr) => {
-    const wSat = new Date(dateStr);
-    const start = new Date(dep.start_date);
-    const end = new Date(dep.end_date);
-    wSat.setHours(0,0,0,0);
-    start.setHours(0,0,0,0);
-    end.setHours(0,0,0,0);
-
-    if (wSat.toDateString() === start.toDateString()) {
-      return 'start';
-    }
-    if (wSat > start && wSat <= end) {
-      return 'continue';
-    }
-    return 'none';
-  };
-
-  const handleDeleteStaged = (id) => {
-    setStagedDeployments(prev => prev.filter(d => d.id !== id));
-  };
-
-  const handleDeleteSaved = async (id) => {
-    const { error } = await supabase
-      .from('periodization_deployments')
-      .delete()
-      .eq('id', id);
-    if (!error) {
-      setAthleteDeployments(prev => prev.filter(d => d.id !== id));
-      handleToast('تم إزالة الفترة التدريبية بنجاح.');
-      if (refreshDeploymentsCallback) refreshDeploymentsCallback(athlete.id);
-    } else {
-      handleToast('حدث خطأ أثناء حذف الفترة التدريبية');
-    }
-  };
-
-  const handleSaveSeasonPlan = async () => {
-    if (stagedDeployments.length === 0) {
-      handleToast('لا يوجد برامج جديدة لحفظها!');
+  const handleCreateSeasonPlan = async () => {
+    if (!newSeasonName.trim()) {
+      handleToast('الرجاء كتابة اسم الخطة!');
       return;
     }
     setIsLoading(true);
     try {
+      const payload = {
+        program_name: newSeasonName,
+        type: 'season_plan',
+        weeks: [
+          {
+            isSeasonPlan: true,
+            start_date: newSeasonStartDate,
+            deployments: [],
+            week_tags: {}
+          }
+        ]
+      };
+      const { data, error } = await supabase
+        .from('agilitylap_programs')
+        .insert([payload])
+        .select();
+
+      if (!error && data && data.length > 0) {
+        handleToast('تم إنشاء خطة الموسم بنجاح!');
+        setShowNewSeasonModal(false);
+        setNewSeasonName('');
+        await fetchSeasonPlans();
+        setSelectedSeasonId(data[0].id);
+      } else {
+        handleToast('حدث خطأ أثناء إنشاء خطة الموسم');
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء إنشاء خطة الموسم');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRenameSeasonPlan = async () => {
+    if (!renameSeasonName.trim() || !selectedSeasonId) return;
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('agilitylap_programs')
+        .update({ program_name: renameSeasonName })
+        .eq('id', selectedSeasonId);
+
+      if (!error) {
+        handleToast('تم تعديل اسم الخطة بنجاح!');
+        setShowRenameSeasonModal(false);
+        await fetchSeasonPlans();
+      } else {
+        handleToast('حدث خطأ أثناء تعديل الاسم');
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء تعديل الاسم');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteSeasonPlan = async () => {
+    if (!selectedSeasonId || !confirm('هل أنت متأكد من حذف خطة الموسم الحالية؟')) return;
+    setIsLoading(true);
+    try {
+      const { error } = await supabase
+        .from('agilitylap_programs')
+        .delete()
+        .eq('id', selectedSeasonId);
+
+      if (!error) {
+        handleToast('تم حذف خطة الموسم!');
+        setSelectedSeasonId(null);
+        await fetchSeasonPlans();
+      } else {
+        handleToast('حدث خطأ أثناء الحذف');
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء الحذف');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveSeasonPlan = async () => {
+    if (!selectedSeasonId) return;
+    setIsLoading(true);
+    try {
+      const payloadWeeks = [
+        {
+          isSeasonPlan: true,
+          start_date: seasonStartDate,
+          deployments: stagedDeployments,
+          week_tags: weekTags
+        }
+      ];
+
+      const { error } = await supabase
+        .from('agilitylap_programs')
+        .update({ weeks: payloadWeeks })
+        .eq('id', selectedSeasonId);
+
+      if (!error) {
+        handleToast('تم حفظ خطة الموسم بنجاح!');
+        await fetchSeasonPlans();
+      } else {
+        handleToast('حدث خطأ أثناء حفظ الخطة');
+      }
+    } catch (err) {
+      console.error(err);
+      handleToast('حدث خطأ أثناء حفظ الخطة');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeploySeasonPlanToAthlete = async () => {
+    if (!selectedSeasonId || !deploySeasonAthleteId) {
+      handleToast('الرجاء اختيار اللاعب أولاً!');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const baseStart = new Date(deploySeasonStartDate);
+      
       for (const dep of stagedDeployments) {
         const { data: program } = await supabase
           .from('agilitylap_programs')
@@ -243,10 +300,12 @@ export default function PeriodizationPlanner({
 
         if (!program || !program.weeks) continue;
 
-        const start = new Date(dep.start_date);
+        const blockStartOffsetDays = (dep.start_week - 1) * 7;
+        const blockStartDate = new Date(baseStart);
+        blockStartDate.setDate(blockStartDate.getDate() + blockStartOffsetDays);
 
         for (let i = 0; i < program.weeks.length; i++) {
-          const futureWeekStart = new Date(start);
+          const futureWeekStart = new Date(blockStartDate);
           futureWeekStart.setDate(futureWeekStart.getDate() + (i * 7));
           const weekTemplateObject = program.weeks[i].drills || {};
           const targetBlockTitle = program.weeks[i].title || 'Block Workout';
@@ -257,13 +316,19 @@ export default function PeriodizationPlanner({
 
             let clonedDrills = [];
             if (weekTemplateObject && !Array.isArray(weekTemplateObject)) {
-              clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ ...drill, id: `season-${Date.now()}-${i}-${j}-${idx}` }));
+              clonedDrills = (weekTemplateObject[DAYS_OF_WEEK[j]] || []).map((drill, idx) => ({ 
+                ...drill, 
+                id: `deployed-season-${Date.now()}-${i}-${j}-${idx}-${Math.random()}` 
+              }));
             } else if (Array.isArray(weekTemplateObject)) {
-              clonedDrills = weekTemplateObject.map((drill, idx) => ({ ...drill, id: `season-${Date.now()}-${i}-${j}-${idx}` }));
+              clonedDrills = weekTemplateObject.map((drill, idx) => ({ 
+                ...drill, 
+                id: `deployed-season-${Date.now()}-${i}-${j}-${idx}-${Math.random()}` 
+              }));
             }
 
             await supabase.from('agilitylap_workouts').upsert({
-              athlete_id: athlete.id,
+              athlete_id: deploySeasonAthleteId,
               workout_date: getDbDateStr(dayDate),
               workout_title: targetBlockTitle,
               drills: clonedDrills
@@ -271,36 +336,93 @@ export default function PeriodizationPlanner({
           }
         }
 
+        const deployEndDate = new Date(blockStartDate);
+        deployEndDate.setDate(deployEndDate.getDate() + (program.weeks.length * 7) - 1);
+
         await supabase.from('periodization_deployments').insert([{
-          athlete_id: athlete.id,
+          athlete_id: deploySeasonAthleteId,
           program_id: dep.program_id,
           program_name: dep.program_name,
-          start_date: dep.start_date,
-          end_date: dep.end_date,
+          start_date: getDbDateStr(blockStartDate),
+          end_date: getDbDateStr(deployEndDate),
           color: dep.color
         }]);
       }
 
-      handleToast('تم حفظ وتطبيق خطة الموسم بنجاح!');
-      setStagedDeployments([]);
-      fetchAthleteDeployments();
-      if (refreshDeploymentsCallback) refreshDeploymentsCallback(athlete.id);
+      handleToast('تم نشر وتوزيع خطة الموسم بنجاح على اللاعب!');
+      setShowDeploySeasonModal(false);
+      if (refreshDeploymentsCallback) refreshDeploymentsCallback(deploySeasonAthleteId);
     } catch (err) {
       console.error(err);
-      handleToast('حدث خطأ أثناء حفظ وتطبيق خطة الموسم.');
+      handleToast('حدث خطأ أثناء نشر خطة الموسم.');
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getSeasonWeeks = (startStr) => {
+    const list = [];
+    const base = new Date(startStr);
+    for (let w = 0; w < 52; w++) {
+      const wkStart = new Date(base);
+      wkStart.setDate(wkStart.getDate() + (w * 7));
+      const wkEnd = new Date(wkStart);
+      wkEnd.setDate(wkEnd.getDate() + 6);
+      
+      const rangeLabel = `${wkStart.getDate()} ${wkStart.toLocaleDateString('en-US', { month: 'short' })} - ${wkEnd.getDate()} ${wkEnd.toLocaleDateString('en-US', { month: 'short' })}`;
+      list.push({
+        index: w + 1,
+        dateStr: getDbDateStr(wkStart),
+        rangeLabel
+      });
+    }
+    return list;
+  };
+
+  const handleDropWeekOnSeason = (e, weekNum) => {
+    e.preventDefault();
+    const dataStr = e.dataTransfer.getData('application/json');
+    if (!dataStr) return;
+    const { programId, programName, weeksCount } = JSON.parse(dataStr);
+
+    const newDeploy = {
+      id: `season-staged-${Date.now()}`,
+      program_id: programId,
+      program_name: programName,
+      start_week: weekNum,
+      weeks_count: weeksCount,
+      color: PHASE_COLORS[stagedDeployments.length % PHASE_COLORS.length].hex
+    };
+
+    setStagedDeployments(prev => [...prev, newDeploy]);
+  };
+
   const renderSeasonPlanner = () => {
-    const calendarData = getMonthsAndWeeks();
-    const mesoBlocks = programs ? programs.filter(p => p.type !== 'macro_block') : [];
+    const weeksList = getSeasonWeeks(seasonStartDate);
+    const mesoBlocks = programs ? programs.filter(p => p.type !== 'macro_block' && p.type !== 'season_plan') : [];
+
+    // Calculate vertical tracks for Gantt bars
+    const sortedDeploys = [...stagedDeployments].sort((a, b) => a.start_week - b.start_week);
+    const allocatedDeployments = [];
+    sortedDeploys.forEach(dep => {
+      let track = 0;
+      while (true) {
+        const overlaps = allocatedDeployments.some(ad => 
+          ad.track === track && 
+          !(dep.start_week >= ad.start_week + ad.weeks_count || 
+            dep.start_week + dep.weeks_count <= ad.start_week)
+        );
+        if (!overlaps) break;
+        track++;
+      }
+      allocatedDeployments.push({ ...dep, track });
+    });
+    const maxTracks = allocatedDeployments.length > 0 ? Math.max(...allocatedDeployments.map(d => d.track)) + 1 : 1;
 
     return (
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row h-full">
         {/* Sidebar: Draggable Meso-Blocks */}
-        <div className="w-full md:w-72 border-b md:border-b-0 md:border-l border-slate-250 dark:border-slate-800 bg-white dark:bg-slate-950 p-5 flex flex-col gap-5 overflow-y-auto shrink-0">
+        <div className="w-full md:w-72 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-5 flex flex-col gap-5 overflow-y-auto shrink-0">
           <div>
             <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">البرامج المتاحة للسحب</h4>
             <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Drag programs to timeline</p>
@@ -319,13 +441,13 @@ export default function PeriodizationPlanner({
                       weeksCount: prog.weeks ? prog.weeks.length : 0
                     }));
                   }}
-                  className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl cursor-grab active:cursor-grabbing hover:border-orange-500 dark:hover:border-orange-500/50 transition-all select-none group"
+                  className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-205 dark:border-slate-800 rounded-2xl cursor-grab active:cursor-grabbing hover:border-orange-500 dark:hover:border-orange-500/50 transition-all select-none group"
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-orange-500 shrink-0">
                       <Dumbbell className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-205 truncate group-hover:text-orange-500 transition-colors">
                       {prog.program_name}
                     </span>
                   </div>
@@ -342,119 +464,146 @@ export default function PeriodizationPlanner({
               </div>
             )}
           </div>
-
-          {/* Staged list actions */}
-          {stagedDeployments.length > 0 && (
-            <div className="mt-auto bg-orange-50/50 dark:bg-orange-950/10 p-3 rounded-2xl border border-orange-100 dark:border-orange-900/20 flex flex-col gap-2">
-              <span className="text-[10px] font-bold text-orange-650 dark:text-orange-400 block text-center">لديك خطة دورية غير محفوظة!</span>
-              <button
-                onClick={handleSaveSeasonPlan}
-                className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-1.5"
-              >
-                <Save className="w-4 h-4" /> حفظ خطة الموسم التدريبية
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Annual Timeline Calendar Grid */}
+        {/* Annual Timeline Gantt Calendar Grid */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-50 dark:bg-slate-900/40">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex justify-between items-center bg-white dark:bg-slate-800/80 p-4 border border-slate-200/50 dark:border-slate-800 rounded-2xl shadow-sm">
-              <div>
-                <h4 className="text-xs font-black text-slate-800 dark:text-white font-sans">الخطة السنوية والجدولة للاعب: {athlete ? athlete.name : ''}</h4>
-                <p className="text-[9px] font-bold text-slate-450 dark:text-slate-500 mt-0.5 uppercase tracking-wide">Annual periodization & schedule mapping</p>
+          <div className="space-y-6">
+            
+            {/* Planner Header Controls */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-800/85 p-4 border border-slate-200/50 dark:border-slate-800 rounded-[20px] shadow-sm">
+              <div className="flex items-center gap-2" dir="rtl">
+                <span className="text-xs font-black text-slate-400 dark:text-slate-500">مشاهدة الخطة / Viewing:</span>
+                <select
+                  value={selectedSeasonId || ''}
+                  onChange={(e) => setSelectedSeasonId(e.target.value)}
+                  className="text-xs font-black bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-705 p-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-500 dark:text-white"
+                >
+                  {seasonPlans.length === 0 ? (
+                    <option value="">-- بلا خطط موسمية --</option>
+                  ) : (
+                    seasonPlans.map(sp => (
+                      <option key={sp.id} value={sp.id}>{sp.program_name}</option>
+                    ))
+                  )}
+                </select>
+                <button onClick={() => { setNewSeasonName(''); setShowNewSeasonModal(true); }} className="p-2 bg-slate-50 hover:bg-orange-50 hover:text-orange-500 dark:bg-slate-900 dark:hover:bg-orange-950/20 text-slate-500 border border-slate-200 dark:border-slate-800 rounded-xl transition-all" title="خطة جديدة"><Plus className="w-3.5 h-3.5" /></button>
+                <button onClick={() => { setRenameSeasonName(selectedSeason?.program_name || ''); setShowRenameSeasonModal(true); }} className="p-2 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-800 rounded-xl transition-all" title="تعديل الاسم" disabled={!selectedSeasonId}><Edit2 className="w-3.5 h-3.5" /></button>
+                <button onClick={handleDeleteSeasonPlan} className="p-2 bg-slate-50 hover:bg-red-50 hover:text-red-500 dark:bg-slate-900 dark:hover:bg-red-950/20 text-slate-500 border border-slate-200 dark:border-slate-800 rounded-xl transition-all" title="حذف الخطة" disabled={!selectedSeasonId}><Trash2 className="w-3.5 h-3.5" /></button>
               </div>
-              {stagedDeployments.length > 0 && (
-                <span className="text-[9px] font-black uppercase bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded border border-orange-200 dark:border-orange-900/20 animate-pulse">غير محفوظ</span>
+
+              {selectedSeasonId && (
+                <div className="flex gap-2">
+                  <button onClick={handleSaveSeasonPlan} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> حفظ التعديلات</button>
+                  <button onClick={() => { setDeploySeasonAthleteId(''); setShowDeploySeasonModal(true); }} className="px-4 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"><Play className="w-3.5 h-3.5" /> تطبيق على لاعب</button>
+                </div>
               )}
             </div>
 
-            <div className="bg-white dark:bg-slate-800/60 border border-slate-250 dark:border-slate-805 rounded-[24px] overflow-hidden shadow-sm">
-              <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                {calendarData.map((mon, mIdx) => (
-                  <div key={mIdx} className="p-4 flex flex-col md:flex-row gap-4">
-                    {/* Month Label */}
-                    <div className="w-full md:w-36 font-black text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wider md:pt-1">
-                      {mon.monthName}
+            {selectedSeasonId ? (
+              <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-[24px] overflow-hidden shadow-sm flex flex-col">
+                {/* Horizontal Gantt scrollable board */}
+                <div className="overflow-x-auto relative min-h-[420px] p-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                  <div className="relative" style={{ width: `${52 * 140}px` }}>
+                    
+                    {/* Vertical Grid dividers behind */}
+                    <div className="absolute inset-0 flex pointer-events-none">
+                      {Array.from({ length: 52 }).map((_, idx) => (
+                        <div key={idx} className="w-[140px] border-l border-slate-100 dark:border-slate-800 h-full shrink-0" />
+                      ))}
                     </div>
 
-                    {/* Weeks Column Grid */}
-                    <div className="flex-1 flex flex-col gap-2.5">
-                      {mon.weeks.map((wk, wIdx) => {
-                        const weekDeploys = athleteDeployments.concat(stagedDeployments).filter(dep => {
-                          const wSat = new Date(wk.dateStr);
-                          const start = new Date(dep.start_date);
-                          const end = new Date(dep.end_date);
-                          return wSat >= start && wSat <= end;
-                        });
+                    {/* Row 1: Week headers */}
+                    <div className="flex border-b border-slate-200 dark:border-slate-700 pb-2 relative z-10">
+                      {weeksList.map((wk, idx) => (
+                        <div
+                          key={idx}
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropWeekOnSeason(e, wk.index)}
+                          className="w-[140px] px-2 flex flex-col items-center justify-center text-center select-none shrink-0"
+                        >
+                          <span className="text-[10px] font-black text-slate-700 dark:text-slate-255 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md">W{wk.index}</span>
+                          <span className="text-[8px] text-slate-400 font-bold mt-1 tracking-tight">{wk.rangeLabel}</span>
+                        </div>
+                      ))}
+                    </div>
 
+                    {/* Row 2: Microcycle / Game tag input row */}
+                    <div className="flex border-b border-slate-150 dark:border-slate-855 py-2 relative z-10 bg-slate-50/50 dark:bg-slate-950/20">
+                      {weeksList.map((wk, idx) => (
+                        <div key={idx} className="w-[140px] px-1.5 flex items-center justify-center shrink-0">
+                          <input
+                            type="text"
+                            placeholder="Game/Note..."
+                            value={weekTags[wk.index] || ''}
+                            onChange={(e) => {
+                              const updated = { ...weekTags, [wk.index]: e.target.value };
+                              setWeekTags(updated);
+                            }}
+                            className="w-full text-center text-[9px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:text-white"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Row 3: Horizontal Gantt Track */}
+                    <div className="relative mt-4" style={{ height: `${maxTracks * 55}px` }}>
+                      {allocatedDeployments.map((dep) => {
+                        const startIdx = dep.start_week - 1;
+                        const left = startIdx * 140;
+                        const width = dep.weeks_count * 140;
+                        const top = dep.track * 52;
+                        
                         return (
                           <div
-                            key={wIdx}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => handleDropWeek(e, wk.dateStr)}
-                            className="flex items-center justify-between p-3.5 bg-slate-50 dark:bg-slate-900/60 hover:bg-slate-100 dark:hover:bg-slate-900 border border-dashed border-slate-200 dark:border-slate-700/50 rounded-2xl transition-all gap-4 min-h-[50px] relative drop-zone"
+                            key={dep.id}
+                            className="absolute px-3 py-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-sm flex items-center justify-between gap-2 text-white transition-all select-none group/pill animate-fadeIn cursor-pointer"
+                            style={{
+                              left: `${left + 4}px`,
+                              width: `${width - 8}px`,
+                              top: `${top}px`,
+                              height: '42px',
+                              backgroundColor: dep.color,
+                              borderColor: dep.color,
+                              boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                            }}
                           >
-                            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 shrink-0 select-none">
-                              {wk.rangeLabel}
-                            </span>
-
-                            {/* Render mapped capsules */}
-                            <div className="flex-1 flex flex-col gap-1.5">
-                              {weekDeploys.map(dep => {
-                                const status = getDeployCoverStatus(dep, wk.dateStr);
-                                if (status === 'start') {
-                                  return (
-                                    <div
-                                      key={dep.id}
-                                      className="px-3.5 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center justify-between gap-3 text-white transition-all select-none animate-fadeIn"
-                                      style={{ backgroundColor: dep.color, borderColor: dep.color }}
-                                    >
-                                      <span className="truncate">{dep.program_name}</span>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (dep.isStaged) {
-                                            handleDeleteStaged(dep.id);
-                                          } else {
-                                            if (confirm('هل أنت متأكد من حذف هذه الفترة التدريبية؟ سيتم إزالة السجلات المرتبطة بها.')) {
-                                              handleDeleteSaved(dep.id);
-                                            }
-                                          }
-                                        }}
-                                        className="p-1 hover:bg-white/20 rounded-md transition-all shrink-0"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                    </div>
-                                  );
-                                } else if (status === 'continue') {
-                                  return (
-                                    <div
-                                      key={dep.id}
-                                      className="h-3 rounded-md w-full transition-all animate-fadeIn"
-                                      style={{ backgroundColor: dep.color, opacity: 0.25 }}
-                                      title={`Continuation of ${dep.program_name}`}
-                                    />
-                                  );
-                                }
-                                return null;
-                              })}
-                            </div>
+                            <span className="truncate pr-1 select-none font-bold" title={dep.program_name}>{dep.program_name}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStagedDeployments(prev => prev.filter(d => d.id !== dep.id));
+                              }}
+                              className="p-1 hover:bg-white/20 rounded-md transition-all shrink-0 select-none opacity-0 group-hover/pill:opacity-100"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         );
                       })}
                     </div>
+
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="bg-white dark:bg-slate-800/40 p-12 rounded-[24px] text-center border border-dashed border-slate-200 dark:border-slate-800 flex flex-col items-center justify-center gap-4">
+                <span className="text-xs text-slate-400 dark:text-slate-500">الرجاء إنشاء خطة موسمية جديدة للبدء.</span>
+                <button
+                  onClick={() => { setNewSeasonName(''); setShowNewSeasonModal(true); }}
+                  className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-xs font-black shadow-md flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" /> إنشاء خطة موسمية جديدة
+                </button>
+              </div>
+            )}
+
           </div>
         </div>
       </div>
     );
   };
+
 
   // Modals inside Periodization Planner
   const [showCreateBlockModal, setShowCreateBlockModal] = useState(false);
@@ -1327,6 +1476,145 @@ export default function PeriodizationPlanner({
               </button>
               <button
                 onClick={() => setShowDeployModal({ isOpen: false, blockId: null, athleteId: '', startDate: '' })}
+                className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-750 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY 4: Create Season Plan Modal */}
+      {showNewSeasonModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-right border border-slate-200 dark:border-slate-700 font-sans">
+            <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Plus className="w-5 h-5 text-orange-500" /> إنشاء خطة موسمية جديدة
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">اسم الخطة:</label>
+                <input
+                  type="text"
+                  placeholder="مثال: خطة موسم كرة القدم"
+                  value={newSeasonName}
+                  onChange={(e) => setNewSeasonName(e.target.value)}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">تاريخ بداية الموسم:</label>
+                <input
+                  type="date"
+                  value={newSeasonStartDate}
+                  onChange={(e) => setNewSeasonStartDate(e.target.value)}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={handleCreateSeasonPlan}
+                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+              >
+                تأكيد الإنشاء
+              </button>
+              <button
+                onClick={() => setShowNewSeasonModal(false)}
+                className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-750 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY 5: Rename Season Plan Modal */}
+      {showRenameSeasonModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-right border border-slate-200 dark:border-slate-700 font-sans">
+            <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-orange-500" /> تعديل اسم خطة الموسم
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">الاسم الجديد:</label>
+                <input
+                  type="text"
+                  value={renameSeasonName}
+                  onChange={(e) => setRenameSeasonName(e.target.value)}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={handleRenameSeasonPlan}
+                className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+              >
+                حفظ الاسم
+              </button>
+              <button
+                onClick={() => setShowRenameSeasonModal(false)}
+                className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-750 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* OVERLAY 6: Deploy Season Plan Modal */}
+      {showDeploySeasonModal && (
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-right border border-slate-200 dark:border-slate-700 font-sans">
+            <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> تطبيق خطة الموسم على لاعب
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">اختر اللاعب:</label>
+                <select
+                  value={deploySeasonAthleteId}
+                  onChange={(e) => setDeploySeasonAthleteId(e.target.value)}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                >
+                  <option value="">-- اختر لاعب --</option>
+                  {athletes.map(a => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">تاريخ البداية (تاريخ نشر W1):</label>
+                <input
+                  type="date"
+                  value={deploySeasonStartDate}
+                  onChange={(e) => setDeploySeasonStartDate(e.target.value)}
+                  className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={handleDeploySeasonPlanToAthlete}
+                className="px-6 py-2.5 bg-violet-650 hover:bg-violet-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+              >
+                تطبيق ونشر الخطة
+              </button>
+              <button
+                onClick={() => setShowDeploySeasonModal(false)}
                 className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-750 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
               >
                 إلغاء

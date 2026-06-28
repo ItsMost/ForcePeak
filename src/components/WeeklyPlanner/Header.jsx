@@ -385,36 +385,36 @@ export default function Header({
 
         {/* 3. Center-Right stats indicators pill */}
         {weeklyStats && (
-          <div className="hidden lg:flex items-center gap-5 px-6 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-150 dark:border-slate-850/80 order-4 lg:order-3 shadow-sm">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-orange-500 shrink-0" />
-              <span className="text-[10px] md:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Load:</span>
-              <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
+          <div className="hidden lg:flex items-center gap-3.5 px-4 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-150 dark:border-slate-850/80 order-4 lg:order-3 shadow-sm">
+            <div className="flex items-center gap-1.5">
+              <TrendingUp className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Load:</span>
+              <span className="text-xs font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.load} AU
               </span>
             </div>
             
-            <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
+            <span className={`px-2 py-0.5 rounded-lg border text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
               {weeklyStats.loadLabel}
             </span>
 
-            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
 
-            <div className="flex items-center gap-2">
-              <Activity className="w-4 h-4 text-indigo-500 shrink-0" />
-              <span className="text-[10px] md:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Intensity:</span>
-              <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
+            <div className="flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Avg Intensity:</span>
+              <span className="text-xs font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.intensity}%
               </span>
             </div>
 
-            <div className="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
 
-            <div className="flex items-center gap-2.5">
-              <span className="px-2.5 py-1 rounded-full border border-pink-100 bg-pink-50/50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 rounded-lg border border-pink-100 bg-pink-50/50 dark:bg-pink-950/10 text-pink-600 dark:text-pink-400 text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 CNS: {weeklyStats.cnsPercentage}%
               </span>
-              <span className="px-2.5 py-1 rounded-full border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none">
+              <span className="px-2 py-0.5 rounded-lg border border-blue-100 bg-blue-50/50 dark:bg-blue-950/10 text-blue-600 dark:text-blue-400 text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 Struct: {weeklyStats.structuralPercentage}%
               </span>
             </div>
