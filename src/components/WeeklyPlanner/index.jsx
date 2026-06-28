@@ -152,6 +152,11 @@ const distributeWeeksToPhases = (numWeeks) => {
 export default function WeeklyPlanner() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [currentView, setCurrentView] = useState('planner');
+  const [dashboardSearch, setDashboardSearch] = useState('');
+  const [selectedDashboardGroup, setSelectedDashboardGroup] = useState('All');
+  const [allWorkouts, setAllWorkouts] = useState([]);
+  const [allDeployments, setAllDeployments] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [athletes, setAthletes] = useState([]);
