@@ -147,7 +147,7 @@ export default function TimelineCard({
           
           {/* Superset Pill Indicator */}
           {isSuperset && (
-            <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded tracking-wider shadow-sm shrink-0 flex items-center gap-0.5 ${sStyle.badge}`}>
+            <span className={`text-[8.5px] font-bold px-1.5 py-0.5 rounded tracking-wider shadow-sm shrink-0 flex items-center gap-0.5 ${sStyle.badge}`}>
               <Zap className="w-2.5 h-2.5 text-white" /> {supersetLabel}
             </span>
           )}
@@ -157,25 +157,25 @@ export default function TimelineCard({
           </h4>
           
           {calculatedWeight && (
-            <span className="px-1.5 py-0.5 text-[9px] font-black bg-blue-50/80 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-md border border-blue-100 dark:border-blue-900/20 shrink-0">
+            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-blue-50/80 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-md border border-blue-100 dark:border-blue-900/20 shrink-0">
               {calculatedWeight} KG
             </span>
           )}
 
           {drill.percentage && (
-            <span className="px-1.5 py-0.5 text-[9px] font-black bg-orange-50/80 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/20 shrink-0">
+            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-orange-50/80 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/20 shrink-0">
               {drill.percentage}% 1RM
             </span>
           )}
 
           {drill.bwRatio && (
-            <span className="px-1.5 py-0.5 text-[9px] font-black bg-teal-50/80 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-md border border-teal-100 dark:border-teal-900/20 shrink-0">
+            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-teal-50/80 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-md border border-teal-100 dark:border-teal-900/20 shrink-0">
               {drill.bwRatio}x BW {calculatedBwWeight ? `(${calculatedBwWeight} KG)` : ''}
             </span>
           )}
 
           {calculatedIntensityFromBw && (
-            <span className="px-1.5 py-0.5 text-[9px] font-black bg-orange-50/80 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/20 shrink-0">
+            <span className="px-1.5 py-0.5 text-[9px] font-bold bg-orange-50/80 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-md border border-orange-100 dark:border-orange-900/20 shrink-0">
               {calculatedIntensityFromBw}% Intensity
             </span>
           )}
@@ -186,30 +186,30 @@ export default function TimelineCard({
           <div className="flex items-center gap-1.5 mt-1.5 mb-1.5 flex-wrap">
             {(drill.sets || (isMeters ? drill.distance : drill.reps)) && (
               <div className="flex items-center gap-1 shrink-0 whitespace-nowrap">
-                <span className="px-2 py-0.5 bg-slate-150/70 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+                <span className="px-2 py-0.5 bg-slate-150/70 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 rounded-md font-bold text-[9.5px] tracking-wider uppercase">
                   {drill.sets || '-'} Sets
                 </span>
-                <span className="text-slate-400 text-[9px] font-black">x</span>
-                <span className="px-2 py-0.5 bg-slate-150/70 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+                <span className="text-slate-400 text-[9px] font-semibold">x</span>
+                <span className="px-2 py-0.5 bg-slate-150/70 dark:bg-slate-700/60 text-slate-800 dark:text-slate-200 rounded-md font-bold text-[9.5px] tracking-wider uppercase">
                   {(isMeters ? drill.distance : drill.reps) || '-'} {formatUnit(drill.unit)}
                 </span>
               </div>
             )}
             
             {drill.rest && (
-              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-md font-black text-[9.5px] tracking-wider uppercase flex items-center gap-1">
+              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 rounded-md font-semibold text-[9.5px] tracking-wider uppercase flex items-center gap-1">
                 <Timer className="w-3.5 h-3.5" /> {drill.rest}
               </span>
             )}
 
             {drill.targetVelocity && (
-              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 rounded-md font-semibold text-[9.5px] tracking-wider uppercase">
                 V Target: {drill.targetVelocity} m/s
               </span>
             )}
 
             {drill.velocityLoss && (
-              <span className="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+              <span className="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 rounded-md font-semibold text-[9.5px] tracking-wider uppercase">
                 V Loss: {drill.velocityLoss}
               </span>
             )}
@@ -217,7 +217,7 @@ export default function TimelineCard({
             {drill.details && (
               <button 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowNotes(!showNotes); }} 
-                className={`px-2 py-0.5 rounded-md text-[9.5px] font-black tracking-wider uppercase flex items-center gap-1 transition-colors ${showNotes ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400' : 'bg-slate-150/70 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-650 text-slate-600 dark:text-slate-350'}`}
+                className={`px-2 py-0.5 rounded-md text-[9.5px] font-semibold tracking-wider uppercase flex items-center gap-1 transition-colors ${showNotes ? 'bg-orange-100 text-orange-600 dark:bg-orange-950/30 dark:text-orange-400' : 'bg-slate-150/70 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-650 text-slate-600 dark:text-slate-350'}`}
               >
                 <ClipboardList className="w-3 h-3" />
                 <span>{showNotes ? 'Hide Cues' : 'Notes'}</span>

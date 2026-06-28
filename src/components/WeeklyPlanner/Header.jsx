@@ -175,7 +175,7 @@ export default function Header({
             <button onClick={handlePrevWeek} className="p-1 rounded-full hover:bg-white dark:hover:bg-slate-850 text-slate-400">
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] font-black text-slate-800 dark:text-white px-1.5 tracking-tight">
+            <span className="text-[10px] font-semibold text-slate-800 dark:text-white px-1.5 tracking-tight">
               {isTemplateEditing ? 'Template' : getFormattedDateRange().split(',')[0]}
             </span>
             <button onClick={handleNextWeek} className="p-1 rounded-full hover:bg-white dark:hover:bg-slate-850 text-slate-400">
@@ -189,7 +189,7 @@ export default function Header({
               onClick={() => { setIsAthleteDropdownOpen(!isAthleteDropdownOpen); setAthleteSearch(''); }} 
               className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 transition-all bg-slate-50 dark:bg-slate-900 w-full select-none shadow-sm"
             >
-              <span className="font-extrabold text-[10px] text-slate-800 dark:text-slate-200 truncate">
+              <span className="font-semibold text-[10px] text-slate-800 dark:text-slate-200 truncate">
                 {isTemplateEditing ? 'Template' : (selectedAthlete?.name || 'Athlete')}
               </span>
               <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform shrink-0 ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
@@ -237,7 +237,7 @@ export default function Header({
               onClick={() => { setIsBlockDropdownOpen(!isBlockDropdownOpen); setBlockSearch(''); }} 
               className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 transition-all bg-slate-50 dark:bg-slate-900 w-full select-none shadow-sm"
             >
-              <span className="font-extrabold text-[10px] text-slate-800 dark:text-slate-200 truncate">
+              <span className="font-semibold text-[10px] text-slate-800 dark:text-slate-200 truncate">
                 {selectedBlockId && blockData ? blockData.program_name || 'Block' : 'Live Plan'}
               </span>
               <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform shrink-0 ${isBlockDropdownOpen ? 'rotate-180' : ''}`} />
@@ -321,12 +321,12 @@ export default function Header({
           
           <button 
             onClick={handleGoToday} 
-            className="px-2.5 py-1 text-[9px] font-black uppercase text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-white rounded-full transition-all leading-none"
+            className="px-2.5 py-1 text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-white rounded-full transition-all leading-none"
           >
             {isEditingBlock || isEditingMeso || isEditingMacro ? 'W1' : 'Today'}
           </button>
           
-          <span className="text-xs md:text-sm font-black text-slate-800 dark:text-white px-2 select-none tracking-tight">
+          <span className="text-xs md:text-sm font-semibold text-slate-800 dark:text-white px-2 select-none tracking-tight">
             {getHeaderLabel()}
           </span>
           
@@ -359,13 +359,13 @@ export default function Header({
           <div className="hidden lg:flex items-center gap-5 px-6 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-150 dark:border-slate-850/80 order-4 lg:order-3 shadow-sm">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-orange-500 shrink-0" />
-              <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Load:</span>
+              <span className="text-[10px] md:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Load:</span>
               <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.load} AU
               </span>
             </div>
             
-            <span className={`px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
+            <span className={`px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
               {weeklyStats.loadLabel}
             </span>
 
@@ -373,7 +373,7 @@ export default function Header({
 
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-indigo-500 shrink-0" />
-              <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Intensity:</span>
+              <span className="text-[10px] md:text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Intensity:</span>
               <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.intensity}%
               </span>
@@ -382,10 +382,10 @@ export default function Header({
             <div className="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
 
             <div className="flex items-center gap-2.5">
-              <span className="px-2.5 py-1 rounded-full border border-pink-100 bg-pink-50/50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 text-[10px] font-black uppercase tracking-wider shadow-sm leading-none">
+              <span className="px-2.5 py-1 rounded-full border border-pink-100 bg-pink-50/50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 CNS: {weeklyStats.cnsPercentage}%
               </span>
-              <span className="px-2.5 py-1 rounded-full border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[10px] font-black uppercase tracking-wider shadow-sm leading-none">
+              <span className="px-2.5 py-1 rounded-full border border-blue-100 bg-blue-50/50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 Struct: {weeklyStats.structuralPercentage}%
               </span>
             </div>
@@ -428,7 +428,7 @@ export default function Header({
               <div className="w-6 h-6 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-sm shrink-0">
                 <User className="w-3.5 h-3.5" />
               </div>
-              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
+              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
                 {isEditingBlock || isEditingMeso || isEditingMacro ? 'Template Mode' : (selectedAthlete?.name || 'No Athlete')}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
@@ -514,10 +514,10 @@ export default function Header({
               onClick={() => { setIsBlockDropdownOpen(!isBlockDropdownOpen); setBlockSearch(''); }} 
               className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
             >
-              <div className="w-6 h-6 rounded-lg bg-violet-600 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
-                <Layers className="w-3.5 h-3.5 text-white" />
+              <div className="w-6 h-6 rounded-lg bg-violet-600/10 flex items-center justify-center text-violet-500 shadow-sm shrink-0">
+                <Layers className="w-3.5 h-3.5" />
               </div>
-              <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
+              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
                 {selectedBlockId && blockData ? blockData.program_name || 'Block Program' : 'Live Athlete Plan'}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isBlockDropdownOpen ? 'rotate-180' : ''}`} />
