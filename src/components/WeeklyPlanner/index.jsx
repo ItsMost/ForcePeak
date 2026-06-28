@@ -2125,92 +2125,137 @@ export default function WeeklyPlanner() {
         const dayDate = new Date(wkStart);
         dayDate.setDate(dayDate.getDate() + dIdx);
         const dateStr = getDbDateStr(dayDate);
+        const fullDateStr = dayDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
         
         const workoutRecord = fourWeekWorkouts.find(wRecord => wRecord.workout_date === dateStr);
-        return {
-          dayName,
-          dateStr,
-          workoutRecord
-        };
+        return { dayName, dateStr, fullDateStr, workoutRecord };
       });
 
-      weeks.push({
-        index: w + 1,
-        rangeLabel,
-        days
-      });
+      weeks.push({ index: w + 1, rangeLabel, days });
     }
 
     return (
-      <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900/40 w-full min-h-screen text-right" dir="rtl">
+      <div className="p-4 md:p-6 space-y-8 w-full" dir="ltr">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-800/85 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
           <div>
-            <h2 className="text-base font-black text-slate-800 dark:text-white">جدول الـ 4 أسابيع للرياضي: {selectedAthlete?.name}</h2>
-            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider text-left">4-Week Meso-Block Athlete Program Sheet</p>
+            <h2 className="text-base font-black text-slate-800 dark:text-white">4-Week Meso-Block Athlete Program Sheet</h2>
+            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">جدول الـ 4 أسابيع للرياضي: {selectedAthlete?.name}</p>
           </div>
           <button 
             onClick={() => setCurrentView('planner')} 
-            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 shrink-0"
           >
-            العودة للمخطط الأسبوعي
+            العودة للمخطط الأسبوعي / Back to Weekly
           </button>
         </div>
 
-        <div className="space-y-6">
-          {weeks.map((wk) => (
-            <div key={wk.index} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
-              <div className="border-b border-slate-100 dark:border-slate-700/60 pb-3 mb-4 flex justify-between items-center">
-                <span className="text-sm font-black text-orange-500">الأسبوع {wk.index} / Week {wk.index}</span>
-                <span className="text-xs font-bold text-slate-400 tracking-tight">{wk.rangeLabel}</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
-                {wk.days.map((day) => {
-                  const drills = day.workoutRecord?.drills || [];
-                  const title = day.workoutRecord?.workout_title || '';
-                  
-                  return (
-                    <div key={day.dayName} className="flex flex-col border border-slate-100 dark:border-slate-750 bg-slate-50/50 dark:bg-slate-950/10 rounded-2xl p-3 min-h-[160px] shadow-sm">
-                      <div className="border-b border-slate-200/60 dark:border-slate-800 pb-2 mb-3">
-                        <span className="text-xs font-black text-slate-700 dark:text-slate-200 block">{day.dayName}</span>
-                        <span className="text-[9px] text-slate-400 font-bold tracking-tight block mt-0.5">{day.dateStr}</span>
-                        {title && (
-                          <span className="text-[9.5px] font-black text-orange-600 dark:text-orange-400 block mt-1.5 uppercase truncate" title={title}>{title}</span>
-                        )}
-                      </div>
-
-                      <div className="space-y-2 flex-1 overflow-y-auto max-h-48 pr-0.5">
-                        {drills.length > 0 ? (
-                          drills.map((drill, drillIdx) => (
-                            <div key={drill.id || drillIdx} className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-150 dark:border-slate-700/60 shadow-sm flex flex-col gap-1">
-                              <div className="flex justify-between items-start gap-1">
-                                <span className="text-[10px] font-black text-slate-800 dark:text-slate-100 break-words leading-tight">{drill.name}</span>
-                              </div>
-                              <div className="flex items-center gap-1.5 flex-wrap text-[8.5px] font-bold text-slate-400 mt-1">
-                                <span className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-650 dark:text-slate-350">{drill.sets} Sets</span>
-                                <span className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-655 dark:text-slate-355">{drill.reps} Reps</span>
-                                {drill.load && (
-                                  <span className="px-1 py-0.5 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">{drill.load} kg</span>
-                                )}
-                              </div>
-                              {drill.notes && (
-                                <p className="text-[8.5px] text-slate-400 dark:text-slate-500 italic mt-1 leading-snug border-t border-slate-50 dark:border-slate-750/30 pt-1">{drill.notes}</p>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="flex items-center justify-center h-full min-h-[60px]">
-                            <span className="text-[9px] text-slate-400 font-bold">لا يوجد تمارين</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+        {/* Weeks */}
+        {weeks.map((wk) => (
+          <div key={wk.index} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
+            {/* Week Header */}
+            <div className="border-b border-slate-100 dark:border-slate-700/60 px-5 py-3 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+              <span className="text-sm font-black text-orange-500">الأسبوع {wk.index} / Week {wk.index}</span>
+              <span className="text-xs font-bold text-slate-400 tracking-tight">{wk.rangeLabel}</span>
             </div>
-          ))}
-        </div>
+
+            {/* Days Grid — same as weekly planner */}
+            <div className="grid grid-cols-7 p-4 gap-4">
+              {wk.days.map((day) => {
+                const drills = day.workoutRecord?.drills || [];
+                const title = day.workoutRecord?.workout_title || '';
+                const isCompleted = day.workoutRecord?.is_completed || false;
+                const dayStats = calculateDayVolume(drills);
+                
+                return (
+                  <div key={day.dayName} className="flex flex-col w-full">
+                    {/* Day Header */}
+                    <div className={`mb-3 flex flex-col border-b pb-2 px-1.5 select-none ${isCompleted ? 'bg-green-500/10 border-green-200 dark:border-green-900/30 rounded-xl pt-2' : 'border-slate-200 dark:border-slate-800'}`}>
+                      <div className="flex justify-between items-baseline mb-1.5">
+                        <span className="text-[10px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">{day.dayName}</span>
+                        <span className="text-[9px] font-bold text-slate-400/80 dark:text-slate-600">{day.fullDateStr}</span>
+                      </div>
+                      {title && (
+                        <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 leading-tight" title={title}>{title}</span>
+                      )}
+                    </div>
+
+                    {/* Exercises — full height, no max-h limit */}
+                    <div className="flex-1 px-1 pb-4 space-y-1.5">
+                      {drills.length > 0 ? (
+                        drills.map((drill, drillIdx) => {
+                          const typeColor = {
+                            'strength': 'text-orange-500', 'power': 'text-red-500', 'physical': 'text-blue-500',
+                            'core': 'text-violet-500', 'mobility': 'text-green-500', 'isometric': 'text-amber-500',
+                            'plyometric': 'text-pink-500', 'conditioning': 'text-cyan-500'
+                          }[(drill.type || 'physical').toLowerCase()] || 'text-blue-500';
+
+                          return (
+                            <div key={drill.id || drillIdx} className="relative pb-1.5">
+                              {/* Timeline connector */}
+                              {drillIdx < drills.length - 1 && (
+                                <div className="absolute left-[7px] top-[18px] bottom-[-4px] w-px bg-slate-200 dark:bg-slate-700"></div>
+                              )}
+                              <div className="flex items-start gap-2">
+                                {/* Timeline dot */}
+                                <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 mt-0.5 ${typeColor.replace('text-', 'border-')} bg-white dark:bg-slate-900`}></div>
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                  <span className={`text-[8px] font-black uppercase tracking-wider block ${typeColor}`}>{(drill.type || 'physical').toUpperCase()}</span>
+                                  <span className="text-[10.5px] font-black text-slate-800 dark:text-slate-100 block leading-tight break-words">{drill.name}</span>
+                                  <div className="flex items-center gap-1.5 flex-wrap text-[8.5px] font-bold text-slate-500 mt-1">
+                                    <span>{drill.sets} SETS</span>
+                                    <span className="text-slate-300">×</span>
+                                    <span>{drill.reps} {drill.unit === 'sec' || drill.unit === 'SEC' ? 'SEC' : 'REPS'}</span>
+                                    {drill.load && (
+                                      <>
+                                        <span className="text-slate-300">⏱</span>
+                                        <span className="text-orange-500">{drill.load}</span>
+                                      </>
+                                    )}
+                                    {drill.rest && (
+                                      <>
+                                        <span className="text-slate-300">⏱</span>
+                                        <span>{drill.rest}</span>
+                                      </>
+                                    )}
+                                  </div>
+                                  {drill.intensity && (
+                                    <span className="text-[8px] font-black text-red-500 mt-0.5 block">{drill.intensity}% 1RM</span>
+                                  )}
+                                  {drill.notes && (
+                                    <p className="text-[8px] text-slate-400 italic mt-0.5 leading-snug">📋 {drill.notes}</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="flex items-center justify-center py-6 text-slate-300 dark:text-slate-700">
+                          <span className="text-[9px] font-bold">—</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Day stats summary */}
+                    {drills.length > 0 && (
+                      <div className="mt-auto p-1.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700/30 space-y-1">
+                        <div className="flex justify-between items-center text-[9px] font-bold flex-wrap gap-y-0.5">
+                          <div className="flex flex-col items-center text-slate-400"><span className="text-[7px] uppercase">Drills</span><span>{dayStats.totalExercises}</span></div>
+                          <div className="w-px h-4 bg-slate-200"></div>
+                          <div className="flex flex-col items-center text-blue-500"><span className="text-[7px] uppercase text-blue-400">Int</span><span>{dayStats.avgIntensity}%</span></div>
+                          <div className="w-px h-4 bg-slate-200"></div>
+                          <div className="flex flex-col items-center text-orange-500"><span className="text-[7px] uppercase text-orange-400">Load</span><span>{dayStats.totalVolumeScore}</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
