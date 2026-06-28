@@ -11,16 +11,16 @@
 
 /* ---- 1. Root Background & Base Text ---- */
 .dark {
-  --pf-bg-base: #090d16;        /* Deep obsidian base background */
-  --pf-bg-surface: #0f172a;     /* Deep slate for header & sidebar */
-  --pf-bg-card: #1e293b;        /* Slate-800 for card backgrounds */
-  --pf-bg-elevated: #334155;    /* Slate-700 for active/dropdown states */
-  --pf-bg-input: #0f172a;       /* Inset input backgrounds */
-  --pf-border: #334155;         /* Crisp, high-visibility borders */
-  --pf-border-subtle: #1e293b;  /* Subtle divider lines */
-  --pf-text-primary: #f8fafc;   /* Slate-50, near-white for ultimate legibility */
-  --pf-text-secondary: #cbd5e1; /* Slate-300, bright gray-blue */
-  --pf-text-muted: #94a3b8;     /* Slate-400, brightened labels */
+  --pf-bg-base: #03060f;        /* Pitch black obsidian base background */
+  --pf-bg-surface: #070b14;     /* Ultra-dark slate for header & sidebar */
+  --pf-bg-card: #0c1220;        /* Deep midnight slate for card backgrounds */
+  --pf-bg-elevated: #1a2333;    /* Muted slate for active/dropdown states */
+  --pf-bg-input: #070b14;       /* Inset input backgrounds */
+  --pf-border: #152033;         /* Deep blue-gray border, very clean */
+  --pf-border-subtle: #0d1624;  /* Subtle divider lines */
+  --pf-text-primary: #ffffff;   /* Pure white for ultimate legibility */
+  --pf-text-secondary: #e2e8f0; /* Slate-200, bright gray-blue */
+  --pf-text-muted: #64748b;     /* Slate-500, muted gray for labels */
   --pf-accent: #f97316;         /* Orange brand color */
 }
 
@@ -74,24 +74,29 @@
 /* ---- 5. Text Colors — warm, readable tones ---- */
 .dark .dark\:text-white,
 .dark .text-slate-800,
-.dark .dark\:text-slate-100 {
-  color: var(--pf-text-primary) !important;
+.dark .dark\:text-slate-100,
+.dark .dark\:text-slate-50 {
+  color: var(--pf-text-primary) !important; /* #ffffff */
 }
 
 .dark .dark\:text-slate-200,
 .dark .dark\:text-slate-300 {
-  color: #c5cdd9 !important;
+  color: var(--pf-text-secondary) !important; /* #e2e8f0 */
 }
 
 .dark .dark\:text-slate-400,
+.dark .text-slate-450 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
 .dark .text-slate-500,
 .dark .dark\:text-slate-500 {
-  color: var(--pf-text-secondary) !important;
+  color: var(--pf-text-muted) !important; /* #64748b - labels contrast */
 }
 
 .dark .dark\:text-slate-600,
 .dark .dark\:text-slate-650 {
-  color: var(--pf-text-muted) !important;
+  color: #475569 !important; /* slate-600 */
 }
 
 /* Day header text — slightly brighter so day names are legible */
@@ -198,6 +203,49 @@
 
 .dark .dark\:bg-indigo-950\/40 {
   background-color: rgba(49, 46, 129, 0.18) !important;
+}
+
+/* Premium Dark Mode Stats Bar Badges Override */
+.dark .text-green-600.bg-green-50,
+.dark .text-green-600.bg-green-50\/50 {
+  color: #34d399 !important; /* emerald-400 */
+  background-color: rgba(6, 78, 59, 0.25) !important;
+  border-color: rgba(52, 211, 153, 0.3) !important;
+}
+
+.dark .text-yellow-600.bg-yellow-50,
+.dark .text-yellow-600.bg-yellow-50\/50 {
+  color: #38bdf8 !important; /* sky-400 */
+  background-color: rgba(30, 58, 138, 0.25) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+.dark .text-orange-600.bg-orange-50,
+.dark .text-orange-600.bg-orange-50\/50 {
+  color: #fb923c !important; /* orange-400 */
+  background-color: rgba(124, 45, 18, 0.25) !important;
+  border-color: rgba(251, 146, 60, 0.3) !important;
+}
+
+.dark .text-red-600.bg-red-50,
+.dark .text-red-600.bg-red-50\/50 {
+  color: #f87171 !important; /* red-400 */
+  background-color: rgba(153, 27, 27, 0.25) !important;
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.dark span[class*="text-pink-600"],
+.dark span[class*="text-pink-400"] {
+  border-color: rgba(244, 63, 94, 0.3) !important; /* pink/red border */
+  background-color: rgba(159, 18, 57, 0.2) !important; /* pink/red bg */
+  color: #f43f5e !important;
+}
+
+.dark span[class*="text-blue-600"],
+.dark span[class*="text-blue-400"] {
+  border-color: rgba(59, 130, 246, 0.3) !important; /* blue border */
+  background-color: rgba(30, 58, 138, 0.2) !important; /* blue bg */
+  color: #3b82f6 !important;
 }
 
 /* ---- 14. Modal Backdrop ---- */

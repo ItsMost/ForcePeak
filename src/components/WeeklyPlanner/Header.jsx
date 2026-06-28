@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity,
-  Layers
+  Layers, TrendingUp
 } from 'lucide-react';
 
 export default function Header({
@@ -358,6 +358,7 @@ export default function Header({
         {weeklyStats && (
           <div className="hidden lg:flex items-center gap-5 px-6 py-2 bg-slate-50 dark:bg-slate-950/40 rounded-2xl border border-slate-150 dark:border-slate-850/80 order-4 lg:order-3 shadow-sm">
             <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-orange-500 shrink-0" />
               <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Total Load:</span>
               <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.load} AU
@@ -371,8 +372,9 @@ export default function Header({
             <div className="w-px h-5 bg-slate-200 dark:bg-slate-800"></div>
 
             <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-indigo-500 shrink-0" />
               <span className="text-[10px] md:text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Avg Intensity:</span>
-              <span className="text-sm md:text-base font-black text-blue-600 dark:text-blue-400 leading-none">
+              <span className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.intensity}%
               </span>
             </div>
@@ -423,8 +425,8 @@ export default function Header({
               onClick={() => { setIsAthleteDropdownOpen(!isAthleteDropdownOpen); setAthleteSearch(''); }} 
               className="flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-transparent hover:border-slate-150 dark:hover:border-slate-800 transition-all bg-slate-50 sm:bg-transparent dark:bg-slate-900 w-full sm:w-auto shrink-0 select-none shadow-sm sm:shadow-none"
             >
-              <div className="w-6 h-6 rounded-lg bg-orange-500 flex items-center justify-center text-white font-black text-[11px] shadow-sm shrink-0">
-                {selectedAthlete?.name && !(isEditingBlock || isEditingMeso || isEditingMacro) ? selectedAthlete.name.charAt(0).toUpperCase() : '?'}
+              <div className="w-6 h-6 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-sm shrink-0">
+                <User className="w-3.5 h-3.5" />
               </div>
               <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
                 {isEditingBlock || isEditingMeso || isEditingMacro ? 'Template Mode' : (selectedAthlete?.name || 'No Athlete')}
@@ -637,7 +639,7 @@ export default function Header({
           </button>
           
           <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors shrink-0 shadow-sm">
-            {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
           </button>
 
         </div>
