@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Layers, Calendar, Plus, Trash2, Edit2, Check, HelpCircle, 
-  Sparkles, Dumbbell, Play, AlertTriangle 
+  Sparkles, Dumbbell, Play, AlertTriangle, Save
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient.js';
+
 
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];

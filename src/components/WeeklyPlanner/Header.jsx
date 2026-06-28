@@ -131,7 +131,7 @@ export default function Header({
   };
 
   return (
-    <header className="min-h-[64px] h-auto py-3 sm:py-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200 shadow-sm font-sans">
+    <header className="min-h-[64px] md:h-16 py-3 md:py-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200 shadow-sm font-sans">
       
       {/* Mobile-Specific Header Layout */}
       <div className="flex md:hidden flex-col w-full gap-2.5">
@@ -301,7 +301,7 @@ export default function Header({
       </div>
 
       {/* Desktop-Specific Header Layout */}
-      <div className="hidden md:flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-3 gap-x-4 w-full">
+      <div className="hidden md:flex flex-nowrap items-center justify-between gap-x-3 w-full h-full">
         
         {/* 1. Left branding block */}
         <div className="flex items-center gap-6 shrink-0 order-1">
@@ -326,7 +326,7 @@ export default function Header({
               className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${currentView === 'dashboard' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>الرئيسية / Dashboard</span>
+              <span>الرئيسية<span className="hidden lg:inline"> / Dashboard</span></span>
             </button>
             <button 
               onClick={() => { if (selectedAthlete) setCurrentView('planner'); }} 
@@ -334,7 +334,7 @@ export default function Header({
               className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${!selectedAthlete ? 'opacity-50 cursor-not-allowed' : ''} ${currentView === 'planner' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
             >
               <CalendarIcon className="w-3.5 h-3.5" />
-              <span>المخطط / Weekly Planner</span>
+              <span>المخطط<span className="hidden lg:inline"> / Weekly Planner</span></span>
             </button>
           </div>
         </div>
@@ -422,7 +422,7 @@ export default function Header({
         )}
 
         {/* 4. Far Right switcher and tools */}
-        <div className="flex items-center gap-1 sm:gap-2.5 shrink-0 order-3 sm:order-4 w-full lg:w-auto mt-2 lg:mt-0 justify-between sm:justify-end flex-1 lg:flex-initial flex-wrap sm:flex-nowrap">
+        <div className="flex items-center gap-1.5 shrink-0 justify-end flex-nowrap">
           
           {/* Sync Status Indicator Pill */}
           {syncStatus && (

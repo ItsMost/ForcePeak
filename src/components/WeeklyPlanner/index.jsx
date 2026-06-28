@@ -179,6 +179,7 @@ export default function WeeklyPlanner() {
   const [library, setLibrary] = useState({ drills: [], templates: [] }); 
   const [programs, setPrograms] = useState([]); 
   const [monthWorkouts, setMonthWorkouts] = useState({});
+  const [fourWeekWorkouts, setFourWeekWorkouts] = useState([]);
 
   const [clipboard, setClipboard] = useState(null); 
   const [history, setHistory] = useState([]); 
@@ -799,6 +800,34 @@ export default function WeeklyPlanner() {
     };
     fetchMonthData();
   }, [selectedAthleteId, currentDate.getMonth(), currentDate.getFullYear(), showMonthCalendar, isEditingBlock, isEditingMeso, isEditingMacro]);
+
+  // Fetch 4-week data when in 4-week view
+  useEffect(() => {
+    if (isEditingBlock || isEditingMeso || isEditingMacro) return;
+    if (currentView !== 'four_week') return;
+    
+    const fetchFourWeekData = async () => {
+      if (!selectedAthleteId) return;
+      setIsLoading(true);
+      const start = new Date(weekStartDateStr);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 27); // 4 weeks total
+      
+      const { data, error } = await supabase
+        .from('agilitylap_workouts')
+        .select('*')
+        .eq('athlete_id', selectedAthleteId)
+        .gte('workout_date', weekStartDateStr)
+        .lte('workout_date', getDbDateStr(end))
+        .order('workout_date', { ascending: true });
+        
+      if (!error && data) {
+        setFourWeekWorkouts(data);
+      }
+      setIsLoading(false);
+    };
+    fetchFourWeekData();
+  }, [selectedAthleteId, weekStartDateStr, currentView, isEditingBlock, isEditingMeso, isEditingMacro]);
 
   const autoSaveDay = async (day, drillsToSave, titleToSave, isCompletedToSave) => {
     const finalTitle = titleToSave !== undefined ? titleToSave : (dayTitles[day] || '');
@@ -2080,6 +2109,112 @@ export default function WeeklyPlanner() {
     }
     return days;
   };
+
+  const renderFourWeekView = () => {
+    const weeks = [];
+    const base = new Date(currentWeekStart);
+    for (let w = 0; w < 4; w++) {
+      const wkStart = new Date(base);
+      wkStart.setDate(wkStart.getDate() + (w * 7));
+      const wkEnd = new Date(wkStart);
+      wkEnd.setDate(wkEnd.getDate() + 6);
+      
+      const rangeLabel = `${wkStart.getDate()} ${wkStart.toLocaleDateString('en-US', { month: 'short' })} - ${wkEnd.getDate()} ${wkEnd.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+      
+      const days = DAYS_OF_WEEK.map((dayName, dIdx) => {
+        const dayDate = new Date(wkStart);
+        dayDate.setDate(dayDate.getDate() + dIdx);
+        const dateStr = getDbDateStr(dayDate);
+        
+        const workoutRecord = fourWeekWorkouts.find(wRecord => wRecord.workout_date === dateStr);
+        return {
+          dayName,
+          dateStr,
+          workoutRecord
+        };
+      });
+
+      weeks.push({
+        index: w + 1,
+        rangeLabel,
+        days
+      });
+    }
+
+    return (
+      <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-slate-900/40 w-full min-h-screen text-right" dir="rtl">
+        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-800/85 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
+          <div>
+            <h2 className="text-base font-black text-slate-800 dark:text-white">جدول الـ 4 أسابيع للرياضي: {selectedAthlete?.name}</h2>
+            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider text-left">4-Week Meso-Block Athlete Program Sheet</p>
+          </div>
+          <button 
+            onClick={() => setCurrentView('planner')} 
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"
+          >
+            العودة للمخطط الأسبوعي
+          </button>
+        </div>
+
+        <div className="space-y-6">
+          {weeks.map((wk) => (
+            <div key={wk.index} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+              <div className="border-b border-slate-100 dark:border-slate-700/60 pb-3 mb-4 flex justify-between items-center">
+                <span className="text-sm font-black text-orange-500">الأسبوع {wk.index} / Week {wk.index}</span>
+                <span className="text-xs font-bold text-slate-400 tracking-tight">{wk.rangeLabel}</span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-7 gap-4">
+                {wk.days.map((day) => {
+                  const drills = day.workoutRecord?.drills || [];
+                  const title = day.workoutRecord?.workout_title || '';
+                  
+                  return (
+                    <div key={day.dayName} className="flex flex-col border border-slate-100 dark:border-slate-750 bg-slate-50/50 dark:bg-slate-950/10 rounded-2xl p-3 min-h-[160px] shadow-sm">
+                      <div className="border-b border-slate-200/60 dark:border-slate-800 pb-2 mb-3">
+                        <span className="text-xs font-black text-slate-700 dark:text-slate-200 block">{day.dayName}</span>
+                        <span className="text-[9px] text-slate-400 font-bold tracking-tight block mt-0.5">{day.dateStr}</span>
+                        {title && (
+                          <span className="text-[9.5px] font-black text-orange-600 dark:text-orange-400 block mt-1.5 uppercase truncate" title={title}>{title}</span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2 flex-1 overflow-y-auto max-h-48 pr-0.5">
+                        {drills.length > 0 ? (
+                          drills.map((drill, drillIdx) => (
+                            <div key={drill.id || drillIdx} className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-150 dark:border-slate-700/60 shadow-sm flex flex-col gap-1">
+                              <div className="flex justify-between items-start gap-1">
+                                <span className="text-[10px] font-black text-slate-800 dark:text-slate-100 break-words leading-tight">{drill.name}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap text-[8.5px] font-bold text-slate-400 mt-1">
+                                <span className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-650 dark:text-slate-350">{drill.sets} Sets</span>
+                                <span className="px-1 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-655 dark:text-slate-355">{drill.reps} Reps</span>
+                                {drill.load && (
+                                  <span className="px-1 py-0.5 rounded bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400">{drill.load} kg</span>
+                                )}
+                              </div>
+                              {drill.notes && (
+                                <p className="text-[8.5px] text-slate-400 dark:text-slate-500 italic mt-1 leading-snug border-t border-slate-50 dark:border-slate-750/30 pt-1">{drill.notes}</p>
+                              )}
+                            </div>
+                          ))
+                        ) : (
+                          <div className="flex items-center justify-center h-full min-h-[60px]">
+                            <span className="text-[9px] text-slate-400 font-bold">لا يوجد تمارين</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
 
   const renderDashboard = () => {
     const uniqueGroups = ['All', ...new Set(athletes.map(a => a.groupName).filter(Boolean))];
@@ -3500,7 +3635,14 @@ export default function WeeklyPlanner() {
           onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' })}
           isEditingBlock={isEditingBlock}
           onDeployBlock={handleOpenDeployBlockModal}
+          isFourWeekView={currentView === 'four_week'}
+          onToggleFourWeekView={() => setCurrentView(currentView === 'four_week' ? 'planner' : 'four_week')}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
+          
+          {currentView === 'four_week' ? (
+            renderFourWeekView()
+          ) : (
+            <>
           
           {/* Premium Printed Report Header */}
           <div className="hidden print:flex flex-col border-b-2 border-slate-900 pb-4 mb-6 pt-4 px-4">
@@ -3894,6 +4036,8 @@ export default function WeeklyPlanner() {
               <span>CONFIDENTIAL - TRAINING PERFORMANCE REPORT</span>
             </div>
           </div>
+          </>
+          )}
         </div>
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
