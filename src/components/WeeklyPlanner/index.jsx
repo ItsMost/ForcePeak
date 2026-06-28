@@ -3544,7 +3544,7 @@ export default function WeeklyPlanner() {
         </div>
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-           <div className="pointer-events-auto h-full absolute right-0 w-full md:w-auto" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
+           <div className={`h-full absolute right-0 transition-all duration-300 ${showLibrary ? 'w-full md:w-80 pointer-events-auto' : 'w-0 md:w-0 pointer-events-none'}`} onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
              <ExerciseLibrary 
                showLibrary={showLibrary} 
                setShowLibrary={setShowLibrary} 

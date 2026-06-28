@@ -32,6 +32,7 @@ export default function Header({
   onExitMacro
 }) {
   
+  const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
   const [athleteSearch, setAthleteSearch] = useState('');
   const filteredAthletes = athletes.filter(a => a.name.toLowerCase().includes(athleteSearch.toLowerCase()));
 
@@ -131,7 +132,168 @@ export default function Header({
   return (
     <header className="min-h-[64px] h-auto py-3 sm:py-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200 shadow-sm font-sans">
       
-      <div className="flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-3 gap-x-4 w-full">
+      {/* Mobile-Specific Header Layout */}
+      <div className="flex md:hidden flex-col w-full gap-2.5">
+        {/* Row 1: Brand & Top Actions */}
+        <div className="flex items-center justify-between w-full">
+          <div className="flex items-center gap-2 select-none">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
+              <Activity className="w-4.5 h-4.5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xs font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
+                Peak Force
+              </h1>
+              <p className="text-[7.5px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
+                PERFORMANCE CORE
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {syncStatus && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700/50 text-[8px] font-bold uppercase tracking-wider bg-slate-50 dark:bg-slate-900/50">
+                <span className={`w-1.5 h-1.5 rounded-full ${syncStatus === 'synced' ? 'bg-green-500' : syncStatus === 'syncing' ? 'bg-amber-500' : 'bg-red-500'}`}></span>
+              </div>
+            )}
+            <button 
+              onClick={() => setShowLibrary(!showLibrary)} 
+              className={`p-2 rounded-xl transition-all border shrink-0 ${showLibrary ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-900 text-orange-500' : 'bg-white dark:bg-slate-850 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-500 hover:text-orange-500 shadow-sm'}`} 
+            >
+              <Library className="w-4 h-4" /> 
+            </button>
+            <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors shrink-0 shadow-sm">
+              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Date Navigation & Selectors */}
+        <div className="flex items-center gap-2 w-full">
+          {/* Compact Date Capsule */}
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 border border-slate-150 dark:border-slate-800/80 rounded-full p-0.5 shadow-inner shrink-0">
+            <button onClick={handlePrevWeek} className="p-1 rounded-full hover:bg-white dark:hover:bg-slate-850 text-slate-400">
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[10px] font-black text-slate-800 dark:text-white px-1.5 tracking-tight">
+              {isTemplateEditing ? 'Template' : getFormattedDateRange().split(',')[0]}
+            </span>
+            <button onClick={handleNextWeek} className="p-1 rounded-full hover:bg-white dark:hover:bg-slate-850 text-slate-400">
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Athlete switcher */}
+          <div className="relative flex items-center flex-1">
+            <button 
+              onClick={() => { setIsAthleteDropdownOpen(!isAthleteDropdownOpen); setAthleteSearch(''); }} 
+              className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 transition-all bg-slate-50 dark:bg-slate-900 w-full select-none shadow-sm"
+            >
+              <span className="font-extrabold text-[10px] text-slate-800 dark:text-slate-200 truncate">
+                {isTemplateEditing ? 'Template' : (selectedAthlete?.name || 'Athlete')}
+              </span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform shrink-0 ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isAthleteDropdownOpen && (
+              <div className="absolute top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 left-0">
+                <div className="px-2 pb-2 mb-2 border-b border-slate-150 dark:border-slate-700">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-slate-400" />
+                    <input type="text" placeholder="Search..." value={athleteSearch} onChange={(e) => setAthleteSearch(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full pl-7 pr-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-white" autoFocus />
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredAthletes.length > 0 ? (
+                    filteredAthletes.map(athlete => (
+                      <button 
+                        key={athlete.id} 
+                        type="button"
+                        onClick={() => { 
+                          setSelectedAthleteId(athlete.id); 
+                          setSelectedBlockId(null);
+                          if (onExitMeso) onExitMeso();
+                          if (onExitMacro) onExitMacro();
+                          setIsAthleteDropdownOpen(false); 
+                          setAthleteSearch(''); 
+                          handleToast(`Selected ${athlete.name}`); 
+                        }} 
+                        className={`w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase truncate dark:text-slate-250 ${selectedAthlete?.id === athlete.id && !isTemplateEditing ? 'text-orange-500 bg-orange-50/50 dark:bg-orange-500/10 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                      >
+                        {athlete.name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-[10px] text-slate-500">No athletes</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Block Template switcher */}
+          <div className="relative flex items-center flex-1">
+            <button 
+              onClick={() => { setIsBlockDropdownOpen(!isBlockDropdownOpen); setBlockSearch(''); }} 
+              className="flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-850 border border-slate-200 dark:border-slate-800 transition-all bg-slate-50 dark:bg-slate-900 w-full select-none shadow-sm"
+            >
+              <span className="font-extrabold text-[10px] text-slate-800 dark:text-slate-200 truncate">
+                {selectedBlockId && blockData ? blockData.program_name || 'Block' : 'Live Plan'}
+              </span>
+              <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform shrink-0 ${isBlockDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {isBlockDropdownOpen && (
+              <div className="absolute top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
+                <div className="px-2 pb-2 mb-2 border-b border-slate-150 dark:border-slate-700">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-slate-400" />
+                    <input type="text" placeholder="Search..." value={blockSearch} onChange={(e) => setBlockSearch(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full pl-7 pr-2 py-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] outline-none dark:text-white" autoFocus />
+                  </div>
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedBlockId(null);
+                      setIsBlockDropdownOpen(false);
+                      if (athletes.length > 0) setSelectedAthleteId(athletes[0].id);
+                      handleToast('Switched to Live Athlete Mode');
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Activity className="w-3.5 h-3.5" /> Live Plan
+                  </button>
+                  <div className="w-full h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                  {filteredBlocks.length > 0 ? (
+                    filteredBlocks.map(block => (
+                      <button 
+                        key={block.id} 
+                        type="button"
+                        onClick={() => { 
+                          setSelectedBlockId(block.id); 
+                          setSelectedAthleteId(null);
+                          setIsBlockDropdownOpen(false); 
+                          setBlockSearch(''); 
+                          handleToast(`قالب: ${block.program_name}`); 
+                        }} 
+                        className={`w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase truncate dark:text-slate-250 ${selectedBlockId === block.id ? 'text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-500/10 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                      >
+                        {block.program_name}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-[10px] text-slate-500">No blocks</div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop-Specific Header Layout */}
+      <div className="hidden md:flex flex-wrap lg:flex-nowrap items-center justify-between gap-y-3 gap-x-4 w-full">
         
         {/* 1. Left branding block */}
         <div className="flex items-center gap-3 shrink-0 order-1 select-none">
