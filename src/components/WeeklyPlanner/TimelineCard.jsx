@@ -142,7 +142,7 @@ export default function TimelineCard({
       </div>
 
       {/* Exercise core detailed metadata descriptor block */}
-      <div className="flex-1 pt-0.5 min-w-0 pr-1.5">
+      <div className="flex-1 pt-0.5 min-w-0 pr-24 md:pr-1.5">
         <div className="flex items-center gap-1.5 mb-1 flex-wrap">
           
           {/* Superset Pill Indicator */}
@@ -235,7 +235,7 @@ export default function TimelineCard({
 
         {/* Quick layout overlay control actions view state menu wrapper */}
         {!isPreviewMode && (
-          <div className="absolute top-1.5 right-1.5 z-20 flex items-center gap-0.5 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700/80 px-2 py-0.5 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200 print:hidden">
+          <div className="absolute top-1.5 right-1.5 z-20 flex items-center gap-0.5 bg-slate-50/90 dark:bg-slate-900/90 backdrop-blur-sm border border-slate-200 dark:border-slate-700/80 px-2 py-0.5 rounded-full shadow-sm opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200 print:hidden">
             <button 
               onClick={(e) => { e.stopPropagation(); onMoveUp(); }} 
               className="p-1 text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-250 transition-colors" 

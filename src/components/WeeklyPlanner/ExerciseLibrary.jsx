@@ -45,7 +45,8 @@ export default function ExerciseLibrary({
   onDeleteMacro,
   onEditProgram,
   onEditMacro,
-  onRenameProgram
+  onRenameProgram,
+  onApplyExercise
 }) {
   const [activeTab, setActiveTab] = useState('exercises');
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,7 +97,24 @@ export default function ExerciseLibrary({
   });
 
   return (
-    <div className={`fixed top-16 right-0 w-80 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 h-[calc(100vh-64px)] z-30 shadow-2xl transition-transform duration-300 flex flex-col ${showLibrary ? 'translate-x-0' : 'translate-x-full'}`}>
+    <div className={`fixed z-30 bg-white dark:bg-slate-800 transition-all duration-300 flex flex-col shadow-2xl
+      bottom-0 left-0 right-0 h-[50vh] w-full border-t border-slate-200 dark:border-slate-750 rounded-t-[2rem]
+      ${showLibrary ? 'translate-y-0' : 'translate-y-full'}
+      md:top-16 md:bottom-auto md:left-auto md:right-0 md:w-80 md:h-[calc(100vh-64px)] md:border-l md:border-t-0 md:rounded-t-none
+      ${showLibrary ? 'md:translate-y-0 md:translate-x-0' : 'md:translate-y-0 md:translate-x-full'}
+    `}>
+      
+      {/* Mobile Bottom Sheet Handle Bar */}
+      <div className="md:hidden flex items-center justify-between px-6 py-2 bg-slate-50 dark:bg-slate-900/60 rounded-t-[2rem] border-b border-slate-100 dark:border-slate-850 shrink-0 select-none">
+        <div className="w-10"></div>
+        <div className="w-12 h-1 bg-slate-350 dark:bg-slate-700 rounded-full"></div>
+        <button 
+          onClick={() => setShowLibrary(false)} 
+          className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
+        >
+          Close
+        </button>
+      </div>
       
       {/* Tabs Navigation Switcher */}
       <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-2 gap-1 shrink-0 overflow-x-auto scrollbar-none">
@@ -161,7 +179,7 @@ export default function ExerciseLibrary({
               <p className="text-center text-xs text-slate-400 py-4">No exercises archived yet</p>
             ) : (
               filteredDrills.map(drill => (
-                <div key={drill.id} draggable onDragStart={(e) => handleLibraryDragStart(e, drill, false)} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-orange-500/40 transition-all cursor-grab active:cursor-grabbing group flex justify-between items-start gap-2">
+                <div key={drill.id} draggable onDragStart={(e) => handleLibraryDragStart(e, drill, false)} className="p-3 bg-slate-50 dark:bg-slate-900/40 rounded-xl border border-slate-100 dark:border-slate-700 hover:border-orange-500/40 transition-all cursor-grab active:cursor-grabbing group flex justify-between items-start gap-2 flex-wrap">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 rounded">{drill.type}</span>
@@ -173,10 +191,32 @@ export default function ExerciseLibrary({
                       <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{drill.title}</h5>
                     </div>
                     {drill.details && <p className="text-[10px] text-slate-400 mt-1 truncate">{drill.details}</p>}
+                    
+                    {/* Quick-Add Day Badges */}
+                    <div className="flex flex-wrap gap-1 mt-2 items-center">
+                      <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Add:</span>
+                      {[
+                        { key: 'Saturday', label: 'Sat' },
+                        { key: 'Sunday', label: 'Sun' },
+                        { key: 'Monday', label: 'Mon' },
+                        { key: 'Tuesday', label: 'Tue' },
+                        { key: 'Wednesday', label: 'Wed' },
+                        { key: 'Thursday', label: 'Thu' },
+                        { key: 'Friday', label: 'Fri' }
+                      ].map(dayObj => (
+                        <button 
+                          key={dayObj.key}
+                          onClick={(e) => { e.stopPropagation(); onApplyExercise && onApplyExercise(drill, dayObj.key); }}
+                          className="px-1.5 py-0.5 text-[9px] font-bold bg-white dark:bg-slate-800 hover:bg-orange-500 hover:text-white dark:hover:bg-orange-600 text-slate-500 dark:text-slate-400 rounded border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-sm"
+                        >
+                          {dayObj.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => onEditDrill(drill)} className="p-1 text-slate-400 hover:text-blue-500"><Edit2 className="w-3 h-3" /></button>
-                    <button onClick={() => onDeleteDrill(drill.id)} className="p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onEditDrill(drill); }} className="p-1 text-slate-400 hover:text-blue-500"><Edit2 className="w-3 h-3" /></button>
+                    <button onClick={(e) => { e.stopPropagation(); onDeleteDrill(drill.id); }} className="p-1 text-slate-400 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
                   </div>
                 </div>
               ))

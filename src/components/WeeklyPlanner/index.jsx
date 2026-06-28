@@ -1317,6 +1317,24 @@ export default function WeeklyPlanner() {
     setDraggedItem(null);
   };
 
+  const handleApplyLibraryExercise = (drill, dayName) => {
+    setSchedule(prev => {
+      const newSchedule = { ...prev };
+      newSchedule[dayName] = [...(newSchedule[dayName] || [])];
+      const newDrill = { 
+        ...drill, 
+        id: `lib-drill-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        subcategory: drill.subcategory || '',
+        video_url: drill.video_url || ''
+      };
+      newSchedule[dayName].push(newDrill);
+      pushToHistory(newSchedule, dayTitles);
+      autoSaveDay(dayName, newSchedule[dayName], dayTitles[dayName]);
+      return newSchedule;
+    });
+    handleToast(`Added ${drill.title} to ${dayName}`);
+  };
+
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
@@ -3310,7 +3328,7 @@ export default function WeeklyPlanner() {
           </div>
 
           {/* Premium Mobile-Native Smart Tabs Interface */}
-          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-4 space-y-4`}>
+          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-4 space-y-4 ${showLibrary ? 'pb-[52vh]' : 'pb-16'}`}>
             {/* Day Selector Pills */}
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x snap-mandatory">
               {DAYS_OF_WEEK.map((day, index) => {
@@ -3526,7 +3544,7 @@ export default function WeeklyPlanner() {
         </div>
 
         <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-           <div className="pointer-events-auto h-full absolute right-0" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
+           <div className="pointer-events-auto h-full absolute right-0 w-full md:w-auto" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
              <ExerciseLibrary 
                showLibrary={showLibrary} 
                setShowLibrary={setShowLibrary} 
@@ -3556,6 +3574,7 @@ export default function WeeklyPlanner() {
                  setSelectedMacroId(macro.id);
                  handleToast(`Editing Macro-Cycle: ${macro.program_name}`);
                }}
+               onApplyExercise={handleApplyLibraryExercise}
              />
            </div>
         </div>
