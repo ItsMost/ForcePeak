@@ -131,7 +131,7 @@ export default function Header({
   };
 
   return (
-    <header className="min-h-[64px] md:h-16 py-3 md:py-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200 shadow-sm font-sans">
+    <header className="min-h-[64px] md:h-16 py-3 md:py-0 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 lg:px-4 flex items-center justify-between sticky top-0 z-40 print:hidden transition-colors duration-200 shadow-sm font-sans">
       
       {/* Mobile-Specific Header Layout */}
       <div className="flex md:hidden flex-col w-full gap-2.5">
@@ -252,7 +252,7 @@ export default function Header({
             </button>
             
             {isBlockDropdownOpen && (
-              <div className="absolute top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 right-0">
+              <div className="absolute top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-150 dark:border-slate-700 py-3 z-50 left-0">
                 <div className="px-2 pb-2 mb-2 border-b border-slate-150 dark:border-slate-700">
                   <div className="relative">
                     <Search className="absolute left-2 top-1.5 w-3.5 h-3.5 text-slate-400" />
@@ -260,18 +260,22 @@ export default function Header({
                   </div>
                 </div>
                 <div className="max-h-48 overflow-y-auto">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedBlockId(null);
-                      setIsBlockDropdownOpen(false);
-                      if (athletes.length > 0) setSelectedAthleteId(athletes[0].id);
-                      handleToast('Switched to Live Athlete Mode');
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center gap-1"
-                  >
-                    <Activity className="w-3.5 h-3.5" /> Live Plan
-                  </button>
+                  <div className="px-2 pb-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedBlockId(null);
+                        setIsBlockDropdownOpen(false);
+                        if (athletes.length > 0) {
+                          setSelectedAthleteId(athletes[0].id);
+                        }
+                        handleToast('Switched to Live Athlete Mode');
+                      }}
+                      className="w-full text-right px-3 py-1.5 text-[10px] font-bold text-orange-650 dark:text-orange-450 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center gap-1.5"
+                    >
+                      <Activity className="w-3 h-3" /> Live Athlete Mode
+                    </button>
+                  </div>
                   <div className="w-full h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
                   {filteredBlocks.length > 0 ? (
                     filteredBlocks.map(block => (
@@ -283,9 +287,9 @@ export default function Header({
                           setSelectedAthleteId(null);
                           setIsBlockDropdownOpen(false); 
                           setBlockSearch(''); 
-                          handleToast(`قالب: ${block.program_name}`); 
+                          handleToast(`Template: ${block.program_name}`); 
                         }} 
-                        className={`w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase truncate dark:text-slate-250 ${selectedBlockId === block.id ? 'text-violet-600 dark:text-violet-400 bg-violet-50/50 dark:bg-violet-500/10 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
+                        className={`w-full text-left px-3 py-1.5 text-[10px] font-bold uppercase truncate dark:text-slate-250 ${selectedBlockId === block.id ? 'text-violet-500 bg-violet-50/50 dark:bg-violet-500/10 font-bold' : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
                       >
                         {block.program_name}
                       </button>
@@ -304,7 +308,7 @@ export default function Header({
       <div className="hidden md:flex flex-nowrap items-center justify-between gap-x-3 w-full h-full">
         
         {/* 1. Left branding block */}
-        <div className="flex items-center gap-6 shrink-0 order-1">
+        <div className="flex items-center gap-3 xl:gap-5 shrink-0 order-1">
           <div className="flex items-center gap-3 select-none">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-white shadow-md shadow-orange-500/20 shrink-0">
               <Activity className="w-5 h-5 text-white" />
@@ -408,9 +412,9 @@ export default function Header({
               </span>
             </div>
 
-            <div className="w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="hidden 2xl:block w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
 
-            <div className="flex items-center gap-2">
+            <div className="hidden 2xl:flex items-center gap-2">
               <span className="px-2 py-0.5 rounded-lg border border-pink-100 bg-pink-50/50 dark:bg-pink-950/10 text-pink-600 dark:text-pink-400 text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 CNS: {weeklyStats.cnsPercentage}%
               </span>
@@ -430,19 +434,19 @@ export default function Header({
               {syncStatus === 'synced' && (
                 <>
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
-                  <span className="text-green-600 dark:text-green-400 hidden xs:inline">متصل / Synced</span>
+                  <span className="text-green-600 dark:text-green-400 hidden 2xl:inline">Synced</span>
                 </>
               )}
               {syncStatus === 'syncing' && (
                 <>
                   <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span>
-                  <span className="text-amber-600 dark:text-amber-400 hidden xs:inline">جاري المزامنة / Syncing</span>
+                  <span className="text-amber-600 dark:text-amber-400 hidden 2xl:inline">Syncing</span>
                 </>
               )}
               {syncStatus === 'offline' && (
                 <>
                   <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
-                  <span className="text-red-600 dark:text-red-400 hidden xs:inline">أوفلاين / Offline</span>
+                  <span className="text-red-600 dark:text-red-400 hidden 2xl:inline">Offline</span>
                 </>
               )}
             </div>
@@ -457,7 +461,7 @@ export default function Header({
               <div className="w-6 h-6 rounded-lg bg-orange-500/10 flex items-center justify-center text-orange-500 shadow-sm shrink-0">
                 <User className="w-3.5 h-3.5" />
               </div>
-              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
+              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[90px] xl:max-w-[150px] 2xl:max-w-[220px]">
                 {isEditingBlock || isEditingMeso || isEditingMacro ? 'Template Mode' : (selectedAthlete?.name || 'No Athlete')}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isAthleteDropdownOpen ? 'rotate-180' : ''}`} />
@@ -546,7 +550,7 @@ export default function Header({
               <div className="w-6 h-6 rounded-lg bg-violet-600/10 flex items-center justify-center text-violet-500 shadow-sm shrink-0">
                 <Layers className="w-3.5 h-3.5" />
               </div>
-              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[140px] xs:max-w-[180px] sm:max-w-[220px]">
+              <span className="font-semibold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[90px] xl:max-w-[150px] 2xl:max-w-[220px]">
                 {selectedBlockId && blockData ? blockData.program_name || 'Block Program' : 'Live Athlete Plan'}
               </span>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isBlockDropdownOpen ? 'rotate-180' : ''}`} />
