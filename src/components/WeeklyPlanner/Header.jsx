@@ -330,7 +330,7 @@ export default function Header({
               className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${currentView === 'dashboard' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>الرئيسية<span className="hidden lg:inline"> / Dashboard</span></span>
+              <span>الرئيسية</span>
             </button>
             <button 
               onClick={() => { if (selectedAthlete) setCurrentView('planner'); }} 
@@ -338,7 +338,7 @@ export default function Header({
               className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${!selectedAthlete ? 'opacity-50 cursor-not-allowed' : ''} ${currentView === 'planner' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
             >
               <CalendarIcon className="w-3.5 h-3.5" />
-              <span>المخطط<span className="hidden lg:inline"> / Weekly Planner</span></span>
+              <span>المخطط</span>
             </button>
           </div>
         </div>
@@ -389,7 +389,7 @@ export default function Header({
 
         {/* 3. Center-Right stats indicators pill */}
         {weeklyStats && (
-          <div className="hidden xl:flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-150 dark:border-slate-850/80 order-3 shadow-sm">
+          <div className="hidden 2xl:flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-150 dark:border-slate-850/80 order-3 shadow-sm">
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-orange-500 shrink-0" />
               <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Load:</span>
