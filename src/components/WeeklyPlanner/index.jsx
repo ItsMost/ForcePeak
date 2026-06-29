@@ -2535,7 +2535,7 @@ export default function WeeklyPlanner() {
   };
 
   return (
-    <div className={`min-h-screen font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black pb-16 md:pb-0 ${printMode === 'landscape' ? 'print-mode-landscape' : 'print-mode-portrait'}`}>
+    <div className={`min-h-screen w-screen max-w-full overflow-x-hidden font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black pb-16 md:pb-0 ${printMode === 'landscape' ? 'print-mode-landscape' : 'print-mode-portrait'}`}>
       
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}

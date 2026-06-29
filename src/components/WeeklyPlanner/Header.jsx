@@ -385,7 +385,7 @@ export default function Header({
 
         {/* 3. Center-Right stats indicators pill */}
         {weeklyStats && (
-          <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-150 dark:border-slate-850/80 order-3 shadow-sm">
+          <div className="hidden xl:flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-150 dark:border-slate-850/80 order-3 shadow-sm">
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-orange-500 shrink-0" />
               <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Load:</span>
