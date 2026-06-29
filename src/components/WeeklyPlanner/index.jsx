@@ -2202,7 +2202,7 @@ export default function WeeklyPlanner() {
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
                                   <span className={`text-[8px] font-black uppercase tracking-wider block ${typeColor}`}>{(drill.type || 'physical').toUpperCase()}</span>
-                                  <span className="text-[10.5px] font-black text-slate-800 dark:text-slate-100 block leading-tight break-words">{drill.name}</span>
+                                  <span className="text-[10.5px] font-black text-slate-800 dark:text-slate-100 block leading-tight break-words">{drill.title || 'Unnamed Exercise'}</span>
                                   <div className="flex items-center gap-1.5 flex-wrap text-[8.5px] font-bold text-slate-500 mt-1">
                                     <span>{drill.sets} SETS</span>
                                     <span className="text-slate-300">×</span>
@@ -2223,8 +2223,8 @@ export default function WeeklyPlanner() {
                                   {drill.intensity && (
                                     <span className="text-[8px] font-black text-red-500 mt-0.5 block">{drill.intensity}% 1RM</span>
                                   )}
-                                  {drill.notes && (
-                                    <p className="text-[8px] text-slate-400 italic mt-0.5 leading-snug">📋 {drill.notes}</p>
+                                  {drill.details && (
+                                    <p className="text-[8px] text-slate-400 italic mt-0.5 leading-snug">📋 {drill.details}</p>
                                   )}
                                 </div>
                               </div>

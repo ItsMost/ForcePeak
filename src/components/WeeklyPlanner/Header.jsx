@@ -464,7 +464,7 @@ export default function Header({
             </button>
             
             {isAthleteDropdownOpen && (
-              <div className="absolute top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-150 dark:border-slate-700 py-3 z-[110] right-0">
+              <div className="absolute top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-150 dark:border-slate-700 py-3 z-[110] left-0">
                 <div className="px-3 pb-3 mb-2 border-b border-slate-150 dark:border-slate-700">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2 w-4 h-4 text-slate-400" />
@@ -553,7 +553,7 @@ export default function Header({
             </button>
             
             {isBlockDropdownOpen && (
-              <div className="absolute top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-150 dark:border-slate-700 py-3 z-[110] right-0">
+              <div className="absolute top-full mt-2 w-72 sm:w-80 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-150 dark:border-slate-700 py-3 z-[110] left-0">
                 <div className="px-3 pb-3 mb-2 border-b border-slate-150 dark:border-slate-700">
                   <div className="relative">
                     <Search className="absolute left-2.5 top-2 w-4 h-4 text-slate-400" />

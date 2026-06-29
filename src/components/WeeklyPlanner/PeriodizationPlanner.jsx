@@ -384,18 +384,35 @@ export default function PeriodizationPlanner({
     e.preventDefault();
     const dataStr = e.dataTransfer.getData('application/json');
     if (!dataStr) return;
-    const { programId, programName, weeksCount } = JSON.parse(dataStr);
-
-    const newDeploy = {
-      id: `season-staged-${Date.now()}`,
-      program_id: programId,
-      program_name: programName,
-      start_week: weekNum,
-      weeks_count: weeksCount,
-      color: PHASE_COLORS[stagedDeployments.length % PHASE_COLORS.length].hex
-    };
-
-    setStagedDeployments(prev => [...prev, newDeploy]);
+    try {
+      const payload = JSON.parse(dataStr);
+      if (payload.isExisting) {
+        setStagedDeployments(prev => prev.map(dep => {
+          if (dep.id === payload.deploymentId) {
+            return {
+              ...dep,
+              start_week: weekNum
+            };
+          }
+          return dep;
+        }));
+        handleToast('تم نقل كتلة التدريب بنجاح');
+      } else {
+        const { programId, programName, weeksCount } = payload;
+        const newDeploy = {
+          id: `season-staged-${Date.now()}`,
+          program_id: programId,
+          program_name: programName,
+          start_week: weekNum,
+          weeks_count: weeksCount,
+          color: PHASE_COLORS[stagedDeployments.length % PHASE_COLORS.length].hex
+        };
+        setStagedDeployments(prev => [...prev, newDeploy]);
+        handleToast('تمت إضافة كتلة التدريب بنجاح');
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const renderSeasonPlanner = () => {
@@ -504,7 +521,7 @@ export default function PeriodizationPlanner({
             {selectedSeasonId ? (
               <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-[24px] overflow-hidden shadow-sm flex flex-col">
                 {/* Horizontal Gantt scrollable board */}
-                <div className="overflow-x-auto relative min-h-[420px] p-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+                <div className="overflow-x-auto relative min-h-[420px] p-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800" dir="ltr">
                   <div className="relative" style={{ width: `${52 * 140}px` }}>
                     
                     {/* Vertical Grid dividers behind */}
@@ -558,6 +575,14 @@ export default function PeriodizationPlanner({
                         return (
                           <div
                             key={dep.id}
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('application/json', JSON.stringify({
+                                isExisting: true,
+                                deploymentId: dep.id,
+                                weeksCount: dep.weeks_count
+                              }));
+                            }}
                             className="absolute px-3 py-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-sm flex items-center justify-between gap-2 text-white transition-all select-none group/pill animate-fadeIn cursor-pointer"
                             style={{
                               left: `${left + 4}px`,
@@ -936,8 +961,8 @@ export default function PeriodizationPlanner({
   };
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-2 sm:p-6 print:hidden" dir="rtl">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-7xl h-[92vh] overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col font-sans">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-2 sm:p-4 print:hidden" dir="rtl">
+      <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-[96vw] h-[94vh] overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col font-sans">
         
         {/* Main Header */}
         <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
