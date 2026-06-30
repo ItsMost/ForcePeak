@@ -219,6 +219,18 @@ export default function TimelineCard({
               </span>
             )}
 
+            {drill.tempo && (
+              <span className="px-2 py-0.5 bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+                T: {drill.tempo}
+              </span>
+            )}
+
+            {drill.focus && (
+              <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+                {drill.focus}
+              </span>
+            )}
+
             {drill.details && (
               <button 
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); setShowNotes(!showNotes); }} 

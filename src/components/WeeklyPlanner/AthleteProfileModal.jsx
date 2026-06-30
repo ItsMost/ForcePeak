@@ -72,7 +72,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               </div>
               <div className="flex-1 space-y-3">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME / الاسم الكامل</label>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME</label>
                   <input 
                     type="text" 
                     name="name" 
@@ -83,7 +83,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">ATHLETE GROUP / مجموعة اللاعب (مثال: Rehab, Sprinters)</label>
+                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">ATHLETE GROUP (e.g. Rehab, Sprinters)</label>
                   <input 
                     type="text" 
                     name="groupName" 

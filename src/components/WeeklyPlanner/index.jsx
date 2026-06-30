@@ -214,11 +214,12 @@ export default function WeeklyPlanner() {
   const [activeMacroWeekIndex, setActiveMacroWeekIndex] = useState(0);
   const [macroData, setMacroData] = useState(null);
   const [macroWeeks, setMacroWeeks] = useState([]);
+  const [loadedMesoCycles, setLoadedMesoCycles] = useState({});
 
   const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
   const [deployBlockModal, setDeployBlockModal] = useState({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
@@ -302,10 +303,10 @@ export default function WeeklyPlanner() {
         orientation: printStudioModal.orientation,
         theme: printStudioModal.theme
       });
-      handleToast('تم تحميل ملف الـ PDF بنجاح! / PDF downloaded successfully!');
+      handleToast('PDF downloaded successfully!');
     } catch (error) {
       console.error('Error generating PDF:', error);
-      handleToast('حدث خطأ أثناء تحميل الملف / Error generating PDF');
+      handleToast('Error generating PDF');
     } finally {
       setIsLoading(false);
     }
@@ -448,9 +449,9 @@ export default function WeeklyPlanner() {
       .eq('id', athleteId);
     if (!error) {
       setAthletes(prev => prev.map(a => a.id === athleteId ? { ...a, groupName: groupName || '' } : a));
-      handleToast(groupName ? `تم ضم اللاعب للمجموعة: ${groupName}` : 'تم إزالة اللاعب من المجموعة');
+      handleToast(groupName ? `Athlete added to group: ${groupName}` : 'Athlete removed from group');
     } else {
-      handleToast('حدث خطأ أثناء تحديث مجموعة اللاعب');
+      handleToast('Error updating athlete group');
     }
   };
 
@@ -500,10 +501,10 @@ export default function WeeklyPlanner() {
           if (data.type === 'macro_block') {
             if (!details.phases) {
               details.phases = [
-                { name: 'بناء الأساس / Base Building', durationWeeks: 12, weeks: [] },
-                { name: 'القوة القصوى / Max Strength', durationWeeks: 8, weeks: [] },
-                { name: 'الـ POWER السريع / Rapid Power', durationWeeks: 6, weeks: [] },
-                { name: 'التجهيز للقفز (Peak) / Peak & Jump Prep', durationWeeks: 4, weeks: [] }
+                { name: 'Base Building', durationWeeks: 12, weeks: [] },
+                { name: 'Max Strength', durationWeeks: 8, weeks: [] },
+                { name: 'Rapid Power', durationWeeks: 6, weeks: [] },
+                { name: 'Peak & Jump Prep', durationWeeks: 4, weeks: [] }
               ];
               details.phases.forEach(phase => {
                 if (!phase.weeks || phase.weeks.length === 0) {
@@ -663,6 +664,7 @@ export default function WeeklyPlanner() {
 
           const blocksChain = data.weeks?.[0]?.blocksChain || [];
           const resolvedWeeks = [];
+          const mesoCache = {};
 
           for (let blockIndex = 0; blockIndex < blocksChain.length; blockIndex++) {
             const blockItem = blocksChain[blockIndex];
@@ -673,6 +675,7 @@ export default function WeeklyPlanner() {
               .single();
 
             if (!fetchErr && progDetails) {
+              mesoCache[blockItem.blockId] = progDetails;
               const totalWeeksInBlock = progDetails.weeks?.length || 0;
               for (let i = 0; i < totalWeeksInBlock; i++) {
                 resolvedWeeks.push({
@@ -686,6 +689,7 @@ export default function WeeklyPlanner() {
             }
           }
 
+          setLoadedMesoCycles(mesoCache);
           setMacroWeeks(resolvedWeeks);
 
           if (resolvedWeeks.length > 0) {
@@ -863,7 +867,95 @@ export default function WeeklyPlanner() {
       } catch (err) {
         console.error(err);
         setSyncStatus('offline');
-        handleToast('حدث خطأ أثناء حفظ القالب تلقائياً');
+        handleToast('Error auto-saving block template');
+      }
+      return;
+    }
+
+    if (isEditingMeso) {
+      if (!selectedMesoId || !mesoData) return;
+      const updatedMesoData = { ...mesoData };
+      if (!updatedMesoData.weeks) updatedMesoData.weeks = [];
+      if (!updatedMesoData.weeks[activeMesoWeekIndex]) {
+        updatedMesoData.weeks[activeMesoWeekIndex] = {
+          weekIndex: activeMesoWeekIndex,
+          title: '',
+          drills: {}
+        };
+      }
+      const week = updatedMesoData.weeks[activeMesoWeekIndex];
+      week.drills = {
+        ...(week.drills || {}),
+        [day]: finalDrills.map(d => ({ ...d }))
+      };
+      week.title = finalTitle;
+      setMesoData(updatedMesoData);
+
+      try {
+        setSyncStatus('syncing');
+        const { error } = await supabase
+          .from('agilitylap_programs')
+          .update({ weeks: updatedMesoData.weeks })
+          .eq('id', selectedMesoId);
+        if (error) throw error;
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error(err);
+        setSyncStatus('offline');
+        handleToast('Error saving Meso template');
+      }
+      return;
+    }
+
+    if (isEditingMacro) {
+      const weekInfo = macroWeeks[activeMacroWeekIndex];
+      if (!weekInfo || !weekInfo.mesoId) return;
+
+      try {
+        setSyncStatus('syncing');
+        const cachedMeso = loadedMesoCycles[weekInfo.mesoId];
+        if (!cachedMeso) throw new Error('Meso-cycle not found in cache');
+
+        const updatedWeeks = [...(cachedMeso.weeks || [])];
+        const wIdx = weekInfo.mesoWeekIndex;
+        if (!updatedWeeks[wIdx]) {
+          updatedWeeks[wIdx] = { weekIndex: wIdx, title: '', drills: {} };
+        }
+        updatedWeeks[wIdx].drills = {
+          ...(updatedWeeks[wIdx].drills || {}),
+          [day]: finalDrills.map(d => ({ ...d }))
+        };
+        updatedWeeks[wIdx].title = finalTitle;
+
+        const { error: saveErr } = await supabase
+          .from('agilitylap_programs')
+          .update({ weeks: updatedWeeks })
+          .eq('id', weekInfo.mesoId);
+        if (saveErr) throw saveErr;
+
+        setLoadedMesoCycles(prev => ({
+          ...prev,
+          [weekInfo.mesoId]: {
+            ...prev[weekInfo.mesoId],
+            weeks: updatedWeeks
+          }
+        }));
+
+        const updatedMacroWeeks = [...macroWeeks];
+        updatedMacroWeeks[activeMacroWeekIndex] = {
+          ...updatedMacroWeeks[activeMacroWeekIndex],
+          title: finalTitle,
+          drills: {
+            ...(updatedMacroWeeks[activeMacroWeekIndex].drills || {}),
+            [day]: finalDrills.map(d => ({ ...d }))
+          }
+        };
+        setMacroWeeks(updatedMacroWeeks);
+        setSyncStatus('synced');
+      } catch (err) {
+        console.error(err);
+        setSyncStatus('offline');
+        handleToast('Error saving macro template component');
       }
       return;
     }
@@ -1414,7 +1506,12 @@ export default function WeeklyPlanner() {
       reps: drill.reps || '', 
       rest: drill.rest || '', 
       unit: drill.unit || 'reps',
-      distance: drill.distance ? parseFloat(drill.distance) : null
+      distance: drill.distance ? parseFloat(drill.distance) : null,
+      tempo: drill.tempo || '',
+      focus: drill.focus || '',
+      subcategory: drill.subcategory || '',
+      bwRatio: drill.bwRatio ? parseFloat(drill.bwRatio) : null,
+      video_url: drill.video_url || ''
     };
     const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
     if (!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); handleToast('Exercise saved to library sidebar!'); }
@@ -1679,7 +1776,7 @@ export default function WeeklyPlanner() {
 
         const phases = [
           {
-            name: 'بناء الأساس / Base Building',
+            name: 'Base Building',
             durationWeeks: baseWeeks,
             weeks: baseSlice.map((w, idx) => ({
               weekIndex: idx,
@@ -1689,7 +1786,7 @@ export default function WeeklyPlanner() {
             }))
           },
           {
-            name: 'القوة القصوى / Max Strength',
+            name: 'Max Strength',
             durationWeeks: strengthWeeks,
             weeks: strengthSlice.map((w, idx) => ({
               weekIndex: idx,
@@ -1699,7 +1796,7 @@ export default function WeeklyPlanner() {
             }))
           },
           {
-            name: 'الـ POWER السريع / Rapid Power',
+            name: 'Rapid Power',
             durationWeeks: powerWeeks,
             weeks: powerSlice.map((w, idx) => ({
               weekIndex: idx,
@@ -1709,7 +1806,7 @@ export default function WeeklyPlanner() {
             }))
           },
           {
-            name: 'التجهيز للقفز (Peak) / Peak & Jump Prep',
+            name: 'Peak & Jump Prep',
             durationWeeks: peakWeeks,
             weeks: peakSlice.map((w, idx) => ({
               weekIndex: idx,
@@ -1797,7 +1894,7 @@ export default function WeeklyPlanner() {
   const executeDeployBlock = async () => {
     const { blockId, athleteId, startDate } = deployBlockModal;
     if (!blockId || !athleteId || !startDate) {
-      handleToast('الرجاء اختيار اللاعب وتاريخ البداية!');
+      handleToast('Please select athlete and start date!');
       return;
     }
 
@@ -1816,7 +1913,7 @@ export default function WeeklyPlanner() {
       const details = program.weeks?.[0] || {};
       const phases = details.phases || [];
       if (phases.length === 0) {
-        throw new Error('القالب لا يحتوي على أي فترات أو أسابيع!');
+        throw new Error('The block template does not contain any phases or weeks!');
       }
 
       const start = new Date(startDate);
@@ -1877,14 +1974,14 @@ export default function WeeklyPlanner() {
         phases_durations: phases.map(p => p.durationWeeks)
       }]);
 
-      handleToast(`تم تطبيق القالب "${program.program_name}" بنجاح على اللاعب لمدة ${totalWeeksDeployed} أسبوعاً!`);
+      handleToast(`Template "${program.program_name}" deployed successfully to athlete for ${totalWeeksDeployed} weeks!`);
       
       if (selectedAthleteId === athleteId) {
         setCurrentDate(new Date(start));
       }
     } catch (err) {
       console.error(err);
-      handleToast('حدث خطأ أثناء تطبيق القالب الدوري.');
+      handleToast('Error deploying template.');
     } finally {
       setIsLoading(false);
     }
@@ -1942,7 +2039,7 @@ export default function WeeklyPlanner() {
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
@@ -1960,14 +2057,16 @@ export default function WeeklyPlanner() {
       rest: addExerciseModal.rest, 
       unit: addExerciseModal.unit,
       distance: addExerciseModal.distance ? parseFloat(addExerciseModal.distance) : null,
-      video_url: addExerciseModal.video_url || ''
+      video_url: addExerciseModal.video_url || '',
+      tempo: addExerciseModal.tempo || '',
+      focus: addExerciseModal.focus || ''
     }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '' }); handleToast('Exercise updated'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' }); handleToast('Exercise updated'); }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '' }); handleToast('Exercise added'); }
+      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' }); handleToast('Exercise added'); }
     }
   };
 
@@ -2140,13 +2239,13 @@ export default function WeeklyPlanner() {
         <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center bg-white dark:bg-slate-800/85 p-4 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
           <div>
             <h2 className="text-base font-black text-slate-800 dark:text-white">4-Week Meso-Block Athlete Program Sheet</h2>
-            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">جدول الـ 4 أسابيع للرياضي: {selectedAthlete?.name}</p>
+            <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">4-Week Program Sheet for Athlete: {selectedAthlete?.name}</p>
           </div>
           <button 
             onClick={() => setCurrentView('planner')} 
             className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5 shrink-0"
           >
-            العودة للمخطط الأسبوعي / Back to Weekly
+            Back to Weekly
           </button>
         </div>
 
@@ -2155,7 +2254,7 @@ export default function WeeklyPlanner() {
           <div key={wk.index} className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm overflow-hidden">
             {/* Week Header */}
             <div className="border-b border-slate-100 dark:border-slate-700/60 px-5 py-3 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
-              <span className="text-sm font-black text-orange-500">الأسبوع {wk.index} / Week {wk.index}</span>
+              <span className="text-sm font-black text-orange-500">Week {wk.index}</span>
               <span className="text-xs font-bold text-slate-400 tracking-tight">{wk.rangeLabel}</span>
             </div>
 
@@ -2219,6 +2318,18 @@ export default function WeeklyPlanner() {
                                         <span>{drill.rest}</span>
                                       </>
                                     )}
+                                    {drill.tempo && (
+                                      <>
+                                        <span className="text-slate-300">•</span>
+                                        <span className="text-amber-650 dark:text-amber-450">T: {drill.tempo}</span>
+                                      </>
+                                    )}
+                                    {drill.focus && (
+                                      <>
+                                        <span className="text-slate-300">•</span>
+                                        <span className="text-rose-600 dark:text-rose-400">{drill.focus}</span>
+                                      </>
+                                    )}
                                   </div>
                                   {drill.intensity && (
                                     <span className="text-[8px] font-black text-red-500 mt-0.5 block">{drill.intensity}% 1RM</span>
@@ -2277,44 +2388,44 @@ export default function WeeklyPlanner() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white leading-tight">
-                أهلاً بك كابتن! 👋
+                Welcome Captain! 👋
               </h2>
               <p className="text-xs text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider font-semibold">
-                شاشة التحكم المركزية لإدارة اللاعبين والبرامج التدريبية
+                Central dashboard for managing athletes and training programs
               </p>
             </div>
             <button
               onClick={() => setShowAddAthleteModal(true)}
               className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-xs font-black shadow-md shadow-orange-500/10 flex items-center gap-2 self-start sm:self-auto transition-all"
             >
-              <UserPlus className="w-4 h-4" /> إضافة لاعب جديد
+              <UserPlus className="w-4 h-4" /> Add New Athlete
             </button>
           </div>
 
           {/* Quick Stats Row */}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             <div className="bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-850/80 rounded-2xl p-4 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">إجمالي اللاعبين</span>
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Total Athletes</span>
               <span className="text-2xl font-black text-slate-800 dark:text-white block mt-1">{athletes.length}</span>
             </div>
             <div className="bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-850/80 rounded-2xl p-4 shadow-sm">
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">المجموعات الفعّالة</span>
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Active Groups</span>
               <span className="text-2xl font-black text-slate-800 dark:text-white block mt-1">{uniqueGroups.length - 1}</span>
             </div>
             <div className="bg-white dark:bg-slate-800 border border-slate-150 dark:border-slate-850/80 rounded-2xl p-4 shadow-sm col-span-2 sm:col-span-1">
-              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">البرامج الجاهزة (Meso)</span>
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Meso Blocks</span>
               <span className="text-2xl font-black text-slate-800 dark:text-white block mt-1">{programs.length}</span>
             </div>
           </div>
 
           {/* Search & Groups Filter Bar */}
-          <div className="bg-white dark:bg-slate-850 p-4 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
+          <div className="bg-white dark:bg-slate-855 p-4 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
             {/* Search Input */}
             <div className="relative w-full md:w-80">
               <Search className="absolute right-3 top-3 w-4 h-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="البحث عن لاعب..."
+                placeholder="Search athletes..."
                 value={dashboardSearch}
                 onChange={(e) => setDashboardSearch(e.target.value)}
                 className="w-full pl-4 pr-10 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs sm:text-sm outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
@@ -2329,7 +2440,7 @@ export default function WeeklyPlanner() {
                   onClick={() => setSelectedDashboardGroup(grp)}
                   className={`px-3.5 py-1.5 rounded-xl font-bold text-[10px] sm:text-xs transition-all shrink-0 select-none ${selectedDashboardGroup === grp ? 'bg-orange-500 text-white shadow-sm' : 'bg-slate-50 dark:bg-slate-900 text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-150 dark:border-slate-800'}`}
                 >
-                  {grp === 'All' ? 'جميع اللاعبين / All' : grp}
+                  {grp === 'All' ? 'All Athletes' : grp}
                 </button>
               ))}
             </div>
@@ -2360,10 +2471,10 @@ export default function WeeklyPlanner() {
                         </h4>
                         <div className="flex items-center gap-2 flex-wrap mt-1">
                           {athlete.birthYear && (
-                            <span className="text-[10px] text-slate-400 font-bold">الميلاد: {athlete.birthYear}</span>
+                            <span className="text-[10px] text-slate-400 font-bold">Born: {athlete.birthYear}</span>
                           )}
                           {athlete.weight && (
-                            <span className="text-[10px] text-slate-400 font-bold">• الوزن: {athlete.weight} كجم</span>
+                            <span className="text-[10px] text-slate-400 font-bold">• Weight: {athlete.weight} kg</span>
                           )}
                           {athlete.groupName && (
                             <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 text-[9px] font-black uppercase tracking-wider">
@@ -2377,11 +2488,11 @@ export default function WeeklyPlanner() {
                     {/* Active Routine Info (Center) */}
                     <div className="flex flex-col gap-1 min-w-0 md:max-w-xs w-full md:w-auto">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">البرنامج الفعّال:</span>
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Active Block:</span>
                         <span className="text-[11px] font-black text-slate-700 dark:text-slate-350 truncate">{phaseLabel}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">مرحلة التقدم:</span>
+                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Timeline Position:</span>
                         <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/20 shadow-sm shrink-0">
                           {weekLabel}
                         </span>
@@ -2392,17 +2503,17 @@ export default function WeeklyPlanner() {
                     <div className="flex items-center gap-2.5 w-full md:w-auto justify-end shrink-0" onClick={e => e.stopPropagation()}>
                       {/* Group Switcher Select Dropdown */}
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">المجموعة:</span>
+                        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Group:</span>
                         <select
                           value={athlete.groupName || ''}
                           onChange={(e) => handleQuickAssignGroup(athlete.id, e.target.value)}
                           className="text-[10px] font-bold bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-500 dark:text-white w-28 font-sans"
                         >
-                          <option value="">بلا مجموعة</option>
-                          <option value="Rehab">Rehab / تأهيل</option>
-                          <option value="Sprinters">Sprinters / سرعات</option>
-                          <option value="Group A">Group A / مجموعة أ</option>
-                          <option value="Group B">Group B / مجموعة ب</option>
+                          <option value="">No Group</option>
+                          <option value="Rehab">Rehab</option>
+                          <option value="Sprinters">Sprinters</option>
+                          <option value="Group A">Group A</option>
+                          <option value="Group B">Group B</option>
                           {athlete.groupName && !['Rehab', 'Sprinters', 'Group A', 'Group B'].includes(athlete.groupName) && (
                             <option value={athlete.groupName}>{athlete.groupName}</option>
                           )}
@@ -2421,7 +2532,7 @@ export default function WeeklyPlanner() {
                         }}
                         className="px-3.5 py-2.5 bg-slate-50 hover:bg-orange-50 dark:bg-slate-900 dark:hover:bg-orange-950/20 text-slate-700 dark:text-slate-200 hover:text-orange-500 dark:hover:text-orange-400 border border-slate-200 dark:border-slate-750 rounded-xl text-[10px] font-black uppercase transition-all shadow-sm flex items-center gap-1.5"
                       >
-                        <Layers className="w-3.5 h-3.5" /> تطبيق برنامج
+                        <Layers className="w-3.5 h-3.5" /> Deploy Block
                       </button>
 
                       {/* Edit profile */}
@@ -2441,7 +2552,7 @@ export default function WeeklyPlanner() {
               })
             ) : (
               <div className="bg-white dark:bg-slate-800/40 p-8 rounded-3xl text-center border border-dashed border-slate-250 dark:border-slate-800">
-                <span className="text-xs text-slate-400 dark:text-slate-500">لا يوجد لاعبين يطابقون خيارات البحث.</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500">No athletes found matching search criteria.</span>
               </div>
             )}
           </div>
@@ -2451,7 +2562,7 @@ export default function WeeklyPlanner() {
         <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 flex flex-col gap-6 overflow-y-auto shrink-0">
           <div>
             <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">
-              قوالب الدورات والبرامج
+              Meso Blocks & Templates
             </h3>
             <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5 uppercase tracking-wide">
               Meso-Blocks & Programs Directory
@@ -2464,13 +2575,13 @@ export default function WeeklyPlanner() {
               onClick={() => setCreateProgramModal({ isOpen: true, name: '', tags: '', weeksChain: [''] })}
               className="w-full py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md shadow-orange-500/10 flex items-center justify-center gap-1.5 transition-all"
             >
-              <Plus className="w-4 h-4" /> إنشاء كتلة تدريب جديدة
+              <Plus className="w-4 h-4" /> Create Meso Block
             </button>
             <button
               onClick={() => setShowPeriodizationPlanner(true)}
-              className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-black shadow-md shadow-violet-500/10 flex items-center justify-center gap-1.5 transition-all"
+              className="w-full py-2.5 bg-violet-650 hover:bg-violet-700 text-white rounded-xl text-xs font-black shadow-md shadow-violet-500/10 flex items-center justify-center gap-1.5 transition-all"
             >
-              <Calendar className="w-4 h-4" /> مخطط الموسم السنوي (Planner)
+              <Calendar className="w-4 h-4" /> Annual Season Planner
             </button>
           </div>
 
@@ -2478,7 +2589,7 @@ export default function WeeklyPlanner() {
 
           {/* Meso programs list */}
           <div className="flex flex-col gap-3 flex-1">
-            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">قائمة البرامج المحفوظة ({programs.length})</span>
+            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Saved Programs List ({programs.length})</span>
             <div className="flex flex-col gap-2.5">
               {programs.length > 0 ? (
                 programs.map(prog => (
@@ -2490,7 +2601,7 @@ export default function WeeklyPlanner() {
                       <h5 className="text-xs font-black text-slate-800 dark:text-white">{prog.program_name}</h5>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                         <span className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-855 text-slate-600 dark:text-slate-400 text-[8.5px] font-bold">
-                          {prog.weeks ? prog.weeks.length : 0} أسابيع
+                          {prog.weeks ? prog.weeks.length : 0} Weeks
                         </span>
                         {prog.weeks?.[0]?.blockTags && (
                           <span className="text-[8.5px] text-orange-500 font-bold">{prog.weeks[0].blockTags}</span>
@@ -2510,7 +2621,7 @@ export default function WeeklyPlanner() {
                         }}
                         className="flex-1 py-1.5 bg-white dark:bg-slate-950 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-700 dark:text-slate-200 hover:text-orange-500 border border-slate-200 dark:border-slate-700 rounded-lg text-[9px] font-black uppercase transition-all flex items-center justify-center gap-1"
                       >
-                        <Play className="w-3 h-3" /> تطبيق البرنامج
+                        <Play className="w-3 h-3" /> Deploy
                       </button>
                       <button
                         onClick={() => handleDeleteProgramBlock(prog.id)}
@@ -2524,7 +2635,7 @@ export default function WeeklyPlanner() {
                 ))
               ) : (
                 <div className="text-center py-6">
-                  <span className="text-[10px] text-slate-400">لا يوجد برامج محفوظة حالياً.</span>
+                  <span className="text-[10px] text-slate-400">No saved programs found.</span>
                 </div>
               )}
             </div>
@@ -2676,106 +2787,106 @@ export default function WeeklyPlanner() {
       {saveWeekTemplateModal.isOpen && ( <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4"> <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><BookmarkPlus className="w-5 h-5 text-orange-500" /> Save Week Block</h3> <input type="text" value={saveWeekTemplateModal.name} onChange={(e) => setSaveWeekTemplateModal({...saveWeekTemplateModal, name: e.target.value})} className="w-full px-4 py-2.5 rounded-xl border bg-slate-50 dark:bg-slate-900 mb-6 outline-none focus:ring-2 focus:ring-orange-500" autoFocus /> <div className="flex justify-end gap-2"> <button onClick={() => setSaveWeekTemplateModal({isOpen: false, name: ''})} className="px-4 py-2 bg-slate-100 rounded-xl text-sm font-bold">Cancel</button> <button onClick={handleSaveWeekTemplate} className="px-6 py-2 bg-orange-500 text-white rounded-xl text-sm font-bold">Save</button> </div> </div> </div> )}
 
       {bulkSaveModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4" dir="rtl">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700 text-right">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 border border-slate-200 dark:border-slate-700 text-left">
             <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
               <CalendarIcon className="w-5 h-5 text-orange-500" />
-              {bulkSaveModal.saveType === 'macro_block' ? 'حفظ كدورة كبرى / Save as Macrocycle' : 'حفظ ككتلة متوسطة / Save as Meso-Block'}
+              {bulkSaveModal.saveType === 'macro_block' ? 'Save as Macrocycle' : 'Save as Meso-Block'}
             </h3>
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">الاسم / Name</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">Name</label>
                 <input 
                   type="text" 
                   value={bulkSaveModal.programName || ''} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, programName: e.target.value})} 
                   placeholder={bulkSaveModal.saveType === 'macro_block' ? "e.g. 30-Week Deficit Season" : "e.g. 4-Week Hypertrophy Block"} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold" 
                   autoFocus 
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">نوع الحفظ / Save As</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">Save As</label>
                 <select 
                   value={bulkSaveModal.saveType || 'meso'} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, saveType: e.target.value})} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold"
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold"
                 >
-                  <option value="meso">كتلة متوسطة / Meso-Block</option>
-                  <option value="macro_block">دورة كبرى / Macrocycle</option>
+                  <option value="meso">Meso-Block</option>
+                  <option value="macro_block">Macrocycle</option>
                 </select>
               </div>
 
               {bulkSaveModal.saveType === 'macro_block' && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">بروتوكول العجز / Deficit Protocol</label>
+                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">Deficit Protocol</label>
                     <select 
                       value={bulkSaveModal.deficitProtocol || 'FDP'} 
                       onChange={(e) => setBulkSaveModal({...bulkSaveModal, deficitProtocol: e.target.value})} 
-                      className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold"
+                      className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold"
                     >
-                      <option value="FDP">FDP - عجز القوة (Force Deficit)</option>
-                      <option value="EDP">EDP - عجز الدورة المطاطية (Elastic/SSC)</option>
-                      <option value="RSD">RSD - عجز الصلابة الارتدادية (Reactive/Stiffness)</option>
-                      <option value="HVRP">HVRP - عجز السرعة ومعدل القوة (High-Velocity RFD)</option>
+                      <option value="FDP">FDP - Max Force Deficit</option>
+                      <option value="EDP">EDP - Elastic SSC Deficit</option>
+                      <option value="RSD">RSD - Reactive Stiffness Deficit</option>
+                      <option value="HVRP">HVRP - High-Velocity RFD Deficit</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">المستوى الرياضي / Level</label>
-                    <select 
+                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">Athlete Level</label>
+                    <select
                       value={bulkSaveModal.level || 'Beginner'} 
                       onChange={(e) => setBulkSaveModal({...bulkSaveModal, level: e.target.value})} 
-                      className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold"
+                      className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold"
                     >
-                      <option value="Beginner">مبتدئ / Beginner</option>
-                      <option value="Intermediate">متوسط / Intermediate</option>
-                      <option value="Advanced">متقدم / Advanced</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
                     </select>
                   </div>
                 </>
               )}
 
               <div>
-                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">تاريخ البداية / Start Date</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">Start Date</label>
                 <input 
                   type="date" 
                   value={bulkSaveModal.startDate} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, startDate: e.target.value})} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">تاريخ النهاية / End Date</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">End Date</label>
                 <input 
                   type="date" 
                   value={bulkSaveModal.endDate} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, endDate: e.target.value})} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold" 
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">الوسوم (اختياري) / Tags</label>
+                <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">Tags (Optional)</label>
                 <input 
                   type="text" 
                   value={bulkSaveModal.tags || ''} 
                   onChange={(e) => setBulkSaveModal({...bulkSaveModal, tags: e.target.value})} 
                   placeholder="e.g. Strength, Power" 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 text-right font-bold" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-orange-500 font-bold" 
                 />
               </div>
             </div>
-            <div className="flex gap-3 flex-row-reverse">
-              <button onClick={handleSaveRangeAsBlock} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">حفظ القالب / Save</button>
-              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">إلغاء / Cancel</button>
+            <div className="flex gap-3 flex-row">
+              <button onClick={handleSaveRangeAsBlock} className="flex-1 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md transition-all active:scale-95">Save</button>
+              <button onClick={() => setBulkSaveModal({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-350 rounded-xl font-bold text-sm">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
       {printStudioModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4" dir="rtl">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-lg border border-slate-100 dark:border-slate-700/50 overflow-hidden animate-fadeIn">
             {/* Header */}
             <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20">
@@ -2783,13 +2894,13 @@ export default function WeeklyPlanner() {
                 <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                   <Printer className="w-5 h-5" />
                 </div>
-                <div className="text-right">
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white leading-none">PDF استوديو الطباعة والـ</h3>
+                <div className="text-left">
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white leading-none">Printing & PDF Export Lab</h3>
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-1 block">Printing & PDF Lab</span>
                 </div>
               </div>
               <button 
-                onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
+                onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))}
                 className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-full transition-all"
               >
                 <X className="w-5 h-5" />
@@ -2797,18 +2908,18 @@ export default function WeeklyPlanner() {
             </div>
 
             {/* Content */}
-            <div className="p-6 space-y-6 text-right">
+            <div className="p-6 space-y-6 text-left">
               {/* 1. Layout Orientation */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">1. LAYOUT ORIENTATION / اتجاه الصفحة</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">1. LAYOUT ORIENTATION</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Landscape Card */}
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, orientation: 'landscape' }))}
-                    className={`relative p-4 rounded-2xl border text-right transition-all flex flex-col justify-between h-24 ${
+                    className={`relative p-4 rounded-2xl border text-left transition-all flex flex-col justify-between h-24 ${
                       printStudioModal.orientation === 'landscape'
                         ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:bg-slate-600 bg-white dark:bg-slate-900'
@@ -2822,7 +2933,7 @@ export default function WeeklyPlanner() {
                     </div>
                     <div>
                       <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'landscape' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>Landscape (1 Page)</h4>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">بالعرض - ورقة واحدة كامل الأسبوع</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Horizontal - Single full-week sheet</p>
                     </div>
                   </button>
 
@@ -2830,7 +2941,7 @@ export default function WeeklyPlanner() {
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, orientation: 'portrait' }))}
-                    className={`relative p-4 rounded-2xl border text-right transition-all flex flex-col justify-between h-24 ${
+                    className={`relative p-4 rounded-2xl border text-left transition-all flex flex-col justify-between h-24 ${
                       printStudioModal.orientation === 'portrait'
                         ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:bg-slate-600 bg-white dark:bg-slate-900'
@@ -2844,7 +2955,7 @@ export default function WeeklyPlanner() {
                     </div>
                     <div>
                       <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'portrait' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>Portrait (Vertical)</h4>
-                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">بالطول - قائمة عمودية</p>
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Vertical - Stacked day list</p>
                     </div>
                   </button>
                 </div>
@@ -2853,14 +2964,14 @@ export default function WeeklyPlanner() {
               {/* 2. Visual Print Theme */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">2. VISUAL PRINT THEME / المظهر الفني للطباعة</span>
+                  <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">2. VISUAL PRINT THEME</span>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {/* Crimson Theme */}
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'crimson' }))}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                    className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                       printStudioModal.theme === 'crimson'
                         ? 'border-rose-500 dark:border-rose-400 bg-rose-50/30 dark:bg-rose-950/10 ring-2 ring-rose-500/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
@@ -2869,8 +2980,8 @@ export default function WeeklyPlanner() {
                     <div className="flex items-center gap-3">
                       <span className="w-5 h-5 rounded-md bg-rose-600 block shrink-0"></span>
                       <div>
-                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'crimson' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-300'}`}>Classic Crimson</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">الأحمر الكلاسيكي للمدرب</p>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'crimson' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-350'}`}>Classic Crimson</h5>
+                        <p className="text-[9px] text-slate-400 font-medium">Classic coach red theme</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'crimson' && (
@@ -2882,7 +2993,7 @@ export default function WeeklyPlanner() {
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'navy' }))}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                    className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                       printStudioModal.theme === 'navy'
                         ? 'border-blue-600 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-950/10 ring-2 ring-blue-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
@@ -2892,7 +3003,7 @@ export default function WeeklyPlanner() {
                       <span className="w-5 h-5 rounded-md bg-blue-600 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'navy' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>Professional Navy</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">الكحلي الاحترافي</p>
+                        <p className="text-[9px] text-slate-400 font-medium">Professional dark blue</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'navy' && (
@@ -2904,7 +3015,7 @@ export default function WeeklyPlanner() {
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'green' }))}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                    className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                       printStudioModal.theme === 'green'
                         ? 'border-green-600 dark:border-green-500 bg-green-50/30 dark:bg-green-950/10 ring-2 ring-green-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
@@ -2914,7 +3025,7 @@ export default function WeeklyPlanner() {
                       <span className="w-5 h-5 rounded-md bg-green-700 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'green' ? 'text-green-700 dark:text-green-400' : 'text-slate-700 dark:text-slate-300'}`}>Athletic Green</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">الأخضر الرياضي الحركي</p>
+                        <p className="text-[9px] text-slate-400 font-medium">Kinetic athletic green</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'green' && (
@@ -2926,7 +3037,7 @@ export default function WeeklyPlanner() {
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'minimal' }))}
-                    className={`p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                    className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                       printStudioModal.theme === 'minimal'
                         ? 'border-slate-600 dark:border-slate-500 bg-slate-50/30 dark:bg-slate-700/20 ring-2 ring-slate-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
@@ -2936,7 +3047,7 @@ export default function WeeklyPlanner() {
                       <span className="w-5 h-5 rounded-md bg-white border border-slate-400 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'minimal' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>Minimal Ink Saver</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">موفر الحبر (أبيض وأسود)</p>
+                        <p className="text-[9px] text-slate-400 font-medium">Printer-friendly (B&W)</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'minimal' && (
@@ -2948,7 +3059,7 @@ export default function WeeklyPlanner() {
                   <button
                     type="button"
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, theme: 'dark' }))}
-                    className={`col-span-2 p-3 rounded-xl border text-right transition-all flex items-center justify-between ${
+                    className={`col-span-2 p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
                       printStudioModal.theme === 'dark'
                         ? 'border-orange-500 bg-slate-900 ring-2 ring-orange-500/10 text-white'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 bg-white dark:bg-slate-900'
@@ -2959,8 +3070,8 @@ export default function WeeklyPlanner() {
                         <span className="w-2.5 h-2.5 rounded-full bg-orange-500"></span>
                       </span>
                       <div>
-                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'dark' ? 'text-orange-400' : 'text-slate-700 dark:text-slate-300'}`}>Elite Dark (Digital PDF)</h5>
-                        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">الداكن الرياضي الاحترافي (مثالي للملفات الرقمية)</p>
+                        <h5 className={`text-xs font-bold ${printStudioModal.theme === 'dark' ? 'text-orange-400' : 'text-slate-700 dark:text-slate-350'}`}>Elite Dark (Digital PDF)</h5>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Elite sports dark (ideal for digital sharing)</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'dark' && (
@@ -2977,14 +3088,14 @@ export default function WeeklyPlanner() {
                 onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
                 className="px-6 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all flex-1 text-center"
               >
-                إلغاء / Cancel
+                Cancel
               </button>
               <button 
                 onClick={handlePrintStudioSubmit} 
                 className="px-8 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2 flex-1"
               >
                 <Printer className="w-4 h-4" />
-                طباعة البرنامج / Print Plan
+                Print Plan
               </button>
             </div>
           </div>
@@ -3289,13 +3400,31 @@ export default function WeeklyPlanner() {
                   className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs outline-none focus:ring-2 focus:ring-orange-500/30 dark:text-white font-medium mb-3" 
                 />
               </div>
+              
+              {/* Tempo & Contraction Focus */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Tempo</label>
+                  <input type="text" placeholder="e.g. 3-0-1" value={addExerciseModal.tempo || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, tempo: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Contraction Focus</label>
+                  <select value={addExerciseModal.focus || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, focus: e.target.value})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
+                    <option value="">None / Standard</option>
+                    <option value="Isometric">Isometric</option>
+                    <option value="Eccentric">Eccentric</option>
+                    <option value="Concentric">Concentric</option>
+                  </select>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-slate-500 mb-1">Notes</label>
                 <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
+              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
               <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button>
             </div>
           </div>
@@ -3383,6 +3512,23 @@ export default function WeeklyPlanner() {
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">Velocity Loss Limit (%)</label>
                   <input type="text" placeholder="e.g. 20%" value={dayDrillModal.drill.velocityLoss || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, velocityLoss: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+
+              {/* Tempo & Contraction Focus */}
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Tempo</label>
+                  <input type="text" placeholder="e.g. 3-0-1" value={dayDrillModal.drill.tempo || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, tempo: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-slate-500 mb-1">Contraction Focus</label>
+                  <select value={dayDrillModal.drill.focus || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, focus: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">None / Standard</option>
+                    <option value="Isometric">Isometric</option>
+                    <option value="Eccentric">Eccentric</option>
+                    <option value="Concentric">Concentric</option>
+                  </select>
                 </div>
               </div>
 
@@ -3573,20 +3719,20 @@ export default function WeeklyPlanner() {
       {showAddAthleteModal && ( <div className="fixed inset-0 bg-slate-900/50 z-[100] flex items-center justify-center p-4"> <div className="bg-white rounded-3xl w-full max-w-md p-6"> <h3 className="text-lg font-bold mb-4 flex items-center gap-2"><UserPlus className="w-5 h-5 text-orange-500" /> Add Athlete</h3> <div className="space-y-3 mb-6"> <div><label className="block text-xs font-medium text-slate-500 mb-1">Full Name</label><input type="text" value={newAthleteData.name} onChange={(e) => setNewAthleteData({...newAthleteData, name: e.target.value})} className="w-full px-4 py-2 border rounded-xl" autoFocus /></div><div className="flex gap-3"><div className="flex-1"><label className="block text-xs font-medium text-slate-500 mb-1">Birth Year</label><input type="number" value={newAthleteData.birthYear} onChange={(e) => setNewAthleteData({...newAthleteData, birthYear: e.target.value})} className="w-full px-4 py-2 border rounded-xl" /></div><div className="flex-1"><label className="block text-xs font-medium text-slate-500 mb-1">Weight (kg)</label><input type="number" value={newAthleteData.weight} onChange={(e) => setNewAthleteData({...newAthleteData, weight: e.target.value})} className="w-full px-4 py-2 border rounded-xl" /></div></div> </div> <div className="flex justify-end gap-3"><button onClick={() => setShowAddAthleteModal(false)} className="px-4 py-2 bg-slate-100 rounded-xl font-medium">Cancel</button><button onClick={handleAddAthlete} className="px-6 py-2 bg-orange-500 text-white rounded-xl font-medium">Add</button></div> </div> </div> )}
 
       {deployBlockModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4" dir="rtl">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 font-sans">
             <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> تطبيق ونشر قالب الكتلة الدوري على لاعب
+              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> Deploy Block Template to Athlete
             </h3>
-            <div className="space-y-4 text-right">
+            <div className="space-y-4 text-left">
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">اختر اللاعب المستهدف:</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Select Athlete:</label>
                 <select
                   value={deployBlockModal.athleteId}
                   onChange={(e) => setDeployBlockModal({ ...deployBlockModal, athleteId: e.target.value })}
                   className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
                 >
-                  <option value="">-- اختر لاعب --</option>
+                  <option value="">-- Select Athlete --</option>
                   {athletes.map(a => (
                     <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
@@ -3594,7 +3740,7 @@ export default function WeeklyPlanner() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">تاريخ بداية التطبيق (السبت):</label>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 mb-1">Start Date (Saturday):</label>
                 <input
                   type="date"
                   value={deployBlockModal.startDate}
@@ -3602,7 +3748,7 @@ export default function WeeklyPlanner() {
                   className="w-full text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl outline-none focus:ring-2 focus:ring-orange-500 dark:text-white font-bold"
                 />
                 <p className="text-[10px] text-slate-400 mt-1">
-                  ⚠️ ملحوظة: سيتم نسخ كامل أسابيع الفترات التدريبية الأربعة تلقائياً بدءاً من هذا التاريخ بشكل متعاقب.
+                  ⚠️ Note: All phases and weeks will be deployed consecutively starting from this date.
                 </p>
               </div>
             </div>
@@ -3612,13 +3758,13 @@ export default function WeeklyPlanner() {
                 onClick={executeDeployBlock}
                 className="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-1.5"
               >
-                تأكيد النشر والتطبيق
+                Confirm Deploy
               </button>
               <button
                 onClick={() => setDeployBlockModal({ isOpen: false, blockId: null, athleteId: '', startDate: '' })}
                 className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-750 dark:text-slate-200 rounded-xl font-bold text-xs transition-all"
               >
-                إلغاء
+                Cancel
               </button>
             </div>
           </div>
@@ -3731,7 +3877,7 @@ export default function WeeklyPlanner() {
           {/* Desktop/Print Grid Layout */}
           <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-[1100px] xl:w-full min-w-full`}>
             {DAYS_OF_WEEK.map((day, index) => {
-              const fullDateStr = isTemplateEditing ? "يوم تدريبي / Template Day" : weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+              const fullDateStr = isTemplateEditing ? "Training Day" : weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
@@ -3904,7 +4050,7 @@ export default function WeeklyPlanner() {
             {(() => {
               const day = activeMobileDay;
               const index = DAYS_OF_WEEK.indexOf(day);
-              const fullDateStr = isTemplateEditing ? "يوم تدريبي / Template Day" : weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
+              const fullDateStr = isTemplateEditing ? "Training Day" : weekDatesFull[index]?.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' }) || '';
               const dayDrills = schedule[day] || [];
               const dayStats = calculateDayVolume(dayDrills);
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;

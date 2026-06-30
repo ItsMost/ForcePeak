@@ -330,7 +330,7 @@ export default function Header({
               className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${currentView === 'dashboard' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
             >
               <LayoutDashboard className="w-3.5 h-3.5" />
-              <span>الرئيسية</span>
+              <span>Dashboard</span>
             </button>
             <button 
               onClick={() => { if (selectedAthlete) setCurrentView('planner'); }} 
@@ -338,7 +338,7 @@ export default function Header({
               className={`px-3 py-1.5 rounded-lg font-bold text-[10px] sm:text-xs transition-all flex items-center gap-1.5 select-none ${!selectedAthlete ? 'opacity-50 cursor-not-allowed' : ''} ${currentView === 'planner' ? 'bg-orange-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800 dark:hover:text-white hover:bg-white dark:hover:bg-slate-850'}`}
             >
               <CalendarIcon className="w-3.5 h-3.5" />
-              <span>المخطط</span>
+              <span>Weekly Planner</span>
             </button>
           </div>
         </div>
@@ -381,7 +381,7 @@ export default function Header({
           <button 
             onClick={() => setShowPeriodizationPlanner(true)} 
             className="p-1.5 bg-white dark:bg-slate-850 border border-slate-150 dark:border-slate-800/80 rounded-full hover:text-orange-500 transition-colors shadow-sm ml-1 shrink-0" 
-            title="Periodization Planner / مخطط الدورات التدريبية"
+            title="Periodization Planner"
           >
             <Layers className="w-3.5 h-3.5 text-slate-500" />
           </button>
@@ -579,7 +579,7 @@ export default function Header({
                       }}
                       className="w-full text-right px-3 py-1.5 text-xs font-bold text-orange-600 dark:text-orange-400 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-lg transition-colors flex items-center gap-1.5"
                     >
-                      <Activity className="w-3.5 h-3.5" /> العودة للمخطط الفعلي للاعبين
+                      <Activity className="w-3.5 h-3.5" /> Live Athlete Mode
                     </button>
                   </div>
                   <div className="w-full h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
@@ -597,7 +597,7 @@ export default function Header({
                             setSelectedAthleteId(null);
                             setIsBlockDropdownOpen(false); 
                             setBlockSearch(''); 
-                            handleToast(`قالب: ${block.program_name}`); 
+                            handleToast(`Template: ${block.program_name}`); 
                           }} 
                           className={`flex-1 text-right text-xs font-black uppercase truncate pr-2 dark:text-slate-250 ${selectedBlockId === block.id ? 'text-violet-600 dark:text-violet-400 font-bold' : 'text-slate-700 dark:text-slate-200'}`}
                         >
@@ -623,10 +623,10 @@ export default function Header({
                 handleToast('Switched to Live Athlete Mode');
               }}
               className="px-3 py-1.5 bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/30 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm shrink-0 cursor-pointer"
-              title="Exit Editing / العودة للاعبين"
+              title="Exit Editing"
             >
               <Activity className="w-3.5 h-3.5" />
-              <span>إنهاء التعديل / Exit Edit</span>
+              <span>Exit Edit</span>
             </button>
           )}
 
@@ -636,7 +636,7 @@ export default function Header({
           <button 
             onClick={() => setSaveWeekTemplateModal({ isOpen: true, name: '' })} 
             className="hidden sm:inline-flex p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 hover:bg-orange-50/50 dark:hover:bg-orange-950/20 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-850 transition-all shrink-0 shadow-sm" 
-            title="Save Week Template / حفظ الأسبوع"
+            title="Save Week Template"
           >
             <BookmarkPlus className="w-4 h-4" />
           </button>

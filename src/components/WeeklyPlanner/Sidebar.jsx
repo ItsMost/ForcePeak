@@ -37,7 +37,7 @@ export default function Sidebar({
           <Calendar className="w-5 h-5" />
         </button>
 
-        <button onClick={onToggleFourWeekView} className={`p-2 md:p-3 rounded-xl transition-all ${isFourWeekView ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'text-slate-400 hover:text-orange-500'}`} title="عرض 4 أسابيع / 4-Week Sheet View">
+        <button onClick={onToggleFourWeekView} className={`p-2 md:p-3 rounded-xl transition-all ${isFourWeekView ? 'text-orange-500 bg-orange-50 dark:bg-orange-950/20' : 'text-slate-400 hover:text-orange-500'}`} title="4-Week Sheet View">
           <FileText className="w-5 h-5" />
         </button>
 
@@ -46,7 +46,7 @@ export default function Sidebar({
         </button>
 
         {isEditingBlock && (
-          <button onClick={onDeployBlock} className="p-2 md:p-3 text-violet-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 rounded-xl transition-all" title="Deploy Block to Athlete / تطبيق القالب على لاعب">
+          <button onClick={onDeployBlock} className="p-2 md:p-3 text-violet-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 rounded-xl transition-all" title="Deploy Block to Athlete">
             <Play className="w-5 h-5" />
           </button>
         )}
