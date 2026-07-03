@@ -368,13 +368,16 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             doc.setFontSize(8);
             doc.setFont(fName, 'bold');
             doc.setTextColor(0, 102, 204);
-            doc.text('🎥 Watch Video', margin + 10, y + 5 + (titleLines.length * 4), {
-              link: { url: drill.video_url.trim() }
-            });
-            const linkTextWidth = doc.getTextWidth('🎥 Watch Video');
+            const linkText = 'Watch Video';
+            const linkTextWidth = doc.getTextWidth(linkText);
+            const linkY = y + 5 + (titleLines.length * 4);
+            doc.text(linkText, margin + 10, linkY);
+            doc.link(margin + 10, linkY - 2.5, linkTextWidth, 3.5, { url: drill.video_url.trim() });
+            
+            // Draw underline
             doc.setDrawColor(0, 102, 204);
             doc.setLineWidth(0.15);
-            doc.line(margin + 10, y + 5 + (titleLines.length * 4) + 0.5, margin + 10 + linkTextWidth, y + 5 + (titleLines.length * 4) + 0.5);
+            doc.line(margin + 10, linkY + 0.5, margin + 10 + linkTextWidth, linkY + 0.5);
             doc.setFont(fName, 'bold');
           }
 
@@ -617,10 +620,12 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             doc.text(drillTitle.substring(0, 14), colX + 4.5, drillY + titleOffset);
             doc.setFontSize(titleFontSize - 0.5);
             doc.setTextColor(0, 102, 204);
-            doc.text('🎥 Link', colX + colWidth - 3, drillY + titleOffset, {
-              align: 'right',
-              link: { url: drill.video_url.trim() }
-            });
+            const linkText = 'Link';
+            const linkTextWidth = doc.getTextWidth(linkText);
+            const linkY = drillY + titleOffset;
+            const linkX = colX + colWidth - 3 - linkTextWidth;
+            doc.text(linkText, colX + colWidth - 3, linkY, { align: 'right' });
+            doc.link(linkX, linkY - 2.2, linkTextWidth, 3, { url: drill.video_url.trim() });
             doc.setFont(fName, 'bold');
           } else {
             doc.text(drillTitle.substring(0, 21), colX + 4.5, drillY + titleOffset);

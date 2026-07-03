@@ -9,6 +9,7 @@ import AthleteProfileModal from './AthleteProfileModal.jsx';
 import PeriodizationPlanner from './PeriodizationPlanner.jsx';
 import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
+import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
 
 const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', plyometric: 'Plyometric', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
 const PHASE_COLORS = [
@@ -309,6 +310,25 @@ export default function WeeklyPlanner() {
       handleToast('Error generating PDF');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handlePrintStudioHTML = () => {
+    setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
+    try {
+      generateWeeklyHTMLPrint({
+        schedule,
+        dayTitles,
+        weekDatesFull,
+        selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
+        calculateDayVolume,
+        orientation: printStudioModal.orientation,
+        theme: printStudioModal.theme
+      });
+      handleToast('Opened browser print preview!');
+    } catch (error) {
+      console.error('Error generating HTML Print:', error);
+      handleToast('Error starting print page');
     }
   };
 
@@ -3083,20 +3103,29 @@ export default function WeeklyPlanner() {
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center gap-4">
+            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-3">
               <button 
                 onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
-                className="px-6 py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all flex-1 text-center"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all text-center"
               >
                 Cancel
               </button>
-              <button 
-                onClick={handlePrintStudioSubmit} 
-                className="px-8 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2 flex-1"
-              >
-                <Printer className="w-4 h-4" />
-                Print Plan
-              </button>
+              <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3 flex-1 justify-end">
+                <button 
+                  onClick={handlePrintStudioHTML} 
+                  className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print via Browser (Best for Arabic/Links)
+                </button>
+                <button 
+                  onClick={handlePrintStudioSubmit} 
+                  className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  <FileText className="w-4 h-4" />
+                  Download PDF
+                </button>
+              </div>
             </div>
           </div>
         </div>
