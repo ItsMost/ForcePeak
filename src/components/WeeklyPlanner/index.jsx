@@ -348,7 +348,7 @@ export default function WeeklyPlanner() {
       handleToast('Generating PEAK FORCE Welcome Pack...');
     } catch (error) {
       console.error('Error generating Welcome Pack:', error);
-      handleToast('Error generating Welcome Pack');
+      handleToast('Error: ' + error.message);
     }
   };
 

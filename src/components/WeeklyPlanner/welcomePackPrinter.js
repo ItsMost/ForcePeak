@@ -28,6 +28,21 @@ export function generateWelcomePackHTML({
     gridBorder: '#444444'
   };
 
+  const getCategoryColor = (type) => {
+    const t = (typeof type === 'string') ? type.toLowerCase() : 'physical';
+    const types = {
+      strength: T.primary,
+      power: '#ef4444',
+      core: '#a855f7',
+      mobility: '#e11d48',
+      isometric: '#f97316',
+      physical: T.muted,
+      speed: '#10b981',
+      endurance: '#06b6d4'
+    };
+    return types[t] || T.muted;
+  };
+
   // Translation Dictionaries
   const dict = {
     cover: {
@@ -166,13 +181,15 @@ export function generateWelcomePackHTML({
       `;
     } else {
       drills.forEach((drill, index) => {
+        if (!drill) return;
         const catColor = getCategoryColor(drill.type || 'physical');
-        const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
+        const drillUnit = typeof drill.unit === 'string' ? drill.unit : '';
+        const isMeters = drillUnit.toLowerCase() === 'meters';
         const repsVal = isMeters ? drill.distance : drill.reps;
         
         let unitStr = '';
-        if (drill.unit) {
-          const u = drill.unit.toLowerCase();
+        if (drillUnit) {
+          const u = drillUnit.toLowerCase();
           if (u === 'meters') unitStr = 'm';
           else if (u === 'sec') unitStr = 's';
           else if (u === 'min') unitStr = 'm';
@@ -181,8 +198,8 @@ export function generateWelcomePackHTML({
 
         const intensityVal = drill.percentage ? `@${drill.percentage}%` : '';
 
-        // Clean double quotes
-        let cleanNotes = drill.details ? drill.details.trim() : '';
+        // Clean double quotes safely
+        let cleanNotes = drill.details ? String(drill.details).trim() : '';
         if (cleanNotes.startsWith('"') && cleanNotes.endsWith('"')) {
           cleanNotes = cleanNotes.substring(1, cleanNotes.length - 1);
         }
