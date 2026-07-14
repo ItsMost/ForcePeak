@@ -1,13 +1,15 @@
 /**
  * Welcome Pack HTML Print Engine for ForcePeak Weekly Planner.
- * Generates a premium 6-page athletic coaching welcome pack using a gritty, modern dark-mode style
+ * Generates a premium multi-page athletic coaching welcome pack using a gritty, modern dark-mode style
  * with athletic orange accents, 100% clickable links, and perfect bilingual/multilingual font rendering.
  * Features:
- * - Only displays active training days (skips rest days).
+ * - Dynamic page count (Cover, About, Philosophy, 1 page per Active Training Day, and a final Protocols Page).
+ * - Skips rest days entirely.
+ * - Each active day gets its own dedicated page with exercises laid out in a clean 2-column grid.
  * - Excludes day load points from training cards.
  * - Format reps/sec units explicitly (e.g. "8 reps", "30 sec", "40 m").
  * - English signature block with Head Coach Mahmoud Ali & Assistant Coach Mostafa Ali side-by-side.
- * - Simplified safe coach's note in summary card.
+ * - Final page uses a 2-column dashboard layout to show Nutrition, Check-ins, and the Weekly Summary.
  * - Minimalist thin line-art jumping athlete watermarks.
  * - Footer text is strictly in English: "PEAK FORCE ATHLETIC PERFORMANCE".
  */
@@ -112,12 +114,6 @@ export function generateWelcomePackHTML({
       }
     },
     page4: {
-      title: { en: 'Weekly Workout Blueprint - Part I', ar: 'مخطط التدريب الأسبوعي - الجزء الأول' },
-      title2: { en: 'Weekly Workout Blueprint - Part II', ar: 'مخطط التدريب الأسبوعي - الجزء الثاني' },
-      lead: {
-        en: 'Your current customized schedule and training layout. Check the video links for demonstrations.',
-        ar: 'جدولك التدريبي الحالي والمخصص. اضغط على روابط الفيديو لمشاهدة شرح التمارين وتكنيك الحركة.'
-      },
       days: {
         Saturday: { en: 'SATURDAY', ar: 'السبت' },
         Sunday: { en: 'SUNDAY', ar: 'الأحد' },
@@ -127,12 +123,7 @@ export function generateWelcomePackHTML({
         Thursday: { en: 'THURSDAY', ar: 'الخميس' },
         Friday: { en: 'FRIDAY', ar: 'الجمعة' }
       },
-      rest: { en: 'REST & ACTIVE RECOVERY', ar: 'راحة واستشفاء نشط' },
-      breakdownTitle: { en: 'Weekly Schedule Breakdown', ar: 'تفاصيل المخطط التدريبي الأسبوعي' },
-      breakdownDesc: {
-        en: '<strong>Days 1-2:</strong> Explosive Power & Max Strength (Neuromuscular development).<br/><strong>Day 3:</strong> Active Recovery & Mobility (Tissue adaptation).<br/><strong>Days 4-5:</strong> Vertical Jump Development & Accessory Work (Reactive strength).',
-        ar: '<strong>الأيام 1-2:</strong> القدرة التفجيرية والقوة القصوى (تطوير الجهاز العصبي العضلي).<br/><strong>اليوم 3:</strong> استشفاء نشط ومرونة حركية (تهيئة الأنسجة).<br/><strong>الأيام 4-5:</strong> تطوير القفز العمودي والتمارين المساعدة (القوة التفاعلية).'
-      }
+      rest: { en: 'REST & ACTIVE RECOVERY', ar: 'راحة واستشفاء نشط' }
     },
     page5: {
       title: { en: 'Nutrition & Check-In Protocol', ar: 'بروتوكول التغذية والمتابعة الأسبوعية' },
@@ -173,8 +164,23 @@ export function generateWelcomePackHTML({
   // Cover page language config
   const coverLang = (langMode === 'arabic') ? 'ar' : 'en';
 
-  // Helper to render a day card inside the 2-column print grid
-  const renderDayCardHTML = (day, dayIdx) => {
+  // Group active training days (skip rest days completely)
+  const activeDays = DAYS_OF_WEEK.filter(day => (schedule[day] || []).length > 0);
+  const totalActive = activeDays.length;
+  const totalPages = 4 + totalActive; // Cover (1) + About (2) + Philosophy (3) + Active Days (totalActive) + Protocols (1)
+
+  // Dynamic footer template
+  const getFooterHTML = (pageNum) => {
+    return `
+      <div class="page-footer ltr">
+        <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
+        <span>Page ${pageNum} of ${totalPages}</span>
+      </div>
+    `;
+  };
+
+  // Render a training day page with a 2-column exercise grid inside the page
+  const renderTrainingDayPageHTML = (day, dayIdx, pageNum) => {
     const drills = schedule[day] || [];
     const dateObj = weekDatesFull[dayIdx] ? new Date(weekDatesFull[dayIdx]) : null;
     const formattedDate = dateObj ? dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
@@ -233,61 +239,45 @@ export function generateWelcomePackHTML({
     const dayNameTranslated = dict.page4.days[day][langMode === 'english' ? 'en' : 'ar'];
 
     return `
-      <div class="day-card">
-        <div class="day-card-header">
-          <div>
-            <h3 class="day-card-name">${dayNameTranslated.toUpperCase()}</h3>
-            <span class="day-card-date">${formattedDate}</span>
+      <!-- DEDICATED TRAINING DAY PAGE -->
+      <section class="page">
+        <header class="page-header ltr">
+          <div class="header-left">
+            <div class="brand">Peak Force</div>
+            <div class="tag">Workout Blueprint</div>
           </div>
-        </div>
-        <div class="day-card-focus"><span>FOCUS:</span> ${dayTitle.toUpperCase()}</div>
-        <div class="day-card-drills">
+          <div class="header-right">${athleteName} // V1.0</div>
+        </header>
+
+        <h2 class="page-title ltr">${dayNameTranslated.toUpperCase()} <span class="day-card-date">${formattedDate}</span></h2>
+        <div class="intro-lead ltr">FOCUS: ${dayTitle.toUpperCase()}</div>
+
+        <!-- 2-Column Spacious Grid for Exercises on this Day -->
+        <div class="day-drills-grid ltr">
           ${drillsHtml}
         </div>
-      </div>
+
+        <!-- Smooth thin line-art jumping athlete watermark at the bottom of the page -->
+        <div class="jump-silhouette-container" style="margin-top: auto; margin-bottom: 20px;">
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="2.5" />
+            <path d="M12 7.5v6.5M8 11.5l4-2.5 4 2.5M7 21.5c1.5-2 3.5-3 5-3s3.5 1 5 3" />
+          </svg>
+        </div>
+
+        ${getFooterHTML(pageNum)}
+      </section>
     `;
   };
 
-  // Group active training days (skip rest days completely)
-  const activeDays = DAYS_OF_WEEK.filter(day => (schedule[day] || []).length > 0);
-  const totalActive = activeDays.length;
+  // Compile active day pages HTML content
+  let activeDaysPagesHtml = '';
+  activeDays.forEach((day, idx) => {
+    const originalIdx = DAYS_OF_WEEK.indexOf(day);
+    activeDaysPagesHtml += renderTrainingDayPageHTML(day, originalIdx, 4 + idx);
+  });
 
-  let page4Html = '';
-  let page5Html = '';
-
-  if (totalActive === 0) {
-    page4Html = `
-      <div class="empty-state" style="grid-column: span 2; padding: 60px;">
-        <div class="empty-title" style="font-size: 16px;">
-          ${langMode === 'english' ? 'REST & RECOVERY WEEK' : 'أسبوع استراحة واستشفاء نشط كامل'}
-        </div>
-      </div>
-    `;
-    page5Html = `
-      <div class="empty-state" style="grid-column: span 2; padding: 60px;">
-        <div class="empty-title" style="font-size: 16px;">
-          ${langMode === 'english' ? 'NO WORKOUTS SCHEDULED' : 'لا توجد تمارين تدريبية مجدولة'}
-        </div>
-      </div>
-    `;
-  } else {
-    // Split active days across Page 4 and Page 5
-    const half = Math.ceil(totalActive / 2);
-    const firstHalfDays = activeDays.slice(0, half);
-    const secondHalfDays = activeDays.slice(half);
-
-    firstHalfDays.forEach((day) => {
-      const originalIdx = DAYS_OF_WEEK.indexOf(day);
-      page4Html += renderDayCardHTML(day, originalIdx);
-    });
-
-    secondHalfDays.forEach((day) => {
-      const originalIdx = DAYS_OF_WEEK.indexOf(day);
-      page5Html += renderDayCardHTML(day, originalIdx);
-    });
-  }
-
-  // Prepare full 6-page HTML content
+  // Prepare full A4 HTML structure
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -323,10 +313,10 @@ export function generateWelcomePackHTML({
           text-align: center;
         }
 
-        /* 6-Page Grid Layout */
+        /* Page Layout */
         .page {
           width: 210mm;
-          min-height: 297mm;
+          height: 297mm;
           padding: 25mm 20mm;
           margin: 0 auto;
           position: relative;
@@ -336,6 +326,7 @@ export function generateWelcomePackHTML({
           break-after: page;
           display: flex;
           flex-direction: column;
+          overflow: hidden;
         }
         .page:last-child {
           border-bottom: none;
@@ -515,71 +506,28 @@ export function generateWelcomePackHTML({
           line-height: 1.5;
         }
 
-        /* Blueprint 2-Column Grid (Page 4 & 5) */
-        .blueprint-grid {
+        /* 2-Column Grid inside dedicated active day pages */
+        .day-drills-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 18px;
-          flex: 1;
+          gap: 16px;
         }
-        .day-card {
+
+        .day-card-date {
+          font-size: 16px;
+          color: ${T.muted};
+          font-weight: 700;
+          margin-left: 10px;
+        }
+        .drill-card {
           background-color: ${T.cardBg};
           border: 1px solid ${T.border};
           border-radius: 16px;
-          padding: 18px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          gap: 12px;
-          min-width: 0;
+          gap: 10px;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-        .day-card-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-bottom: 1.5px solid ${T.border};
-          padding-bottom: 8px;
-        }
-        .day-card-name {
-          font-size: 18px;
-          font-weight: 900;
-          color: ${T.primary};
-          letter-spacing: 0.5px;
-        }
-        .day-card-date {
-          font-size: 11px;
-          color: ${T.muted};
-          font-weight: 700;
-          margin-left: 6px;
-        }
-        .day-card-focus {
-          font-size: 11px;
-          font-weight: 800;
-          background-color: ${T.bg};
-          border: 1px solid ${T.border}80;
-          padding: 5px 12px;
-          border-radius: 8px;
-          color: ${T.text};
-        }
-        .day-card-focus span {
-          color: ${T.primary};
-          font-weight: 900;
-          margin-right: 4px;
-        }
-        .day-card-drills {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          flex: 1;
-        }
-        .drill-card {
-          background-color: ${T.bg};
-          border: 1px solid ${T.border};
-          border-radius: 12px;
-          padding: 12px 14px;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
         }
         .drill-header {
           display: flex;
@@ -603,7 +551,7 @@ export function generateWelcomePackHTML({
           font-weight: 900;
           color: ${T.text};
           flex-grow: 1;
-          word-break: break-word; /* Wrap naturally */
+          word-break: break-word; /* Wrap naturally without clipping */
         }
         .video-link {
           font-size: 9.5px;
@@ -626,7 +574,7 @@ export function generateWelcomePackHTML({
         }
         .param-badge {
           font-size: 10.5px;
-          background-color: ${T.cardBg};
+          background-color: ${T.bg};
           border: 1px solid ${T.border};
           padding: 3px 8px;
           border-radius: 6px;
@@ -662,9 +610,42 @@ export function generateWelcomePackHTML({
           text-align: center;
         }
 
-        /* Weekly Summary Card (Page 5 slot 4) */
+        /* Page 6: Protocols & Weekly Summary Dashboard */
+        .protocols-grid {
+          display: grid;
+          grid-template-columns: 1.05fr 0.95fr;
+          gap: 20px;
+          flex: 1;
+        }
+        .protocols-left {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+        .protocols-right {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
         .summary-card {
+          background-color: ${T.cardBg};
           border: 1.5px dashed ${T.primary}60;
+          border-radius: 16px;
+          padding: 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .summary-card-header {
+          border-bottom: 1.5px solid ${T.border};
+          padding-bottom: 8px;
+        }
+        .summary-card-name {
+          font-size: 16px;
+          font-weight: 900;
+          color: ${T.primary};
+          letter-spacing: 0.5px;
+          text-transform: uppercase;
         }
         .summary-body {
           display: flex;
@@ -704,19 +685,18 @@ export function generateWelcomePackHTML({
           display: flex;
           justify-content: center;
           align-items: center;
-          margin: 30px auto;
           opacity: 0.08; /* Super subtle, smooth watermark */
           width: 100%;
         }
         .jump-silhouette {
-          width: 130px;
-          height: 130px;
+          width: 120px;
+          height: 120px;
           color: ${T.primary};
         }
 
         /* Side-by-Side English Signature Block (Page 6) */
         .signature-row {
-          margin-top: 40px;
+          margin-top: 30px;
           display: flex;
           justify-content: space-between;
           gap: 40px;
@@ -777,7 +757,7 @@ export function generateWelcomePackHTML({
             padding: 20mm 15mm;
             border-bottom: none;
           }
-          .day-card {
+          .drill-card {
             box-shadow: none !important;
             border: 1px solid #333333 !important;
           }
@@ -816,10 +796,7 @@ export function generateWelcomePackHTML({
             </div>
           </div>
         </div>
-        <div class="page-footer ltr">
-          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
-          <span>Page 1 of 6</span>
-        </div>
+        ${getFooterHTML(1)}
       </section>
 
       <!-- PAGE 2: ABOUT THE PROGRAM -->
@@ -871,10 +848,7 @@ export function generateWelcomePackHTML({
           </svg>
         </div>
 
-        <div class="page-footer ltr">
-          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
-          <span>Page 2 of 6</span>
-        </div>
+        ${getFooterHTML(2)}
       </section>
 
       <!-- PAGE 3: TRAINING PHILOSOPHY -->
@@ -933,89 +907,13 @@ export function generateWelcomePackHTML({
           </svg>
         </div>
 
-        <div class="page-footer ltr">
-          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
-          <span>Page 3 of 6</span>
-        </div>
+        ${getFooterHTML(3)}
       </section>
 
-      <!-- PAGE 4: WEEKLY SCHEDULE - PART I (SATURDAY TO TUESDAY - ACTIVE DAYS ONLY) -->
-      <section class="page">
-        <header class="page-header ltr">
-          <div class="header-left">
-            <div class="brand">Peak Force</div>
-            <div class="tag">Weekly Blueprint // Part I</div>
-          </div>
-          <div class="header-right">${athleteName} // V1.0</div>
-        </header>
+      <!-- DYNAMIC ACTIVE TRAINING DAY PAGES (1 page per active day, 2-column exercise grid) -->
+      ${activeDaysPagesHtml}
 
-        <h2 class="page-title ltr">${getVal(dict.page4.title, true)}<span class="orange-dot">.</span></h2>
-        
-        <div class="intro-lead ${langMode === 'english' ? 'ltr' : 'rtl'}">
-          ${getVal(dict.page4.lead)}
-        </div>
-
-        <!-- 2-Column Spacious Grid for first half of active days -->
-        <div class="blueprint-grid ltr">
-          ${page4Html}
-        </div>
-
-        <div class="page-footer ltr">
-          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
-          <span>Page 4 of 6</span>
-        </div>
-      </section>
-
-      <!-- PAGE 5: WEEKLY SCHEDULE - PART II (WEDNESDAY TO FRIDAY + WEEK SUMMARY - ACTIVE DAYS ONLY) -->
-      <section class="page">
-        <header class="page-header ltr">
-          <div class="header-left">
-            <div class="brand">Peak Force</div>
-            <div class="tag">Weekly Blueprint // Part II</div>
-          </div>
-          <div class="header-right">${athleteName} // V1.0</div>
-        </header>
-
-        <h2 class="page-title ltr">${getVal(dict.page4.title2, true)}<span class="orange-dot">.</span></h2>
-
-        <!-- 2-Column Spacious Grid for second half of active days + Summary Slot -->
-        <div class="blueprint-grid ltr">
-          ${page5Html}
-          
-          <!-- Summary Card in Slot 4 -->
-          <div class="day-card summary-card">
-            <div class="day-card-header">
-              <span class="day-card-name">${langMode === 'english' ? 'WEEKLY LOAD PROFILE' : 'ملخص الحمل الأسبوعي'}</span>
-            </div>
-            <div class="summary-body">
-              <div class="summary-stat-row">
-                <span>${langMode === 'english' ? 'Active Training Days' : 'أيام التدريب الفعالة'}</span>
-                <strong>${totalActive} / 7 Days</strong>
-              </div>
-              <div class="summary-stat-row">
-                <span>${langMode === 'english' ? 'Total Exercises' : 'إجمالي عدد التمارين'}</span>
-                <strong>${DAYS_OF_WEEK.reduce((acc, d) => acc + (schedule[d]?.length || 0), 0)} Drills</strong>
-              </div>
-              <div class="summary-stat-row">
-                <span>${langMode === 'english' ? 'Target Athlete Level' : 'مستوى اللاعب المستهدف'}</span>
-                <strong class="text-orange">Elite Athletics</strong>
-              </div>
-              <div class="summary-advice">
-                ${langMode === 'english' 
-                  ? `💡 <strong>Coach Note:</strong> Focus on proper movement mechanics, record your working sets for technique verification, and communicate any fatigue fluctuations immediately.`
-                  : `💡 <strong>ملاحظة الكوتش:</strong> التزم التكنيك الفني الصحيح لكل تمرين وسجل مجموعاتك الأساسية للتعديل والمتابعة. تواصل مع المدرب في حال وجود أي استفسار.`}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="page-footer ltr">
-          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
-          <span>Page 5 of 6</span>
-        </div>
-      </section>
-
-      <!-- PAGE 6: CHECK-IN & NUTRITION -->
+      <!-- FINAL PAGE: PROTOCOLS & WEEKLY LOAD SUMMARY DASHBOARD -->
       <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
         <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
@@ -1027,31 +925,68 @@ export function generateWelcomePackHTML({
 
         <h2 class="page-title ${langMode === 'english' ? 'ltr' : 'ltr'}">${getVal(dict.page5.title, true)}<span class="orange-dot">.</span></h2>
 
-        <div class="intro-lead">
-          ${getVal(dict.page5.lead)}
-        </div>
+        <!-- Dashboard Layout: 2 Columns side-by-side -->
+        <div class="protocols-grid ltr">
+          
+          <!-- Left Column: Nutrition & Macronutrients -->
+          <div class="protocols-left ${langMode === 'english' ? 'ltr' : 'rtl'}">
+            <div class="intro-lead" style="margin-bottom: 12px;">
+              ${getVal(dict.page5.lead)}
+            </div>
+            
+            <p class="body-p" style="margin-bottom: 14px;">
+              <strong>${getVal(dict.page5.nutritionTitle, true)}:</strong> ${getVal(dict.page5.nutritionDesc)}
+            </p>
 
-        <p class="body-p">
-          <strong>${getVal(dict.page5.nutritionTitle, true)}:</strong> ${getVal(dict.page5.nutritionDesc)}
-        </p>
+            <div class="highlight-card" style="padding: 16px; margin-bottom: 0;">
+              <div class="highlight-title" style="font-size: 13.5px;">${getVal(dict.page5.macroTitle, true)}</div>
+              <p class="body-p" style="margin-bottom: 0; font-size: 11.5px; line-height: 1.4;">
+                ${getVal(dict.page5.macroDesc)}
+              </p>
+            </div>
+          </div>
 
-        <div class="highlight-card">
-          <div class="highlight-title">${getVal(dict.page5.macroTitle, true)}</div>
-          <p class="body-p" style="margin-bottom: 0; font-size: 11.5px;">
-            ${getVal(dict.page5.macroDesc)}
-          </p>
-        </div>
+          <!-- Right Column: Check-ins & Weekly Load Profile -->
+          <div class="protocols-right ${langMode === 'english' ? 'ltr' : 'rtl'}">
+            <div class="highlight-card" style="border-left: 4px solid ${T.primary}; padding: 16px; margin-bottom: 0;">
+              <div class="highlight-title" style="color: ${T.primary}; font-size: 13.5px;">${getVal(dict.page5.checkinTitle, true)}</div>
+              <p class="body-p" style="margin-bottom: 0; font-size: 11px; color: ${T.text}; font-weight: 600; line-height: 1.4;">
+                ${getVal(dict.page5.checkinDesc)}
+              </p>
+            </div>
 
-        <div class="highlight-card" style="border-left: 4px solid ${T.primary};">
-          <div class="highlight-title" style="color: ${T.primary};">${getVal(dict.page5.checkinTitle, true)}</div>
-          <p class="body-p" style="margin-bottom: 0; font-size: 11.5px; color: ${T.text}; font-weight: 600;">
-            ${getVal(dict.page5.checkinDesc)}
-          </p>
+            <!-- Weekly Summary Card -->
+            <div class="summary-card">
+              <div class="summary-card-header">
+                <span class="summary-card-name">${langMode === 'english' ? 'WEEKLY LOAD PROFILE' : 'ملخص الحمل الأسبوعي'}</span>
+              </div>
+              <div class="summary-body">
+                <div class="summary-stat-row">
+                  <span>${langMode === 'english' ? 'Active Training Days' : 'أيام التدريب الفعالة'}</span>
+                  <strong>${totalActive} / 7 Days</strong>
+                </div>
+                <div class="summary-stat-row">
+                  <span>${langMode === 'english' ? 'Total Exercises' : 'إجمالي عدد التمارين'}</span>
+                  <strong>${DAYS_OF_WEEK.reduce((acc, d) => acc + (schedule[d]?.length || 0), 0)} Drills</strong>
+                </div>
+                <div class="summary-stat-row">
+                  <span>${langMode === 'english' ? 'Target Athlete Level' : 'مستوى اللاعب المستهدف'}</span>
+                  <strong class="text-orange">Elite Athletics</strong>
+                </div>
+                <div class="summary-advice">
+                  ${langMode === 'english' 
+                    ? `💡 <strong>Coach Note:</strong> Focus on proper movement mechanics, record your working sets for technique verification, and communicate any fatigue fluctuations immediately.`
+                    : `💡 <strong>ملاحظة الكوتش:</strong> التزم التكنيك الفني الصحيح لكل تمرين وسجل مجموعاتك الأساسية للتعديل والمتابعة. تواصل مع المدرب في حال وجود أي استفسار.`}
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
 
         <!-- Jump Athlete Silhouette Watermark (Thin smooth line-art style) -->
         <div class="jump-silhouette-container" style="margin-top: 15px; margin-bottom: 10px;">
-          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 100px; height: 100px;">
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 80px; height: 80px;">
             <circle cx="12" cy="5" r="2.5" />
             <path d="M12 7.5v6.5M8 11.5l4-2.5 4 2.5M7 21.5c1.5-2 3.5-3 5-3s3.5 1 5 3" />
           </svg>
@@ -1071,10 +1006,7 @@ export function generateWelcomePackHTML({
           </div>
         </div>
 
-        <div class="page-footer ltr">
-          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
-          <span>Page 6 of 6</span>
-        </div>
+        ${getFooterHTML(totalPages)}
       </section>
 
     </body>
