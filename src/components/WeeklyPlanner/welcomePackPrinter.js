@@ -316,8 +316,8 @@ export function generateWelcomePackHTML({
         /* Page Layout */
         .page {
           width: 210mm;
-          height: 297mm;
-          padding: 25mm 20mm;
+          min-height: 297mm;
+          padding: 18mm 15mm;
           margin: 0 auto;
           position: relative;
           background-color: ${T.bg};
@@ -326,7 +326,6 @@ export function generateWelcomePackHTML({
           break-after: page;
           display: flex;
           flex-direction: column;
-          overflow: hidden;
         }
         .page:last-child {
           border-bottom: none;
@@ -753,8 +752,8 @@ export function generateWelcomePackHTML({
           }
           .page {
             width: 210mm;
-            height: 297mm;
-            padding: 20mm 15mm;
+            min-height: 297mm;
+            padding: 18mm 15mm;
             border-bottom: none;
           }
           .drill-card {
