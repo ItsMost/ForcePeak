@@ -2,7 +2,8 @@
  * Welcome Pack HTML Print Engine for ForcePeak Weekly Planner.
  * Generates a premium 6-page athletic coaching welcome pack using a gritty, modern dark-mode style
  * with athletic orange accents, 100% clickable links, and perfect bilingual/multilingual font rendering.
- * Splits the workout blueprint across 2 pages in a highly readable 2-column grid layout.
+ * Only displays active training days (skips rest days), splits workouts across 2 pages with large text,
+ * and includes customized coach signatures and jumping silhoutte watermarks.
  */
 export function generateWelcomePackHTML({ 
   schedule, 
@@ -43,21 +44,6 @@ export function generateWelcomePackHTML({
       endurance: '#06b6d4'
     };
     return types[t] || T.muted;
-  };
-
-  const getCategoryLabel = (type) => {
-    const t = (typeof type === 'string') ? type.toLowerCase() : 'physical';
-    const labels = {
-      strength: 'STRENGTH',
-      power: 'PLYOS',
-      core: 'CORE',
-      mobility: 'MOBILITY',
-      isometric: 'ISOMETRIC',
-      physical: 'PHYSICAL',
-      speed: 'SPEED',
-      endurance: 'ENDURANCE'
-    };
-    return labels[t] || 'DRILL';
   };
 
   // Translation Dictionaries
@@ -113,10 +99,10 @@ export function generateWelcomePackHTML({
         en: 'You must record your working sets for primary compound movements. Form dictates muscle recruitment. Send these videos to the coach weekly. We will analyze bar speed, joint angles, and mechanical deficits to adjust your cues and program parameters.',
         ar: 'يجب عليك تصوير مجموعات العمل الأساسية للتمارين المركبة. التكنيك هو ما يحدد تجنيد العضلات المناسبة. أرسل مقاطع الفيديو للمدرب أسبوعياً، حيث سنقوم بتحليل سرعة البار وزوايا الحركة وتعديل البرنامج بناءً عليها.'
       },
-      rule3Title: { en: 'Strict Consistency & Effort', ar: 'الالتزام التام وبذل أقصى جهد' },
+      rule3Title: { en: 'Strict Consistency & Commitment', ar: 'الالتزام التام والاستمرارية' },
       rule3Desc: {
-        en: 'Missed sessions break the adaptive chain. Every session, set, and rep must be executed with maximal intent. Moving a light weight with explosive velocity trains the nervous system; moving it slowly does not. Consistency is the foundation of peak physical performance.',
-        ar: 'الغياب أو التهاون يقطع سلسلة التكيف البدني. كل تكرار وكل مجموعة يجب أن تؤدى بأقصى سرعة وقوة تفجيرية لتدريب الجهاز العصبي بكفاءة. الالتزام المستمر هو الأساس لبناء بطل رياضي.'
+        en: 'Consistency is the ultimate driver of athletic progress. Missing sessions breaks the adaptive chain and resets your biological adaptations. Showing up and executing the plan day after day is what builds elite physical capacity. Commitment to the process is the foundation of peak performance.',
+        ar: 'الالتزام والاستمرارية هما المحركان الأساسيان للتطور الرياضي. الغياب وتفويت الحصص التدريبية يقطع سلسلة تكيف الجسم ويحرمك من النتائج. الانضباط اليومي وتنفيذ البرنامج التدريبي خطوة بخطوة هو ما يصنع الفارق الحقيقي ويبني الأداء البدني العالي.'
       }
     },
     page4: {
@@ -162,8 +148,7 @@ export function generateWelcomePackHTML({
       checkinDesc: {
         en: 'Every Friday, you must submit your weekly logs. Send video clips of your primary sets, record your bodyweight, and note your fatigue scores (1-10 CNS fatigue). Feedback and adjustments will be pushed before your Saturday workout.',
         ar: 'كل يوم جمعة، يجب عليك إرسال تقريرك الأسبوعي بشكل إلزامي. أرسل مقاطع الفيديو لأوزانك الأساسية، وسجل وزن جسمك، واكتب مستوى التعب العام لمراجعة وتحديث برنامجك قبل تمرين يوم السبت.'
-      },
-      aiPromptLabel: { en: 'Visual Design Prompt (Midjourney / DALL-E):', ar: 'مساعد التصميم البصري (Midjourney / DALL-E):' }
+      }
     }
   };
 
@@ -191,60 +176,51 @@ export function generateWelcomePackHTML({
     const dayVolume = calculateDayVolume(drills);
 
     let drillsHtml = '';
-    if (drills.length === 0) {
-      drillsHtml = `
-        <div class="empty-state">
-          <div class="empty-title">${dict.page4.rest[langMode === 'english' ? 'en' : 'ar']}</div>
+    drills.forEach((drill, index) => {
+      if (!drill) return;
+      const catColor = getCategoryColor(drill.type || 'physical');
+      const drillUnit = typeof drill.unit === 'string' ? drill.unit : '';
+      const isMeters = drillUnit.toLowerCase() === 'meters';
+      const repsVal = isMeters ? drill.distance : drill.reps;
+      
+      let unitStr = '';
+      if (drillUnit) {
+        const u = drillUnit.toLowerCase();
+        if (u === 'meters') unitStr = 'm';
+        else if (u === 'sec') unitStr = 's';
+        else if (u === 'min') unitStr = 'm';
+        else if (u === 'jumps') unitStr = 'j';
+      }
+
+      const intensityVal = drill.percentage ? `@${drill.percentage}%` : '';
+
+      // Clean double quotes safely
+      let cleanNotes = drill.details ? String(drill.details).trim() : '';
+      if (cleanNotes.startsWith('"') && cleanNotes.endsWith('"')) {
+        cleanNotes = cleanNotes.substring(1, cleanNotes.length - 1);
+      }
+
+      drillsHtml += `
+        <div class="drill-card" style="border-left: 5px solid ${catColor}">
+          <div class="drill-header">
+            <span class="drill-index" style="background-color: ${catColor}">${index + 1}</span>
+            <span class="drill-title">${drill.title || 'Unnamed Exercise'}</span>
+            ${drill.video_url ? `<a href="${drill.video_url.trim()}" target="_blank" class="video-link">Link</a>` : ''}
+          </div>
+          
+          <div class="drill-params">
+            ${drill.sets ? `<div class="param-badge"><strong>${drill.sets}</strong> Sets</div>` : ''}
+            ${repsVal ? `<div class="param-badge"><strong>${repsVal}${unitStr}</strong> Vol</div>` : ''}
+            ${intensityVal ? `<div class="param-badge text-orange"><strong>${intensityVal}</strong></div>` : ''}
+            ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest}</strong></div>` : ''}
+            ${drill.tempo ? `<div class="param-badge">T: <strong>${drill.tempo}</strong></div>` : ''}
+            ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${drill.focus}</div>` : ''}
+          </div>
+
+          ${cleanNotes ? `<div class="drill-notes">${cleanNotes}</div>` : ''}
         </div>
       `;
-    } else {
-      drills.forEach((drill, index) => {
-        if (!drill) return;
-        const catColor = getCategoryColor(drill.type || 'physical');
-        const catLabel = getCategoryLabel(drill.type || 'physical');
-        const drillUnit = typeof drill.unit === 'string' ? drill.unit : '';
-        const isMeters = drillUnit.toLowerCase() === 'meters';
-        const repsVal = isMeters ? drill.distance : drill.reps;
-        
-        let unitStr = '';
-        if (drillUnit) {
-          const u = drillUnit.toLowerCase();
-          if (u === 'meters') unitStr = 'm';
-          else if (u === 'sec') unitStr = 's';
-          else if (u === 'min') unitStr = 'm';
-          else if (u === 'jumps') unitStr = 'j';
-        }
-
-        const intensityVal = drill.percentage ? `@${drill.percentage}%` : '';
-
-        // Clean double quotes safely
-        let cleanNotes = drill.details ? String(drill.details).trim() : '';
-        if (cleanNotes.startsWith('"') && cleanNotes.endsWith('"')) {
-          cleanNotes = cleanNotes.substring(1, cleanNotes.length - 1);
-        }
-
-        drillsHtml += `
-          <div class="drill-card" style="border-left: 4px solid ${catColor}">
-            <div class="drill-header">
-              <span class="drill-index" style="background-color: ${catColor}">${index + 1}</span>
-              <span class="drill-title">${drill.title || 'Unnamed Exercise'}</span>
-              ${drill.video_url ? `<a href="${drill.video_url.trim()}" target="_blank" class="video-link">Link</a>` : ''}
-            </div>
-            
-            <div class="drill-params">
-              ${drill.sets ? `<div class="param-badge"><strong>${drill.sets}</strong> Sets</div>` : ''}
-              ${repsVal ? `<div class="param-badge"><strong>${repsVal}${unitStr}</strong> Vol</div>` : ''}
-              ${intensityVal ? `<div class="param-badge text-orange"><strong>${intensityVal}</strong></div>` : ''}
-              ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest}</strong></div>` : ''}
-              ${drill.tempo ? `<div class="param-badge">T: <strong>${drill.tempo}</strong></div>` : ''}
-              ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${drill.focus}</div>` : ''}
-            </div>
-
-            ${cleanNotes ? `<div class="drill-notes">${cleanNotes}</div>` : ''}
-          </div>
-        `;
-      });
-    }
+    });
 
     const dayNameTranslated = dict.page4.days[day][langMode === 'english' ? 'en' : 'ar'];
 
@@ -264,6 +240,49 @@ export function generateWelcomePackHTML({
       </div>
     `;
   };
+
+  // Group active training days (skip rest days completely)
+  const activeDays = DAYS_OF_WEEK.filter(day => (schedule[day] || []).length > 0);
+  const totalActive = activeDays.length;
+
+  let page4Html = '';
+  let page5Html = '';
+
+  if (totalActive === 0) {
+    page4Html = `
+      <div class="empty-state" style="grid-column: span 2; padding: 60px;">
+        <div class="empty-title" style="font-size: 16px;">
+          ${langMode === 'english' ? 'REST & RECOVERY WEEK' : 'أسبوع استراحة واستشفاء نشط كامل'}
+        </div>
+      </div>
+    `;
+    page5Html = `
+      <div class="empty-state" style="grid-column: span 2; padding: 60px;">
+        <div class="empty-title" style="font-size: 16px;">
+          ${langMode === 'english' ? 'NO WORKOUTS SCHEDULED' : 'لا توجد تمارين تدريبية مجدولة'}
+        </div>
+      </div>
+    `;
+  } else {
+    // Split active days across Page 4 and Page 5
+    const half = Math.ceil(totalActive / 2);
+    const firstHalfDays = activeDays.slice(0, half);
+    const secondHalfDays = activeDays.slice(half);
+
+    firstHalfDays.forEach((day) => {
+      const originalIdx = DAYS_OF_WEEK.indexOf(day);
+      page4Html += renderDayCardHTML(day, originalIdx);
+    });
+
+    secondHalfDays.forEach((day) => {
+      const originalIdx = DAYS_OF_WEEK.indexOf(day);
+      page5Html += renderDayCardHTML(day, originalIdx);
+    });
+  }
+
+  // Coach Signature translations
+  const coachNameTranslated = langMode === 'english' ? 'Coach Mahmoud Ali' : 'الكوتش محمود علي';
+  const coachTitleTranslated = langMode === 'english' ? 'PEAK FORCE Head Coach' : 'المدرب الرئيسي لبرنامج بييك فورس';
 
   // Prepare full 6-page HTML content
   const htmlContent = `
@@ -439,7 +458,7 @@ export function generateWelcomePackHTML({
           margin-bottom: 20px;
         }
         .body-p {
-          font-size: 13px;
+          font-size: 13.5px;
           color: ${T.muted};
           margin-bottom: 18px;
           text-align: justify;
@@ -452,7 +471,7 @@ export function generateWelcomePackHTML({
           margin-bottom: 24px;
         }
         .highlight-title {
-          font-size: 14px;
+          font-size: 14.5px;
           font-weight: 800;
           color: ${T.text};
           text-transform: uppercase;
@@ -481,29 +500,30 @@ export function generateWelcomePackHTML({
           line-height: 1;
         }
         .rule-content .rule-title {
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 800;
           color: ${T.text};
           text-transform: uppercase;
           margin-bottom: 6px;
         }
         .rule-content .rule-desc {
-          font-size: 12px;
+          font-size: 13px;
           color: ${T.muted};
+          line-height: 1.5;
         }
 
         /* Blueprint 2-Column Grid (Page 4 & 5) */
         .blueprint-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
-          gap: 16px;
+          gap: 18px;
           flex: 1;
         }
         .day-card {
           background-color: ${T.cardBg};
           border: 1px solid ${T.border};
           border-radius: 16px;
-          padding: 16px;
+          padding: 18px;
           display: flex;
           flex-direction: column;
           gap: 12px;
@@ -515,36 +535,36 @@ export function generateWelcomePackHTML({
           justify-content: space-between;
           align-items: center;
           border-bottom: 1.5px solid ${T.border};
-          padding-bottom: 6px;
+          padding-bottom: 8px;
         }
         .day-card-name {
-          font-size: 16px;
+          font-size: 18px;
           font-weight: 900;
           color: ${T.primary};
           letter-spacing: 0.5px;
         }
         .day-card-date {
-          font-size: 10px;
+          font-size: 11px;
           color: ${T.muted};
           font-weight: 700;
           margin-left: 6px;
         }
         .day-card-load {
-          font-size: 9px;
+          font-size: 10px;
           font-weight: 900;
           background-color: ${T.bg};
           border: 1px solid ${T.border};
           color: ${T.primary};
-          padding: 2px 8px;
+          padding: 3px 10px;
           border-radius: 20px;
           text-transform: uppercase;
         }
         .day-card-focus {
-          font-size: 9.5px;
+          font-size: 11px;
           font-weight: 800;
           background-color: ${T.bg};
           border: 1px solid ${T.border}80;
-          padding: 4px 10px;
+          padding: 5px 12px;
           border-radius: 8px;
           color: ${T.text};
         }
@@ -556,29 +576,29 @@ export function generateWelcomePackHTML({
         .day-card-drills {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
           flex: 1;
         }
         .drill-card {
           background-color: ${T.bg};
           border: 1px solid ${T.border};
-          border-radius: 10px;
-          padding: 10px 12px;
+          border-radius: 12px;
+          padding: 12px 14px;
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 8px;
         }
         .drill-header {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: 10px;
         }
         .drill-index {
-          font-size: 9.5px;
+          font-size: 10.5px;
           font-weight: 950;
           color: #ffffff;
-          width: 18px;
-          height: 18px;
+          width: 22px;
+          height: 22px;
           border-radius: 50%;
           display: flex;
           align-items: center;
@@ -586,20 +606,20 @@ export function generateWelcomePackHTML({
           flex-shrink: 0;
         }
         .drill-title {
-          font-size: 12px;
+          font-size: 13.5px;
           font-weight: 900;
           color: ${T.text};
           flex-grow: 1;
-          word-break: break-word; /* Let name wrap naturally without clipping! */
+          word-break: break-word; /* Wrap naturally */
         }
         .video-link {
-          font-size: 9px;
+          font-size: 9.5px;
           color: ${T.primary};
           text-decoration: none;
           font-weight: 800;
           border: 1px solid ${T.primary}40;
-          padding: 1px 6px;
-          border-radius: 4px;
+          padding: 2px 8px;
+          border-radius: 6px;
           background-color: ${T.primary}08;
           flex-shrink: 0;
         }
@@ -608,15 +628,15 @@ export function generateWelcomePackHTML({
         }
         .drill-params {
           display: flex;
-          gap: 4px;
+          gap: 6px;
           flex-wrap: wrap;
         }
         .param-badge {
-          font-size: 9.5px;
+          font-size: 10.5px;
           background-color: ${T.cardBg};
           border: 1px solid ${T.border};
-          padding: 2px 6px;
-          border-radius: 5px;
+          padding: 3px 8px;
+          border-radius: 6px;
           color: ${T.text};
           font-weight: 600;
         }
@@ -624,11 +644,11 @@ export function generateWelcomePackHTML({
           color: ${T.accent};
         }
         .drill-notes {
-          font-size: 10px;
+          font-size: 11px;
           font-style: italic;
           color: ${T.muted};
           border-top: 1px dashed ${T.border};
-          padding-top: 4px;
+          padding-top: 6px;
           line-height: 1.4;
           white-space: pre-line;
         }
@@ -638,12 +658,12 @@ export function generateWelcomePackHTML({
           align-items: center;
           justify-content: center;
           border: 1px dashed ${T.border};
-          border-radius: 10px;
+          border-radius: 12px;
           padding: 24px;
           background-color: ${T.bg}20;
         }
         .empty-title {
-          font-size: 10px;
+          font-size: 11px;
           font-weight: 900;
           color: ${T.muted};
           text-align: center;
@@ -656,15 +676,15 @@ export function generateWelcomePackHTML({
         .summary-body {
           display: flex;
           flex-direction: column;
-          gap: 10px;
+          gap: 12px;
           flex: 1;
         }
         .summary-stat-row {
           display: flex;
           justify-content: space-between;
-          font-size: 11px;
+          font-size: 12px;
           border-bottom: 1px solid ${T.border};
-          padding-bottom: 6px;
+          padding-bottom: 8px;
           font-weight: 700;
         }
         .summary-stat-row span {
@@ -677,13 +697,57 @@ export function generateWelcomePackHTML({
           color: ${T.primary} !important;
         }
         .summary-advice {
-          font-size: 10px;
-          line-height: 1.4;
+          font-size: 11px;
+          line-height: 1.5;
           color: ${T.muted};
           background-color: ${T.bg};
-          padding: 10px;
+          padding: 12px;
           border-radius: 8px;
           border: 1px solid ${T.border}80;
+        }
+
+        /* Jump Silhouette Graphic */
+        .jump-silhouette-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          margin: 30px auto;
+          opacity: 0.12; /* Subtle watermark */
+          width: 100%;
+        }
+        .jump-silhouette {
+          width: 160px;
+          height: 160px;
+          color: ${T.primary};
+        }
+
+        /* Signature Block */
+        .signature-block {
+          margin-top: 40px;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          width: 100%;
+        }
+        .signature-line {
+          width: 180px;
+          border-top: 2px solid ${T.primary};
+          margin-bottom: 8px;
+        }
+        .signature-text {
+          font-size: 14px;
+          font-weight: 900;
+          color: ${T.text};
+          text-transform: uppercase;
+          letter-spacing: 1px;
+        }
+        .signature-title {
+          font-size: 10.5px;
+          font-weight: 700;
+          color: ${T.muted};
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-top: 2px;
         }
 
         /* Generic Footer */
@@ -698,22 +762,6 @@ export function generateWelcomePackHTML({
           color: ${T.muted};
           text-transform: uppercase;
           letter-spacing: 1px;
-        }
-
-        /* Midjourney Image Generation Info Block */
-        .ai-prompt-box {
-          background-color: ${T.bg};
-          border: 1px dashed ${T.primary};
-          border-radius: 12px;
-          padding: 15px;
-          margin-top: 20px;
-          font-family: monospace;
-          font-size: 10px;
-          color: ${T.muted};
-          word-break: break-all;
-        }
-        .ai-prompt-box strong {
-          color: ${T.primary};
         }
 
         /* Print Media Overrides */
@@ -756,7 +804,7 @@ export function generateWelcomePackHTML({
             </div>
             <div class="meta-row">
               <span class="meta-label">${dict.cover.headCoach[coverLang]}</span>
-              <span class="meta-val">Coach MemoB</span>
+              <span class="meta-val">Mahmoud Ali</span>
             </div>
             <div class="meta-row">
               <span class="meta-label">${dict.cover.systemBlueprint[coverLang]}</span>
@@ -815,6 +863,14 @@ export function generateWelcomePackHTML({
           </p>
         </div>
 
+        <!-- Jump Athlete Silhouette Watermark -->
+        <div class="jump-silhouette-container">
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="15" cy="4" r="2" />
+            <path d="M11.5 9c-.6 0-1.1-.3-1.3-.8L8.4 5.3C8.1 4.5 7.3 4 6.5 4H3c-.6 0-1 .4-1 1s.4 1 1 1h3.5c.2 0 .4.1.5.3l1.8 2.9c.7 1.1 1.9 1.8 3.2 1.8H15c.6 0 1-.4 1-1s-.4-1-1-1h-3.5zm7.3.3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l2.3 2.3-4.2 8.4-4-6c-.3-.5-.8-.8-1.4-.8H7c-.6 0-1 .4-1 1s.4 1 1 1h2.5l3.8 5.7c.3.5.8.8 1.4.8.3 0 .6-.1.8-.3l5.3-10.6z" />
+          </svg>
+        </div>
+
         <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
           <span>Page 2 of 6</span>
@@ -869,13 +925,21 @@ export function generateWelcomePackHTML({
           </div>
         </div>
 
+        <!-- Jump Athlete Silhouette Watermark -->
+        <div class="jump-silhouette-container" style="margin-top: 15px;">
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="15" cy="4" r="2" />
+            <path d="M11.5 9c-.6 0-1.1-.3-1.3-.8L8.4 5.3C8.1 4.5 7.3 4 6.5 4H3c-.6 0-1 .4-1 1s.4 1 1 1h3.5c.2 0 .4.1.5.3l1.8 2.9c.7 1.1 1.9 1.8 3.2 1.8H15c.6 0 1-.4 1-1s-.4-1-1-1h-3.5zm7.3.3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l2.3 2.3-4.2 8.4-4-6c-.3-.5-.8-.8-1.4-.8H7c-.6 0-1 .4-1 1s.4 1 1 1h2.5l3.8 5.7c.3.5.8.8 1.4.8.3 0 .6-.1.8-.3l5.3-10.6z" />
+          </svg>
+        </div>
+
         <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
           <span>Page 3 of 6</span>
         </div>
       </section>
 
-      <!-- PAGE 4: WEEKLY SCHEDULE - PART I (SATURDAY TO TUESDAY) -->
+      <!-- PAGE 4: WEEKLY SCHEDULE - PART I (SATURDAY TO TUESDAY - ACTIVE DAYS ONLY) -->
       <section class="page">
         <header class="page-header ltr">
           <div class="header-left">
@@ -891,12 +955,9 @@ export function generateWelcomePackHTML({
           ${getVal(dict.page4.lead)}
         </div>
 
-        <!-- 2-Column Spacious Grid for Saturday to Tuesday -->
+        <!-- 2-Column Spacious Grid for first half of active days -->
         <div class="blueprint-grid ltr">
-          ${renderDayCardHTML('Saturday', 0)}
-          ${renderDayCardHTML('Sunday', 1)}
-          ${renderDayCardHTML('Monday', 2)}
-          ${renderDayCardHTML('Tuesday', 3)}
+          ${page4Html}
         </div>
 
         <div class="page-footer ltr">
@@ -905,7 +966,7 @@ export function generateWelcomePackHTML({
         </div>
       </section>
 
-      <!-- PAGE 5: WEEKLY SCHEDULE - PART II (WEDNESDAY TO FRIDAY + WEEK SUMMARY) -->
+      <!-- PAGE 5: WEEKLY SCHEDULE - PART II (WEDNESDAY TO FRIDAY + WEEK SUMMARY - ACTIVE DAYS ONLY) -->
       <section class="page">
         <header class="page-header ltr">
           <div class="header-left">
@@ -917,11 +978,9 @@ export function generateWelcomePackHTML({
 
         <h2 class="page-title ltr">${getVal(dict.page4.title2, true)}<span class="orange-dot">.</span></h2>
 
-        <!-- 2-Column Spacious Grid for Wednesday to Friday + Summary Slot -->
+        <!-- 2-Column Spacious Grid for second half of active days + Summary Slot -->
         <div class="blueprint-grid ltr">
-          ${renderDayCardHTML('Wednesday', 4)}
-          ${renderDayCardHTML('Thursday', 5)}
-          ${renderDayCardHTML('Friday', 6)}
+          ${page5Html}
           
           <!-- Summary Card in Slot 4 -->
           <div class="day-card summary-card">
@@ -930,8 +989,8 @@ export function generateWelcomePackHTML({
             </div>
             <div class="summary-body">
               <div class="summary-stat-row">
-                <span>${langMode === 'english' ? 'Scheduled Days' : 'أيام التدريب المبرمجة'}</span>
-                <strong>${DAYS_OF_WEEK.filter(d => schedule[d]?.length > 0).length} / 7 Days</strong>
+                <span>${langMode === 'english' ? 'Active Training Days' : 'أيام التدريب الفعالة'}</span>
+                <strong>${totalActive} / 7 Days</strong>
               </div>
               <div class="summary-stat-row">
                 <span>${langMode === 'english' ? 'Total Exercises' : 'إجمالي عدد التمارين'}</span>
@@ -990,10 +1049,19 @@ export function generateWelcomePackHTML({
           </p>
         </div>
 
-        <!-- AI Image Generation Prompt Box (Page 6 Footer Area, prompt remains in English for Midjourney) -->
-        <div class="ai-prompt-box ltr">
-          <strong>${dict.page5.aiPromptLabel[langMode === 'english' ? 'en' : 'ar']}</strong><br/>
-          A highly professional A4 PDF page design for a sports coaching welcome pack titled "PEAK FORCE", athletic and aggressive style, dark charcoal grey background with vibrant athletic orange accents, bold modern typography, minimal layout, biomechanics and sports performance theme, UI/UX editorial design, 8k resolution, photorealistic --ar 1:1.41
+        <!-- Jump Athlete Silhouette Watermark -->
+        <div class="jump-silhouette-container" style="margin-top: 15px; margin-bottom: 10px;">
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="currentColor" style="width: 100px; height: 100px;">
+            <circle cx="15" cy="4" r="2" />
+            <path d="M11.5 9c-.6 0-1.1-.3-1.3-.8L8.4 5.3C8.1 4.5 7.3 4 6.5 4H3c-.6 0-1 .4-1 1s.4 1 1 1h3.5c.2 0 .4.1.5.3l1.8 2.9c.7 1.1 1.9 1.8 3.2 1.8H15c.6 0 1-.4 1-1s-.4-1-1-1h-3.5zm7.3.3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l2.3 2.3-4.2 8.4-4-6c-.3-.5-.8-.8-1.4-.8H7c-.6 0-1 .4-1 1s.4 1 1 1h2.5l3.8 5.7c.3.5.8.8 1.4.8.3 0 .6-.1.8-.3l5.3-10.6z" />
+          </svg>
+        </div>
+
+        <!-- Coach Signature Block -->
+        <div class="signature-block ${langMode === 'english' ? 'ltr' : 'rtl'}" style="align-items: ${langMode === 'english' ? 'flex-end' : 'flex-start'};">
+          <div class="signature-line"></div>
+          <div class="signature-text">${coachNameTranslated}</div>
+          <div class="signature-title">${coachTitleTranslated}</div>
         </div>
 
         <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
