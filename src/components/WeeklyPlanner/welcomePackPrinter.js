@@ -1,7 +1,8 @@
 /**
  * Welcome Pack HTML Print Engine for ForcePeak Weekly Planner.
- * Generates a premium 5-page athletic coaching welcome pack using a gritty, modern dark-mode style
+ * Generates a premium 6-page athletic coaching welcome pack using a gritty, modern dark-mode style
  * with athletic orange accents, 100% clickable links, and perfect bilingual/multilingual font rendering.
+ * Splits the workout blueprint across 2 pages in a highly readable 2-column grid layout.
  */
 export function generateWelcomePackHTML({ 
   schedule, 
@@ -18,16 +19,17 @@ export function generateWelcomePackHTML({
 
   // Theme configuration (Gritty dark slate & energetic athletic orange)
   const T = {
-    bg: '#1a1a1a',          // Dark charcoal grey
-    cardBg: '#222222',      // Slightly lighter charcoal for cards
-    border: '#333333',
+    bg: '#121212',          // Ultra-dark charcoal
+    cardBg: '#1e1e1e',      // Slightly lighter charcoal for cards
+    border: '#2e2e2e',
     primary: '#ff6b00',     // Athletic Orange
     accent: '#f97316',
     text: '#ffffff',        // High contrast white
     muted: '#94a3b8',       // Slate 400
-    gridBorder: '#444444'
+    gridBorder: '#333333'
   };
 
+  // Category border colors mapping
   const getCategoryColor = (type) => {
     const t = (typeof type === 'string') ? type.toLowerCase() : 'physical';
     const types = {
@@ -41,6 +43,21 @@ export function generateWelcomePackHTML({
       endurance: '#06b6d4'
     };
     return types[t] || T.muted;
+  };
+
+  const getCategoryLabel = (type) => {
+    const t = (typeof type === 'string') ? type.toLowerCase() : 'physical';
+    const labels = {
+      strength: 'STRENGTH',
+      power: 'PLYOS',
+      core: 'CORE',
+      mobility: 'MOBILITY',
+      isometric: 'ISOMETRIC',
+      physical: 'PHYSICAL',
+      speed: 'SPEED',
+      endurance: 'ENDURANCE'
+    };
+    return labels[t] || 'DRILL';
   };
 
   // Translation Dictionaries
@@ -103,21 +120,22 @@ export function generateWelcomePackHTML({
       }
     },
     page4: {
-      title: { en: 'Weekly Workout Blueprint', ar: 'المخطط التدريبي الأسبوعي' },
+      title: { en: 'Weekly Workout Blueprint - Part I', ar: 'مخطط التدريب الأسبوعي - الجزء الأول' },
+      title2: { en: 'Weekly Workout Blueprint - Part II', ar: 'مخطط التدريب الأسبوعي - الجزء الثاني' },
       lead: {
         en: 'Your current customized schedule and training layout. Check the video links for demonstrations.',
         ar: 'جدولك التدريبي الحالي والمخصص. اضغط على روابط الفيديو لمشاهدة شرح التمارين وتكنيك الحركة.'
       },
       days: {
-        Saturday: { en: 'SAT', ar: 'السبت' },
-        Sunday: { en: 'SUN', ar: 'الأحد' },
-        Monday: { en: 'MON', ar: 'الإثنين' },
-        Tuesday: { en: 'TUE', ar: 'الثلاثاء' },
-        Wednesday: { en: 'WED', ar: 'الأربعاء' },
-        Thursday: { en: 'THU', ar: 'الخميس' },
-        Friday: { en: 'FRI', ar: 'الجمعة' }
+        Saturday: { en: 'SATURDAY', ar: 'السبت' },
+        Sunday: { en: 'SUNDAY', ar: 'الأحد' },
+        Monday: { en: 'MONDAY', ar: 'الإثنين' },
+        Tuesday: { en: 'TUESDAY', ar: 'الثلاثاء' },
+        Wednesday: { en: 'WEDNESDAY', ar: 'الأربعاء' },
+        Thursday: { en: 'THURSDAY', ar: 'الخميس' },
+        Friday: { en: 'FRIDAY', ar: 'الجمعة' }
       },
-      rest: { en: 'REST & RECOVERY', ar: 'راحة واستشفاء' },
+      rest: { en: 'REST & ACTIVE RECOVERY', ar: 'راحة واستشفاء نشط' },
       breakdownTitle: { en: 'Weekly Schedule Breakdown', ar: 'تفاصيل المخطط التدريبي الأسبوعي' },
       breakdownDesc: {
         en: '<strong>Days 1-2:</strong> Explosive Power & Max Strength (Neuromuscular development).<br/><strong>Day 3:</strong> Active Recovery & Mobility (Tissue adaptation).<br/><strong>Days 4-5:</strong> Vertical Jump Development & Accessory Work (Reactive strength).',
@@ -161,16 +179,16 @@ export function generateWelcomePackHTML({
     }
   };
 
-  // Cover page language config (Mix mode cover is entirely English)
+  // Cover page language config
   const coverLang = (langMode === 'arabic') ? 'ar' : 'en';
 
-  // Build Page 4 (Weekly Workout Blueprint Grid)
-  let daysHtml = '';
-  DAYS_OF_WEEK.forEach((day, dayIdx) => {
+  // Helper to render a day card inside the 2-column print grid
+  const renderDayCardHTML = (day, dayIdx) => {
     const drills = schedule[day] || [];
     const dateObj = weekDatesFull[dayIdx] ? new Date(weekDatesFull[dayIdx]) : null;
-    const formattedDate = dateObj ? dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' }) : day;
+    const formattedDate = dateObj ? dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
     const dayTitle = dayTitles[day] || 'Training Protocol';
+    const dayVolume = calculateDayVolume(drills);
 
     let drillsHtml = '';
     if (drills.length === 0) {
@@ -183,6 +201,7 @@ export function generateWelcomePackHTML({
       drills.forEach((drill, index) => {
         if (!drill) return;
         const catColor = getCategoryColor(drill.type || 'physical');
+        const catLabel = getCategoryLabel(drill.type || 'physical');
         const drillUnit = typeof drill.unit === 'string' ? drill.unit : '';
         const isMeters = drillUnit.toLowerCase() === 'meters';
         const repsVal = isMeters ? drill.distance : drill.reps;
@@ -205,16 +224,22 @@ export function generateWelcomePackHTML({
         }
 
         drillsHtml += `
-          <div class="drill-card" style="border-left: 3px solid ${catColor}">
+          <div class="drill-card" style="border-left: 4px solid ${catColor}">
             <div class="drill-header">
+              <span class="drill-index" style="background-color: ${catColor}">${index + 1}</span>
               <span class="drill-title">${drill.title || 'Unnamed Exercise'}</span>
               ${drill.video_url ? `<a href="${drill.video_url.trim()}" target="_blank" class="video-link">Link</a>` : ''}
             </div>
+            
             <div class="drill-params">
-              ${drill.sets ? `<span>${drill.sets}s x </span>` : ''}
-              ${repsVal ? `<span>${repsVal}${unitStr} </span>` : ''}
-              ${intensityVal ? `<span class="text-orange">${intensityVal}</span>` : ''}
+              ${drill.sets ? `<div class="param-badge"><strong>${drill.sets}</strong> Sets</div>` : ''}
+              ${repsVal ? `<div class="param-badge"><strong>${repsVal}${unitStr}</strong> Vol</div>` : ''}
+              ${intensityVal ? `<div class="param-badge text-orange"><strong>${intensityVal}</strong></div>` : ''}
+              ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest}</strong></div>` : ''}
+              ${drill.tempo ? `<div class="param-badge">T: <strong>${drill.tempo}</strong></div>` : ''}
+              ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${drill.focus}</div>` : ''}
             </div>
+
             ${cleanNotes ? `<div class="drill-notes">${cleanNotes}</div>` : ''}
           </div>
         `;
@@ -223,21 +248,24 @@ export function generateWelcomePackHTML({
 
     const dayNameTranslated = dict.page4.days[day][langMode === 'english' ? 'en' : 'ar'];
 
-    daysHtml += `
-      <div class="day-column">
-        <div class="day-col-header">
-          <div class="day-col-name">${dayNameTranslated.toUpperCase()}</div>
-          <div class="day-col-date">${formattedDate}</div>
+    return `
+      <div class="day-card">
+        <div class="day-card-header">
+          <div>
+            <h3 class="day-card-name">${dayNameTranslated.toUpperCase()}</h3>
+            <span class="day-card-date">${formattedDate}</span>
+          </div>
+          <span class="day-card-load">${dayVolume.totalVolumeScore} Load</span>
         </div>
-        <div class="day-col-focus">${dayTitle.toUpperCase()}</div>
-        <div class="day-col-drills">
+        <div class="day-card-focus"><span>FOCUS:</span> ${dayTitle.toUpperCase()}</div>
+        <div class="day-card-drills">
           ${drillsHtml}
         </div>
       </div>
     `;
-  });
+  };
 
-  // Prepare full 5-page HTML content
+  // Prepare full 6-page HTML content
   const htmlContent = `
     <!DOCTYPE html>
     <html lang="en">
@@ -273,7 +301,7 @@ export function generateWelcomePackHTML({
           text-align: center;
         }
 
-        /* 5-Page Grid Layout */
+        /* 6-Page Grid Layout */
         .page {
           width: 210mm;
           min-height: 297mm;
@@ -464,105 +492,145 @@ export function generateWelcomePackHTML({
           color: ${T.muted};
         }
 
-        /* Schedule Layout Grid (Page 4) */
-        .schedule-grid {
+        /* Blueprint 2-Column Grid (Page 4 & 5) */
+        .blueprint-grid {
           display: grid;
-          grid-template-columns: repeat(7, 1fr);
-          gap: 8px;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
           flex: 1;
         }
-        .day-column {
+        .day-card {
           background-color: ${T.cardBg};
           border: 1px solid ${T.border};
-          border-radius: 12px;
-          padding: 10px;
+          border-radius: 16px;
+          padding: 16px;
           display: flex;
           flex-direction: column;
-          gap: 8px;
+          gap: 12px;
           min-width: 0;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
-        .day-col-header {
+        .day-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           border-bottom: 1.5px solid ${T.border};
-          padding-bottom: 4px;
-          text-align: center;
+          padding-bottom: 6px;
         }
-        .day-col-name {
-          font-size: 12px;
+        .day-card-name {
+          font-size: 16px;
           font-weight: 900;
           color: ${T.primary};
+          letter-spacing: 0.5px;
         }
-        .day-col-date {
-          font-size: 9px;
+        .day-card-date {
+          font-size: 10px;
           color: ${T.muted};
-          font-weight: 600;
+          font-weight: 700;
+          margin-left: 6px;
         }
-        .day-col-focus {
-          font-size: 8px;
-          font-weight: 800;
+        .day-card-load {
+          font-size: 9px;
+          font-weight: 900;
           background-color: ${T.bg};
           border: 1px solid ${T.border};
-          padding: 3px 4px;
-          border-radius: 6px;
-          text-align: center;
+          color: ${T.primary};
+          padding: 2px 8px;
+          border-radius: 20px;
           text-transform: uppercase;
-          color: ${T.text};
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
         }
-        .day-col-drills {
+        .day-card-focus {
+          font-size: 9.5px;
+          font-weight: 800;
+          background-color: ${T.bg};
+          border: 1px solid ${T.border}80;
+          padding: 4px 10px;
+          border-radius: 8px;
+          color: ${T.text};
+        }
+        .day-card-focus span {
+          color: ${T.primary};
+          font-weight: 900;
+          margin-right: 4px;
+        }
+        .day-card-drills {
           display: flex;
           flex-direction: column;
-          gap: 6px;
+          gap: 10px;
           flex: 1;
         }
         .drill-card {
           background-color: ${T.bg};
           border: 1px solid ${T.border};
-          border-radius: 8px;
-          padding: 6px 8px;
+          border-radius: 10px;
+          padding: 10px 12px;
           display: flex;
           flex-direction: column;
-          gap: 3px;
+          gap: 6px;
         }
         .drill-header {
           display: flex;
-          justify-content: space-between;
           align-items: center;
-          gap: 4px;
+          gap: 8px;
         }
-        .drill-title {
-          font-size: 10px;
-          font-weight: 900;
-          color: ${T.text};
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-        }
-        .video-link {
-          font-size: 8px;
-          color: ${T.primary};
-          text-decoration: underline;
-          font-weight: 800;
+        .drill-index {
+          font-size: 9.5px;
+          font-weight: 950;
+          color: #ffffff;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
           flex-shrink: 0;
         }
-        .drill-params {
-          font-size: 8.5px;
-          font-weight: 700;
-          color: ${T.muted};
+        .drill-title {
+          font-size: 12px;
+          font-weight: 900;
+          color: ${T.text};
+          flex-grow: 1;
+          word-break: break-word; /* Let name wrap naturally without clipping! */
         }
-        .drill-params .text-orange {
+        .video-link {
+          font-size: 9px;
           color: ${T.primary};
+          text-decoration: none;
+          font-weight: 800;
+          border: 1px solid ${T.primary}40;
+          padding: 1px 6px;
+          border-radius: 4px;
+          background-color: ${T.primary}08;
+          flex-shrink: 0;
+        }
+        .video-link:hover {
+          background-color: ${T.primary}15;
+        }
+        .drill-params {
+          display: flex;
+          gap: 4px;
+          flex-wrap: wrap;
+        }
+        .param-badge {
+          font-size: 9.5px;
+          background-color: ${T.cardBg};
+          border: 1px solid ${T.border};
+          padding: 2px 6px;
+          border-radius: 5px;
+          color: ${T.text};
+          font-weight: 600;
+        }
+        .param-badge strong {
+          color: ${T.accent};
         }
         .drill-notes {
-          font-size: 8px;
+          font-size: 10px;
           font-style: italic;
           color: ${T.muted};
           border-top: 1px dashed ${T.border};
-          padding-top: 2px;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          padding-top: 4px;
+          line-height: 1.4;
+          white-space: pre-line;
         }
         .empty-state {
           flex: 1;
@@ -570,14 +638,52 @@ export function generateWelcomePackHTML({
           align-items: center;
           justify-content: center;
           border: 1px dashed ${T.border};
-          border-radius: 8px;
-          padding: 20px 4px;
+          border-radius: 10px;
+          padding: 24px;
+          background-color: ${T.bg}20;
         }
         .empty-title {
-          font-size: 8.5px;
+          font-size: 10px;
           font-weight: 900;
           color: ${T.muted};
           text-align: center;
+        }
+
+        /* Weekly Summary Card (Page 5 slot 4) */
+        .summary-card {
+          border: 1.5px dashed ${T.primary}60;
+        }
+        .summary-body {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          flex: 1;
+        }
+        .summary-stat-row {
+          display: flex;
+          justify-content: space-between;
+          font-size: 11px;
+          border-bottom: 1px solid ${T.border};
+          padding-bottom: 6px;
+          font-weight: 700;
+        }
+        .summary-stat-row span {
+          color: ${T.muted};
+        }
+        .summary-stat-row strong {
+          color: ${T.text};
+        }
+        .text-orange {
+          color: ${T.primary} !important;
+        }
+        .summary-advice {
+          font-size: 10px;
+          line-height: 1.4;
+          color: ${T.muted};
+          background-color: ${T.bg};
+          padding: 10px;
+          border-radius: 8px;
+          border: 1px solid ${T.border}80;
         }
 
         /* Generic Footer */
@@ -613,7 +719,7 @@ export function generateWelcomePackHTML({
         /* Print Media Overrides */
         @media print {
           body {
-            background-color: #1a1a1a !important;
+            background-color: #121212 !important;
             color: #ffffff !important;
             padding: 0;
           }
@@ -622,6 +728,10 @@ export function generateWelcomePackHTML({
             height: 297mm;
             padding: 20mm 15mm;
             border-bottom: none;
+          }
+          .day-card {
+            box-shadow: none !important;
+            border: 1px solid #333333 !important;
           }
           @page {
             size: A4 portrait;
@@ -660,7 +770,7 @@ export function generateWelcomePackHTML({
         </div>
         <div class="page-footer ${coverLang === 'ar' ? 'rtl' : 'ltr'}">
           <span>${coverLang === 'ar' ? 'بييك فورس للأداء الرياضي' : 'Peak Force Performance'}</span>
-          <span>Page 1 of 5</span>
+          <span>Page 1 of 6</span>
         </div>
       </section>
 
@@ -707,7 +817,7 @@ export function generateWelcomePackHTML({
 
         <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
-          <span>Page 2 of 5</span>
+          <span>Page 2 of 6</span>
         </div>
       </section>
 
@@ -761,16 +871,16 @@ export function generateWelcomePackHTML({
 
         <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
-          <span>Page 3 of 5</span>
+          <span>Page 3 of 6</span>
         </div>
       </section>
 
-      <!-- PAGE 4: WEEKLY SCHEDULE -->
+      <!-- PAGE 4: WEEKLY SCHEDULE - PART I (SATURDAY TO TUESDAY) -->
       <section class="page">
         <header class="page-header ltr">
           <div class="header-left">
             <div class="brand">Peak Force</div>
-            <div class="tag">Weekly Blueprint</div>
+            <div class="tag">Weekly Blueprint // Part I</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
         </header>
@@ -781,25 +891,72 @@ export function generateWelcomePackHTML({
           ${getVal(dict.page4.lead)}
         </div>
 
-        <!-- Schedule grid (LTR layout for weekly grid is better for A4 space) -->
-        <div class="schedule-grid ltr">
-          ${daysHtml}
-        </div>
-
-        <div class="highlight-card ${langMode === 'english' ? 'ltr' : 'rtl'}" style="margin-top: 20px; padding: 12px 16px; border-radius: 12px; margin-bottom: 0;">
-          <div class="highlight-title" style="font-size: 11px; margin-bottom: 4px;">${getVal(dict.page4.breakdownTitle, true)}</div>
-          <p class="body-p" style="font-size: 10px; margin-bottom: 0; line-height: 1.3;">
-            ${getVal(dict.page4.breakdownDesc)}
-          </p>
+        <!-- 2-Column Spacious Grid for Saturday to Tuesday -->
+        <div class="blueprint-grid ltr">
+          ${renderDayCardHTML('Saturday', 0)}
+          ${renderDayCardHTML('Sunday', 1)}
+          ${renderDayCardHTML('Monday', 2)}
+          ${renderDayCardHTML('Tuesday', 3)}
         </div>
 
         <div class="page-footer ltr">
           <span>Peak Force Performance</span>
-          <span>Page 4 of 5</span>
+          <span>Page 4 of 6</span>
         </div>
       </section>
 
-      <!-- PAGE 5: CHECK-IN & NUTRITION -->
+      <!-- PAGE 5: WEEKLY SCHEDULE - PART II (WEDNESDAY TO FRIDAY + WEEK SUMMARY) -->
+      <section class="page">
+        <header class="page-header ltr">
+          <div class="header-left">
+            <div class="brand">Peak Force</div>
+            <div class="tag">Weekly Blueprint // Part II</div>
+          </div>
+          <div class="header-right">${athleteName} // V1.0</div>
+        </header>
+
+        <h2 class="page-title ltr">${getVal(dict.page4.title2, true)}<span class="orange-dot">.</span></h2>
+
+        <!-- 2-Column Spacious Grid for Wednesday to Friday + Summary Slot -->
+        <div class="blueprint-grid ltr">
+          ${renderDayCardHTML('Wednesday', 4)}
+          ${renderDayCardHTML('Thursday', 5)}
+          ${renderDayCardHTML('Friday', 6)}
+          
+          <!-- Summary Card in Slot 4 -->
+          <div class="day-card summary-card">
+            <div class="day-card-header">
+              <span class="day-card-name">${langMode === 'english' ? 'WEEKLY LOAD PROFILE' : 'ملخص الحمل الأسبوعي'}</span>
+            </div>
+            <div class="summary-body">
+              <div class="summary-stat-row">
+                <span>${langMode === 'english' ? 'Scheduled Days' : 'أيام التدريب المبرمجة'}</span>
+                <strong>${DAYS_OF_WEEK.filter(d => schedule[d]?.length > 0).length} / 7 Days</strong>
+              </div>
+              <div class="summary-stat-row">
+                <span>${langMode === 'english' ? 'Total Exercises' : 'إجمالي عدد التمارين'}</span>
+                <strong>${DAYS_OF_WEEK.reduce((acc, d) => acc + (schedule[d]?.length || 0), 0)} Drills</strong>
+              </div>
+              <div class="summary-stat-row">
+                <span>${langMode === 'english' ? 'Target Athlete Level' : 'مستوى اللاعب المستهدف'}</span>
+                <strong class="text-orange">Elite Athletics</strong>
+              </div>
+              <div class="summary-advice">
+                ${langMode === 'english' 
+                  ? `💡 <strong>Coach Note:</strong> Focus on video cues and auto-regulation. Ensure proper recovery window between explosive plyo blocks and maximum strength sets.`
+                  : `💡 <strong>ملاحظة الكوتش:</strong> ركز على أداء التمارين بأقصى قدرة تفجيرية وصور مجموعاتك الفعالة. حافظ على فترات الراحة بين المجموعات لضمان التكيف العصبي الكامل.`}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-footer ltr">
+          <span>Peak Force Performance</span>
+          <span>Page 5 of 6</span>
+        </div>
+      </section>
+
+      <!-- PAGE 6: CHECK-IN & NUTRITION -->
       <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
         <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
@@ -833,7 +990,7 @@ export function generateWelcomePackHTML({
           </p>
         </div>
 
-        <!-- AI Image Generation Prompt Box (Page 5 Footer Area, prompt remains in English for Midjourney) -->
+        <!-- AI Image Generation Prompt Box (Page 6 Footer Area, prompt remains in English for Midjourney) -->
         <div class="ai-prompt-box ltr">
           <strong>${dict.page5.aiPromptLabel[langMode === 'english' ? 'en' : 'ar']}</strong><br/>
           A highly professional A4 PDF page design for a sports coaching welcome pack titled "PEAK FORCE", athletic and aggressive style, dark charcoal grey background with vibrant athletic orange accents, bold modern typography, minimal layout, biomechanics and sports performance theme, UI/UX editorial design, 8k resolution, photorealistic --ar 1:1.41
@@ -841,7 +998,7 @@ export function generateWelcomePackHTML({
 
         <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
-          <span>Page 5 of 5</span>
+          <span>Page 6 of 6</span>
         </div>
       </section>
 
