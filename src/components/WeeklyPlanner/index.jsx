@@ -10,6 +10,7 @@ import PeriodizationPlanner from './PeriodizationPlanner.jsx';
 import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
 import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
+import { generateWelcomePackHTML } from './welcomePackPrinter.js';
 
 const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', plyometric: 'Plyometric', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
 const PHASE_COLORS = [
@@ -329,6 +330,23 @@ export default function WeeklyPlanner() {
     } catch (error) {
       console.error('Error generating HTML Print:', error);
       handleToast('Error starting print page');
+    }
+  };
+
+  const handlePrintWelcomePack = () => {
+    setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
+    try {
+      generateWelcomePackHTML({
+        schedule,
+        dayTitles,
+        weekDatesFull,
+        selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
+        calculateDayVolume
+      });
+      handleToast('Generating PEAK FORCE Welcome Pack...');
+    } catch (error) {
+      console.error('Error generating Welcome Pack:', error);
+      handleToast('Error generating Welcome Pack');
     }
   };
 
@@ -3103,14 +3121,21 @@ export default function WeeklyPlanner() {
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-3">
               <button 
                 onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all text-center"
+                className="w-full md:w-auto px-5 py-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all text-center"
               >
                 Cancel
               </button>
-              <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3 flex-1 justify-end">
+              <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3 flex-1 justify-end">
+                <button 
+                  onClick={handlePrintWelcomePack} 
+                  className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-650 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Print Welcome Pack (5 Pages)
+                </button>
                 <button 
                   onClick={handlePrintStudioHTML} 
                   className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
