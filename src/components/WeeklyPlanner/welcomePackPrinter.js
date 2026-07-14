@@ -1,14 +1,15 @@
 /**
  * Welcome Pack HTML Print Engine for ForcePeak Weekly Planner.
  * Generates a premium 5-page athletic coaching welcome pack using a gritty, modern dark-mode style
- * with athletic orange accents, 100% clickable links, and perfect font rendering.
+ * with athletic orange accents, 100% clickable links, and perfect bilingual/multilingual font rendering.
  */
 export function generateWelcomePackHTML({ 
   schedule, 
   dayTitles, 
   weekDatesFull, 
   selectedAthlete, 
-  calculateDayVolume 
+  calculateDayVolume,
+  langMode = 'mix' // 'mix' | 'arabic' | 'english'
 }) {
   const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const athleteName = selectedAthlete ? selectedAthlete.name : 'Elite Athlete';
@@ -27,34 +28,126 @@ export function generateWelcomePackHTML({
     gridBorder: '#444444'
   };
 
-  // Category border colors mapping
-  const getCategoryColor = (type) => {
-    const types = {
-      strength: T.primary,
-      power: '#ef4444',
-      core: '#a855f7',
-      mobility: '#e11d48',
-      isometric: '#f97316',
-      physical: T.muted,
-      speed: '#10b981',
-      endurance: '#06b6d4'
-    };
-    return types[type.toLowerCase()] || T.muted;
+  // Translation Dictionaries
+  const dict = {
+    cover: {
+      tagline: { en: 'ATHLETIC PERFORMANCE LAB', ar: 'مختبر الأداء الرياضي والعضلي' },
+      title: { en: 'PEAK FORCE', ar: 'بييك فورس' },
+      subtitle: { en: 'Elite Athletic Performance & Strength Guide', ar: 'دليل الأداء الرياضي والقوة البدنية للنخبة' },
+      preparedFor: { en: 'Prepared For', ar: 'معد خصيصاً لـ' },
+      headCoach: { en: 'Head Coach', ar: 'المدرب الرئيسي' },
+      systemBlueprint: { en: 'System Blueprint', ar: 'النظام التدريبي' },
+      dateStart: { en: 'Date Start', ar: 'تاريخ البدء' }
+    },
+    page2: {
+      title: { en: 'Who Am I & Why Are You Here?', ar: 'من أنا ولماذا أنت هنا؟' },
+      lead: { 
+        en: 'This is not a recreational gym plan. This is a biomechanically-optimized sports performance system built for elite results.',
+        ar: 'هذا ليس برنامجًا تدريبيًا عاديًا للتسلية. هذا نظام متكامل لتحسين الأداء الرياضي والميكانيكا الحيوية مصمم خصيصًا للنخبة لتحقيق نتائج خارقة وقابلة للقياس.'
+      },
+      body: {
+        en: 'Most training regimens focus purely on vanity or basic hypertrophy. The PEAK FORCE system targets the central nervous system, muscle-tendon architecture, and raw athletic output. If you want to jump higher, sprint faster, and apply force instantly, you must train the qualities that govern those adaptations.',
+        ar: 'معظم البرامج التدريبية تركز فقط على الشكل الخارجي أو الضخامة العضلية البسيطة. لكن نظام PEAK FORCE يستهدف تحفيز الجهاز العصبي المركزي، وتطوير البنية الوترية والعضلية، والقدرة التفجيرية الخام. إذا كنت ترغب في زيادة القفز العمودي، وسرعة الجري، وتوليد القوة بشكل فوري، فعليك تدريب الصفات الحركية الفسيولوجية التي تحكم هذه التكيفات.'
+      },
+      point1Title: { en: '1. Biomechanics & Joint Integrity', ar: '1. الميكانيكا الحيوية وسلامة المفاصل' },
+      point1Desc: {
+        en: 'We align movement vectors with your specific anatomy. By training structural integrity through full range of motion and loaded mobility, we maximize force transfer while bulletproofing your joints.',
+        ar: 'نقوم بمحاذاة زوايا الحركة مع تشريحك الخاص. من خلال تدريب سلامة البنية الحركية عبر المدى الحركي الكامل والمرونة المحملة بالأوزان، نضمن أقصى انتقال للقوة مع حماية كاملة للمفاصل.'
+      },
+      point2Title: { en: '2. Rate of Force Development (RFD)', ar: '2. معدل توليد القوة (RFD)' },
+      point2Desc: {
+        en: 'Strength is useless if you cannot apply it in milliseconds. RFD dictates your explosiveness off the ground and sprint acceleration. We train the neuromuscular system to fire all motor units instantly.',
+        ar: 'القوة بلا سرعة لا قيمة لها في الملعب. معدل توليد القوة هو ما يحدد قدرتك التفجيرية وسرعة انطلاقك. نحن ندرب الجهاز العصبي لتجنيد الألياف العضلية فوراً وفي أجزاء من الثانية.'
+      },
+      point3Title: { en: '3. Measurable Performance Output', ar: '3. نتائج رياضية قابلة للقياس' },
+      point3Desc: {
+        en: 'We track progress using hard metrics: vertical jump height, sprint velocity, reactive strength index, and relative strength ratios. Numbers do not lie.',
+        ar: 'نحن نقيس التقدم باستخدام أرقام حقيقية وملموسة: ارتفاع القفز العمودي، وسرعة الجري، ومؤشر القوة التفاعلية، ونسب القوة النسبية لوزن الجسم. الأرقام لا تكذب.'
+      }
+    },
+    page3: {
+      title: { en: 'The Rules of the Game', ar: 'قواعد اللعبة وقوانين التدريب' },
+      lead: {
+        en: 'To achieve elite adaptations, we must follow a strict, non-negotiable set of training rules.',
+        ar: 'لتحقيق أفضل التكيفات الرياضية والبدنية، يجب الالتزام التام بالقواعد الثلاث التالية التي لا تقبل الجدال:'
+      },
+      rule1Title: { en: 'Auto-regulation (RPE & RIR)', ar: 'الضبط الذاتي للأحمال (RPE / RIR)' },
+      rule1Desc: {
+        en: 'Your body fluctuates daily based on sleep, stress, and recovery. Instead of chasing fixed numbers, we use Rate of Perceived Exertion (RPE). If you are feeling 100%, push the load. If you are fatigued, regulate the load downward. This prevents overtraining and guarantees consistent long-term progress.',
+        ar: 'تتغير طاقة جسمك ونشاطه يومياً بناءً على جودة النوم، التوتر، والاستشفاء. بدلاً من مطاردة أرقام جامدة، نستخدم مقياس الجهد المحسوس (RPE). إذا كنت بكامل طافتك اضغط في الوزن، وإذا كنت مجهداً خفف الحمل لحماية نفسك وضمان الاستمرار.'
+      },
+      rule2Title: { en: 'Video Analysis & Cues', ar: 'تحليل الفيديو والملاحظات الفنية' },
+      rule2Desc: {
+        en: 'You must record your working sets for primary compound movements. Form dictates muscle recruitment. Send these videos to the coach weekly. We will analyze bar speed, joint angles, and mechanical deficits to adjust your cues and program parameters.',
+        ar: 'يجب عليك تصوير مجموعات العمل الأساسية للتمارين المركبة. التكنيك هو ما يحدد تجنيد العضلات المناسبة. أرسل مقاطع الفيديو للمدرب أسبوعياً، حيث سنقوم بتحليل سرعة البار وزوايا الحركة وتعديل البرنامج بناءً عليها.'
+      },
+      rule3Title: { en: 'Strict Consistency & Effort', ar: 'الالتزام التام وبذل أقصى جهد' },
+      rule3Desc: {
+        en: 'Missed sessions break the adaptive chain. Every session, set, and rep must be executed with maximal intent. Moving a light weight with explosive velocity trains the nervous system; moving it slowly does not. Consistency is the foundation of peak physical performance.',
+        ar: 'الغياب أو التهاون يقطع سلسلة التكيف البدني. كل تكرار وكل مجموعة يجب أن تؤدى بأقصى سرعة وقوة تفجيرية لتدريب الجهاز العصبي بكفاءة. الالتزام المستمر هو الأساس لبناء بطل رياضي.'
+      }
+    },
+    page4: {
+      title: { en: 'Weekly Workout Blueprint', ar: 'المخطط التدريبي الأسبوعي' },
+      lead: {
+        en: 'Your current customized schedule and training layout. Check the video links for demonstrations.',
+        ar: 'جدولك التدريبي الحالي والمخصص. اضغط على روابط الفيديو لمشاهدة شرح التمارين وتكنيك الحركة.'
+      },
+      days: {
+        Saturday: { en: 'SAT', ar: 'السبت' },
+        Sunday: { en: 'SUN', ar: 'الأحد' },
+        Monday: { en: 'MON', ar: 'الإثنين' },
+        Tuesday: { en: 'TUE', ar: 'الثلاثاء' },
+        Wednesday: { en: 'WED', ar: 'الأربعاء' },
+        Thursday: { en: 'THU', ar: 'الخميس' },
+        Friday: { en: 'FRI', ar: 'الجمعة' }
+      },
+      rest: { en: 'REST & RECOVERY', ar: 'راحة واستشفاء' },
+      breakdownTitle: { en: 'Weekly Schedule Breakdown', ar: 'تفاصيل المخطط التدريبي الأسبوعي' },
+      breakdownDesc: {
+        en: '<strong>Days 1-2:</strong> Explosive Power & Max Strength (Neuromuscular development).<br/><strong>Day 3:</strong> Active Recovery & Mobility (Tissue adaptation).<br/><strong>Days 4-5:</strong> Vertical Jump Development & Accessory Work (Reactive strength).',
+        ar: '<strong>الأيام 1-2:</strong> القدرة التفجيرية والقوة القصوى (تطوير الجهاز العصبي العضلي).<br/><strong>اليوم 3:</strong> استشفاء نشط ومرونة حركية (تهيئة الأنسجة).<br/><strong>الأيام 4-5:</strong> تطوير القفز العمودي والتمارين المساعدة (القوة التفاعلية).'
+      }
+    },
+    page5: {
+      title: { en: 'Nutrition & Check-In Protocol', ar: 'بروتوكول التغذية والمتابعة الأسبوعية' },
+      lead: {
+        en: 'Adaptation does not happen in the gym; it happens during recovery, fueled by your nutrition.',
+        ar: 'التكيف والبناء لا يحدثان داخل صالة التدريب؛ بل يحدثان أثناء الاستشفاء والنوم، ووقود ذلك هو تغذيتك الرياضية.'
+      },
+      nutritionTitle: { en: 'Fueling for Performance', ar: 'التغذية للأداء الرياضي العالي' },
+      nutritionDesc: {
+        en: 'You must treat food as fuel. To build explosive power, your muscles require carbohydrates for rapid ATP synthesis and proteins for muscle fiber repair. Maintain a clean, whole-foods diet high in micronutrients and clean hydration.',
+        ar: 'يجب أن تعامل الطعام كوقود لجسمك. لبناء قدرة تفجيرية، تحتاج عضلاتك إلى الكربوهيدرات لإنتاج الطاقة السريعة (ATP) والبروتين لإصلاح الألياف العضلية. حافظ على نظام غذائي نظيف ومتكامل ونسبة ترطيب عالية.'
+      },
+      macroTitle: { en: 'Macronutrient Guidelines', ar: 'إرشادات المغذيات الكبرى الأساسية' },
+      macroDesc: {
+        en: '* <strong>Protein:</strong> 2.0g per kg of bodyweight daily (essential for muscle repair).<br/>* <strong>Carbohydrates:</strong> 4.0g - 6.0g per kg of bodyweight (essential for glycolytic energy).<br/>* <strong>Fats:</strong> 1.0g per kg of bodyweight (essential for hormonal health and joint recovery).',
+        ar: '* <strong>البروتين:</strong> 2.0 جم لكل كيلوجرام من وزن الجسم يومياً (أساسي لإصلاح العضلات).<br/>* <strong>الكربوهيدرات:</strong> 4.0 - 6.0 جم لكل كيلوجرام (أساسي لمخازن الطاقة والجلوكوز).<br/>* <strong>الدهون:</strong> 1.0 جم لكل كيلوجرام (هام للهرمونات وصحة المفاصل).'
+      },
+      checkinTitle: { en: 'Mandatory Friday Check-In', ar: 'التقرير الأسبوعي الإلزامي يوم الجمعة' },
+      checkinDesc: {
+        en: 'Every Friday, you must submit your weekly logs. Send video clips of your primary sets, record your bodyweight, and note your fatigue scores (1-10 CNS fatigue). Feedback and adjustments will be pushed before your Saturday workout.',
+        ar: 'كل يوم جمعة، يجب عليك إرسال تقريرك الأسبوعي بشكل إلزامي. أرسل مقاطع الفيديو لأوزانك الأساسية، وسجل وزن جسمك، واكتب مستوى التعب العام لمراجعة وتحديث برنامجك قبل تمرين يوم السبت.'
+      },
+      aiPromptLabel: { en: 'Visual Design Prompt (Midjourney / DALL-E):', ar: 'مساعد التصميم البصري (Midjourney / DALL-E):' }
+    }
   };
 
-  const getCategoryLabel = (type) => {
-    const labels = {
-      strength: 'STRENGTH',
-      power: 'PLYOS',
-      core: 'CORE',
-      mobility: 'MOBILITY',
-      isometric: 'ISOMETRIC',
-      physical: 'PHYSICAL',
-      speed: 'SPEED',
-      endurance: 'ENDURANCE'
-    };
-    return labels[type.toLowerCase()] || 'DRILL';
+  // Language selectors helper
+  const getVal = (dictObj, isHeadline = false) => {
+    if (langMode === 'english') {
+      return dictObj.en;
+    } else if (langMode === 'arabic') {
+      return dictObj.ar;
+    } else {
+      // 'mix' mode: Page 1 is English. Headlines are English. Body is Arabic.
+      return isHeadline ? dictObj.en : dictObj.ar;
+    }
   };
+
+  // Cover page language config (Mix mode cover is entirely English)
+  const coverLang = (langMode === 'arabic') ? 'ar' : 'en';
 
   // Build Page 4 (Weekly Workout Blueprint Grid)
   let daysHtml = '';
@@ -68,13 +161,12 @@ export function generateWelcomePackHTML({
     if (drills.length === 0) {
       drillsHtml = `
         <div class="empty-state">
-          <div class="empty-title">REST & RECOVERY</div>
+          <div class="empty-title">${dict.page4.rest[langMode === 'english' ? 'en' : 'ar']}</div>
         </div>
       `;
     } else {
       drills.forEach((drill, index) => {
         const catColor = getCategoryColor(drill.type || 'physical');
-        const catLabel = getCategoryLabel(drill.type || 'physical');
         const isMeters = drill.unit && drill.unit.toLowerCase() === 'meters';
         const repsVal = isMeters ? drill.distance : drill.reps;
         
@@ -112,10 +204,12 @@ export function generateWelcomePackHTML({
       });
     }
 
+    const dayNameTranslated = dict.page4.days[day][langMode === 'english' ? 'en' : 'ar'];
+
     daysHtml += `
       <div class="day-column">
         <div class="day-col-header">
-          <div class="day-col-name">${day.substring(0, 3).toUpperCase()}</div>
+          <div class="day-col-name">${dayNameTranslated.toUpperCase()}</div>
           <div class="day-col-date">${formattedDate}</div>
         </div>
         <div class="day-col-focus">${dayTitle.toUpperCase()}</div>
@@ -133,7 +227,7 @@ export function generateWelcomePackHTML({
     <head>
       <meta charset="UTF-8">
       <title>PEAK FORCE Welcome Pack - ${athleteName}</title>
-      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
       <style>
         * {
           box-sizing: border-box;
@@ -147,6 +241,19 @@ export function generateWelcomePackHTML({
           line-height: 1.6;
           -webkit-print-color-adjust: exact !important;
           print-color-adjust: exact !important;
+        }
+
+        /* Helper alignment classes */
+        .rtl {
+          direction: rtl;
+          text-align: right;
+        }
+        .ltr {
+          direction: ltr;
+          text-align: left;
+        }
+        .text-center {
+          text-align: center;
         }
 
         /* 5-Page Grid Layout */
@@ -282,7 +389,7 @@ export function generateWelcomePackHTML({
         }
         .intro-lead {
           font-size: 16px;
-          font-weight: 600;
+          font-weight: 700;
           color: ${T.primary};
           margin-bottom: 20px;
         }
@@ -509,107 +616,107 @@ export function generateWelcomePackHTML({
     <body>
 
       <!-- PAGE 1: COVER -->
-      <section class="page">
+      <section class="page ${coverLang === 'ar' ? 'rtl' : 'ltr'}">
         <div class="cover-container">
-          <div class="cover-tagline">Athletic Performance Lab</div>
-          <h1 class="cover-title">PEAK FORCE</h1>
-          <div class="cover-subtitle">Elite Athletic Performance & Strength Guide</div>
+          <div class="cover-tagline">${dict.cover.tagline[coverLang]}</div>
+          <h1 class="cover-title">${dict.cover.title[coverLang]}</h1>
+          <div class="cover-subtitle">${dict.cover.subtitle[coverLang]}</div>
           
           <div class="cover-meta">
             <div class="meta-row">
-              <span class="meta-label">Prepared For</span>
+              <span class="meta-label">${dict.cover.preparedFor[coverLang]}</span>
               <span class="meta-val orange">${athleteName}</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Head Coach</span>
+              <span class="meta-label">${dict.cover.headCoach[coverLang]}</span>
               <span class="meta-val">Coach MemoB</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">System Blueprint</span>
+              <span class="meta-label">${dict.cover.systemBlueprint[coverLang]}</span>
               <span class="meta-val">V1.0 (Active)</span>
             </div>
             <div class="meta-row">
-              <span class="meta-label">Date Start</span>
+              <span class="meta-label">${dict.cover.dateStart[coverLang]}</span>
               <span class="meta-val">${dateStart}</span>
             </div>
           </div>
         </div>
-        <div class="page-footer">
-          <span>Peak Force Performance</span>
+        <div class="page-footer ${coverLang === 'ar' ? 'rtl' : 'ltr'}">
+          <span>${coverLang === 'ar' ? 'بييك فورس للأداء الرياضي' : 'Peak Force Performance'}</span>
           <span>Page 1 of 5</span>
         </div>
       </section>
 
       <!-- PAGE 2: ABOUT THE PROGRAM -->
-      <section class="page">
-        <header class="page-header">
+      <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
+        <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
             <div class="brand">Peak Force</div>
-            <div class="tag">Program Overview</div>
+            <div class="tag">${langMode === 'english' ? 'Program Overview' : 'نظرة عامة على البرنامج'}</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
         </header>
 
-        <h2 class="page-title">Who Am I & Why Are You Here<span class="orange-dot">?</span></h2>
+        <h2 class="page-title ${langMode === 'english' ? 'ltr' : 'ltr'}">${getVal(dict.page2.title, true)}<span class="orange-dot">?</span></h2>
         
         <div class="intro-lead">
-          This is not a recreational gym plan. This is a biomechanically-optimized sports performance system built for elite results.
+          ${getVal(dict.page2.lead)}
         </div>
 
         <p class="body-p">
-          Most training regimens focus purely on vanity or basic hypertrophy. The <strong>PEAK FORCE</strong> system targets the central nervous system, muscle-tendon architecture, and raw athletic output. If you want to jump higher, sprint faster, and apply force instantly, you must train the qualities that govern those adaptations.
+          ${getVal(dict.page2.body)}
         </p>
 
         <div class="highlight-card">
-          <div class="highlight-title">1. Biomechanics & Joint Integrity</div>
+          <div class="highlight-title">${getVal(dict.page2.point1Title, true)}</div>
           <p class="body-p" style="margin-bottom: 0;">
-            We align movement vectors with your specific anatomy. By training structural integrity through full range of motion and loaded mobility, we maximize force transfer while bulletproofing your joints.
+            ${getVal(dict.page2.point1Desc)}
           </p>
         </div>
 
         <div class="highlight-card">
-          <div class="highlight-title">2. Rate of Force Development (RFD)</div>
+          <div class="highlight-title">${getVal(dict.page2.point2Title, true)}</div>
           <p class="body-p" style="margin-bottom: 0;">
-            Strength is useless if you cannot apply it in milliseconds. RFD dictates your explosiveness off the ground and sprint acceleration. We train the neuromuscular system to fire all motor units instantly.
+            ${getVal(dict.page2.point2Desc)}
           </p>
         </div>
 
         <div class="highlight-card">
-          <div class="highlight-title">3. Measurable Performance Output</div>
+          <div class="highlight-title">${getVal(dict.page2.point3Title, true)}</div>
           <p class="body-p" style="margin-bottom: 0;">
-            We track progress using hard metrics: vertical jump height, sprint velocity, reactive strength index, and relative strength ratios. Numbers do not lie.
+            ${getVal(dict.page2.point3Desc)}
           </p>
         </div>
 
-        <div class="page-footer">
-          <span>Peak Force Performance</span>
+        <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
+          <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
           <span>Page 2 of 5</span>
         </div>
       </section>
 
       <!-- PAGE 3: TRAINING PHILOSOPHY -->
-      <section class="page">
-        <header class="page-header">
+      <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
+        <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
             <div class="brand">Peak Force</div>
-            <div class="tag">Training Philosophy</div>
+            <div class="tag">${langMode === 'english' ? 'Training Philosophy' : 'فلسفة التدريب الرياضي'}</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
         </header>
 
-        <h2 class="page-title">The Rules of the Game<span class="orange-dot">.</span></h2>
+        <h2 class="page-title ${langMode === 'english' ? 'ltr' : 'ltr'}">${getVal(dict.page3.title, true)}<span class="orange-dot">.</span></h2>
 
         <div class="intro-lead">
-          To achieve elite adaptations, we must follow a strict, non-negotiable set of training rules.
+          ${getVal(dict.page3.lead)}
         </div>
 
         <div class="rules-list">
           <div class="rule-item">
             <div class="rule-number">01</div>
             <div class="rule-content">
-              <h3 class="rule-title">Auto-regulation (RPE & RIR)</h3>
+              <h3 class="rule-title">${getVal(dict.page3.rule1Title, true)}</h3>
               <p class="rule-desc">
-                Your body fluctuates daily based on sleep, stress, and recovery. Instead of chasing fixed numbers, we use Rate of Perceived Exertion (RPE). If you are feeling 100%, push the load. If you are fatigued, regulate the load downward. This prevents overtraining and guarantees consistent long-term progress.
+                ${getVal(dict.page3.rule1Desc)}
               </p>
             </div>
           </div>
@@ -617,9 +724,9 @@ export function generateWelcomePackHTML({
           <div class="rule-item">
             <div class="rule-number">02</div>
             <div class="rule-content">
-              <h3 class="rule-title">Video Analysis & Cues</h3>
+              <h3 class="rule-title">${getVal(dict.page3.rule2Title, true)}</h3>
               <p class="rule-desc">
-                You must record your working sets for primary compound movements. Form dictates muscle recruitment. Send these videos to the coach weekly. We will analyze bar speed, joint angles, and mechanical deficits to adjust your cues and program parameters.
+                ${getVal(dict.page3.rule2Desc)}
               </p>
             </div>
           </div>
@@ -627,23 +734,23 @@ export function generateWelcomePackHTML({
           <div class="rule-item">
             <div class="rule-number">03</div>
             <div class="rule-content">
-              <h3 class="rule-title">Strict Consistency & Effort</h3>
+              <h3 class="rule-title">${getVal(dict.page3.rule3Title, true)}</h3>
               <p class="rule-desc">
-                Missed sessions break the adaptive chain. Every session, set, and rep must be executed with maximal intent. Moving a light weight with explosive velocity trains the nervous system; moving it slowly does not. Consistency is the foundation of peak physical performance.
+                ${getVal(dict.page3.rule3Desc)}
               </p>
             </div>
           </div>
         </div>
 
-        <div class="page-footer">
-          <span>Peak Force Performance</span>
+        <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
+          <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
           <span>Page 3 of 5</span>
         </div>
       </section>
 
       <!-- PAGE 4: WEEKLY SCHEDULE -->
       <section class="page">
-        <header class="page-header">
+        <header class="page-header ltr">
           <div class="header-left">
             <div class="brand">Peak Force</div>
             <div class="tag">Weekly Blueprint</div>
@@ -651,76 +758,72 @@ export function generateWelcomePackHTML({
           <div class="header-right">${athleteName} // V1.0</div>
         </header>
 
-        <h2 class="page-title">Weekly Workout Blueprint<span class="orange-dot">.</span></h2>
+        <h2 class="page-title ltr">${getVal(dict.page4.title, true)}<span class="orange-dot">.</span></h2>
         
-        <div class="intro-lead">
-          Your current customized schedule and training layout. Check the video links for demonstrations.
+        <div class="intro-lead ${langMode === 'english' ? 'ltr' : 'rtl'}">
+          ${getVal(dict.page4.lead)}
         </div>
 
-        <!-- Landscape grid in A4 portrait columns -->
-        <div class="schedule-grid">
+        <!-- Schedule grid (LTR layout for weekly grid is better for A4 space) -->
+        <div class="schedule-grid ltr">
           ${daysHtml}
         </div>
 
-        <div class="highlight-card" style="margin-top: 20px; padding: 12px 16px; border-radius: 12px; margin-bottom: 0;">
-          <div class="highlight-title" style="font-size: 11px; margin-bottom: 4px;">Weekly Schedule Breakdown</div>
+        <div class="highlight-card ${langMode === 'english' ? 'ltr' : 'rtl'}" style="margin-top: 20px; padding: 12px 16px; border-radius: 12px; margin-bottom: 0;">
+          <div class="highlight-title" style="font-size: 11px; margin-bottom: 4px;">${getVal(dict.page4.breakdownTitle, true)}</div>
           <p class="body-p" style="font-size: 10px; margin-bottom: 0; line-height: 1.3;">
-            <strong>Days 1-2:</strong> Explosive Power & Max Strength (Neuromuscular development).<br/>
-            <strong>Day 3:</strong> Active Recovery & Mobility (Tissue adaptation).<br/>
-            <strong>Days 4-5:</strong> Vertical Jump Development & Accessory Work (Reactive strength).
+            ${getVal(dict.page4.breakdownDesc)}
           </p>
         </div>
 
-        <div class="page-footer">
+        <div class="page-footer ltr">
           <span>Peak Force Performance</span>
           <span>Page 4 of 5</span>
         </div>
       </section>
 
       <!-- PAGE 5: CHECK-IN & NUTRITION -->
-      <section class="page">
-        <header class="page-header">
+      <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
+        <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
             <div class="brand">Peak Force</div>
-            <div class="tag">Protocols</div>
+            <div class="tag">${langMode === 'english' ? 'Protocols' : 'البروتوكولات والمتابعة'}</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
         </header>
 
-        <h2 class="page-title">Nutrition & Check-In Protocol<span class="orange-dot">.</span></h2>
+        <h2 class="page-title ${langMode === 'english' ? 'ltr' : 'ltr'}">${getVal(dict.page5.title, true)}<span class="orange-dot">.</span></h2>
 
         <div class="intro-lead">
-          Adaptation does not happen in the gym; it happens during recovery, fueled by your nutrition.
+          ${getVal(dict.page5.lead)}
         </div>
 
         <p class="body-p">
-          <strong>Fueling for Performance:</strong> You must treat food as fuel. To build explosive power, your muscles require carbohydrates for rapid ATP synthesis and proteins for muscle fiber repair. Maintain a clean, whole-foods diet high in micronutrients and clean hydration.
+          <strong>${getVal(dict.page5.nutritionTitle, true)}:</strong> ${getVal(dict.page5.nutritionDesc)}
         </p>
 
         <div class="highlight-card">
-          <div class="highlight-title">Macronutrient Guidelines</div>
+          <div class="highlight-title">${getVal(dict.page5.macroTitle, true)}</div>
           <p class="body-p" style="margin-bottom: 0; font-size: 11.5px;">
-            * <strong>Protein:</strong> 2.0g per kg of bodyweight daily (essential for muscle repair).<br/>
-            * <strong>Carbohydrates:</strong> 4.0g - 6.0g per kg of bodyweight (essential for glycolytic energy).<br/>
-            * <strong>Fats:</strong> 1.0g per kg of bodyweight (essential for hormonal health and joint recovery).
+            ${getVal(dict.page5.macroDesc)}
           </p>
         </div>
 
         <div class="highlight-card" style="border-left: 4px solid ${T.primary};">
-          <div class="highlight-title" style="color: ${T.primary};">Mandatory Friday Check-In</div>
+          <div class="highlight-title" style="color: ${T.primary};">${getVal(dict.page5.checkinTitle, true)}</div>
           <p class="body-p" style="margin-bottom: 0; font-size: 11.5px; color: ${T.text}; font-weight: 600;">
-            Every Friday, you must submit your weekly logs. Send video clips of your primary sets, record your bodyweight, and note your fatigue scores (1-10 CNS fatigue). Feedback and adjustments will be pushed before your Saturday workout.
+            ${getVal(dict.page5.checkinDesc)}
           </p>
         </div>
 
-        <!-- AI Image Generation Prompt Box (Page 5 Footer Area) -->
-        <div class="ai-prompt-box">
-          <strong>Visual Design Prompt (Midjourney / DALL-E):</strong><br/>
+        <!-- AI Image Generation Prompt Box (Page 5 Footer Area, prompt remains in English for Midjourney) -->
+        <div class="ai-prompt-box ltr">
+          <strong>${dict.page5.aiPromptLabel[langMode === 'english' ? 'en' : 'ar']}</strong><br/>
           A highly professional A4 PDF page design for a sports coaching welcome pack titled "PEAK FORCE", athletic and aggressive style, dark charcoal grey background with vibrant athletic orange accents, bold modern typography, minimal layout, biomechanics and sports performance theme, UI/UX editorial design, 8k resolution, photorealistic --ar 1:1.41
         </div>
 
-        <div class="page-footer">
-          <span>Peak Force Performance</span>
+        <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
+          <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
           <span>Page 5 of 5</span>
         </div>
       </section>

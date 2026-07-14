@@ -226,6 +226,7 @@ export default function WeeklyPlanner() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
   const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
+  const [welcomePackModal, setWelcomePackModal] = useState({ isOpen: false, langMode: 'mix' });
 
   const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' });
   const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
@@ -333,15 +334,16 @@ export default function WeeklyPlanner() {
     }
   };
 
-  const handlePrintWelcomePack = () => {
-    setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
+  const handlePrintWelcomePack = (lang = 'mix') => {
+    setWelcomePackModal({ isOpen: false, langMode: 'mix' });
     try {
       generateWelcomePackHTML({
         schedule,
         dayTitles,
         weekDatesFull,
         selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
-        calculateDayVolume
+        calculateDayVolume,
+        langMode: lang
       });
       handleToast('Generating PEAK FORCE Welcome Pack...');
     } catch (error) {
@@ -3121,21 +3123,14 @@ export default function WeeklyPlanner() {
             </div>
 
             {/* Footer */}
-            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row justify-between items-center gap-3">
               <button 
                 onClick={() => setPrintStudioModal(prev => ({ ...prev, isOpen: false }))} 
-                className="w-full md:w-auto px-5 py-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all text-center"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-sm transition-all text-center"
               >
                 Cancel
               </button>
-              <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3 flex-1 justify-end">
-                <button 
-                  onClick={handlePrintWelcomePack} 
-                  className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-650 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
-                >
-                  <Sparkles className="w-4 h-4" />
-                  Print Welcome Pack (5 Pages)
-                </button>
+              <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3 flex-1 justify-end">
                 <button 
                   onClick={handlePrintStudioHTML} 
                   className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
@@ -3151,6 +3146,119 @@ export default function WeeklyPlanner() {
                   Download PDF
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {welcomePackModal.isOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl transition-all text-left">
+            {/* Header */}
+            <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-black text-white tracking-wide uppercase flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-orange-500" />
+                  PEAK FORCE Welcome Pack
+                </h3>
+                <p className="text-xs text-slate-400 font-semibold mt-1">Generate a premium 5-page athletic blueprint</p>
+              </div>
+              <button 
+                onClick={() => setWelcomePackModal(prev => ({ ...prev, isOpen: false }))}
+                className="p-1.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest block">Choose Language Mode</label>
+              
+              <div className="space-y-3">
+                {/* Mixed Option */}
+                <button
+                  type="button"
+                  onClick={() => setWelcomePackModal(prev => ({ ...prev, langMode: 'mix' }))}
+                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                    welcomePackModal.langMode === 'mix'
+                      ? 'border-orange-500 bg-orange-500/10 ring-2 ring-orange-500/20 text-white'
+                      : 'border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mt-1 flex-shrink-0 animate-pulse"></span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">Mixed Language / ميكس (Recommended)</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-1 leading-relaxed">English cover & headlines, Arabic body content for the athlete.</p>
+                    </div>
+                  </div>
+                  {welcomePackModal.langMode === 'mix' && (
+                    <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                  )}
+                </button>
+
+                {/* All Arabic Option */}
+                <button
+                  type="button"
+                  onClick={() => setWelcomePackModal(prev => ({ ...prev, langMode: 'arabic' }))}
+                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                    welcomePackModal.langMode === 'arabic'
+                      ? 'border-orange-500 bg-orange-500/10 ring-2 ring-orange-500/20 text-white'
+                      : 'border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mt-1 flex-shrink-0"></span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">All Arabic / عربي بالكامل</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-1 leading-relaxed">Cover, headlines, and entire booklet content in Arabic.</p>
+                    </div>
+                  </div>
+                  {welcomePackModal.langMode === 'arabic' && (
+                    <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                  )}
+                </button>
+
+                {/* All English Option */}
+                <button
+                  type="button"
+                  onClick={() => setWelcomePackModal(prev => ({ ...prev, langMode: 'english' }))}
+                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
+                    welcomePackModal.langMode === 'english'
+                      ? 'border-orange-500 bg-orange-500/10 ring-2 ring-orange-500/20 text-white'
+                      : 'border-slate-800 bg-slate-950/50 text-slate-300 hover:border-slate-700'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="w-2.5 h-2.5 rounded-full bg-orange-500 mt-1 flex-shrink-0"></span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">All English / إنجليزي بالكامل</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-1 leading-relaxed">Cover, headlines, and entire booklet content in English.</p>
+                    </div>
+                  </div>
+                  {welcomePackModal.langMode === 'english' && (
+                    <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="p-5 border-t border-slate-800 bg-slate-950/30 flex justify-between items-center gap-3">
+              <button 
+                onClick={() => setWelcomePackModal(prev => ({ ...prev, isOpen: false }))} 
+                className="px-5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-400 hover:text-white font-bold text-sm transition-all text-center flex-1"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handlePrintWelcomePack(welcomePackModal.langMode)} 
+                className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-650 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2 flex-1"
+              >
+                <Sparkles className="w-4 h-4" />
+                Generate
+              </button>
             </div>
           </div>
         </div>
@@ -3877,11 +3985,12 @@ export default function WeeklyPlanner() {
           onShowStats={() => setShowStatsModal(true)}
           onClearWeek={() => setDeleteConfirmation({isOpen: true, type: 'week'})} 
           onExportPDF={handleExportPDF}
-          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' })}
+          onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '', saveType: 'mix', deficitProtocol: 'FDP', level: 'Beginner' })}
           isEditingBlock={isEditingBlock}
           onDeployBlock={handleOpenDeployBlockModal}
           isFourWeekView={currentView === 'four_week'}
           onToggleFourWeekView={() => setCurrentView(currentView === 'four_week' ? 'planner' : 'four_week')}
+          onOpenWelcomePack={() => setWelcomePackModal({ isOpen: true, langMode: 'mix' })}
         />        <div className={`flex-1 overflow-x-auto overflow-y-auto pb-24 md:pb-0 relative scroll-smooth w-full transition-all duration-300 ${showLibrary ? 'md:mr-80' : ''}`}>
           
           {currentView === 'four_week' ? (
