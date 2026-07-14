@@ -2,8 +2,14 @@
  * Welcome Pack HTML Print Engine for ForcePeak Weekly Planner.
  * Generates a premium 6-page athletic coaching welcome pack using a gritty, modern dark-mode style
  * with athletic orange accents, 100% clickable links, and perfect bilingual/multilingual font rendering.
- * Only displays active training days (skips rest days), splits workouts across 2 pages with large text,
- * and includes customized coach signatures and jumping silhoutte watermarks.
+ * Features:
+ * - Only displays active training days (skips rest days).
+ * - Excludes day load points from training cards.
+ * - Format reps/sec units explicitly (e.g. "8 reps", "30 sec", "40 m").
+ * - English signature block with Head Coach Mahmoud Ali & Assistant Coach Mostafa Ali side-by-side.
+ * - Simplified safe coach's note in summary card.
+ * - Minimalist thin line-art jumping athlete watermarks.
+ * - Footer text is strictly in English: "PEAK FORCE ATHLETIC PERFORMANCE".
  */
 export function generateWelcomePackHTML({ 
   schedule, 
@@ -173,25 +179,27 @@ export function generateWelcomePackHTML({
     const dateObj = weekDatesFull[dayIdx] ? new Date(weekDatesFull[dayIdx]) : null;
     const formattedDate = dateObj ? dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
     const dayTitle = dayTitles[day] || 'Training Protocol';
-    const dayVolume = calculateDayVolume(drills);
 
     let drillsHtml = '';
     drills.forEach((drill, index) => {
       if (!drill) return;
       const catColor = getCategoryColor(drill.type || 'physical');
-      const drillUnit = typeof drill.unit === 'string' ? drill.unit : '';
-      const isMeters = drillUnit.toLowerCase() === 'meters';
-      const repsVal = isMeters ? drill.distance : drill.reps;
       
-      let unitStr = '';
-      if (drillUnit) {
-        const u = drillUnit.toLowerCase();
-        if (u === 'meters') unitStr = 'm';
-        else if (u === 'sec') unitStr = 's';
-        else if (u === 'min') unitStr = 'm';
-        else if (u === 'jumps') unitStr = 'j';
+      // Determine unit formatting: reps for counts, sec for timer holds
+      let repsUnitStr = '';
+      const drillUnit = typeof drill.unit === 'string' ? drill.unit.toLowerCase() : '';
+      if (drillUnit === 'sec' || drillUnit === 'seconds' || drillUnit === 's') {
+        repsUnitStr = 'sec';
+      } else if (drillUnit === 'min' || drillUnit === 'minutes' || drillUnit === 'm') {
+        repsUnitStr = 'min';
+      } else if (drillUnit === 'meters' || drillUnit === 'm') {
+        repsUnitStr = 'm';
+      } else {
+        repsUnitStr = 'reps';
       }
 
+      const repsVal = (drillUnit === 'meters' || drillUnit === 'm') ? drill.distance : drill.reps;
+      const repsDisplay = repsVal ? `${repsVal} ${repsUnitStr}` : '';
       const intensityVal = drill.percentage ? `@${drill.percentage}%` : '';
 
       // Clean double quotes safely
@@ -210,9 +218,9 @@ export function generateWelcomePackHTML({
           
           <div class="drill-params">
             ${drill.sets ? `<div class="param-badge"><strong>${drill.sets}</strong> Sets</div>` : ''}
-            ${repsVal ? `<div class="param-badge"><strong>${repsVal}${unitStr}</strong> Vol</div>` : ''}
+            ${repsDisplay ? `<div class="param-badge"><strong>${repsDisplay}</strong></div>` : ''}
             ${intensityVal ? `<div class="param-badge text-orange"><strong>${intensityVal}</strong></div>` : ''}
-            ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest}</strong></div>` : ''}
+            ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest} Rest</strong></div>` : ''}
             ${drill.tempo ? `<div class="param-badge">T: <strong>${drill.tempo}</strong></div>` : ''}
             ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${drill.focus}</div>` : ''}
           </div>
@@ -231,7 +239,6 @@ export function generateWelcomePackHTML({
             <h3 class="day-card-name">${dayNameTranslated.toUpperCase()}</h3>
             <span class="day-card-date">${formattedDate}</span>
           </div>
-          <span class="day-card-load">${dayVolume.totalVolumeScore} Load</span>
         </div>
         <div class="day-card-focus"><span>FOCUS:</span> ${dayTitle.toUpperCase()}</div>
         <div class="day-card-drills">
@@ -279,10 +286,6 @@ export function generateWelcomePackHTML({
       page5Html += renderDayCardHTML(day, originalIdx);
     });
   }
-
-  // Coach Signature translations
-  const coachNameTranslated = langMode === 'english' ? 'Coach Mahmoud Ali' : 'الكوتش محمود علي';
-  const coachTitleTranslated = langMode === 'english' ? 'PEAK FORCE Head Coach' : 'المدرب الرئيسي لبرنامج بييك فورس';
 
   // Prepare full 6-page HTML content
   const htmlContent = `
@@ -549,16 +552,6 @@ export function generateWelcomePackHTML({
           font-weight: 700;
           margin-left: 6px;
         }
-        .day-card-load {
-          font-size: 10px;
-          font-weight: 900;
-          background-color: ${T.bg};
-          border: 1px solid ${T.border};
-          color: ${T.primary};
-          padding: 3px 10px;
-          border-radius: 20px;
-          text-transform: uppercase;
-        }
         .day-card-focus {
           font-size: 11px;
           font-weight: 800;
@@ -706,31 +699,38 @@ export function generateWelcomePackHTML({
           border: 1px solid ${T.border}80;
         }
 
-        /* Jump Silhouette Graphic */
+        /* Smooth thin line-art jumping athlete watermark */
         .jump-silhouette-container {
           display: flex;
           justify-content: center;
           align-items: center;
           margin: 30px auto;
-          opacity: 0.12; /* Subtle watermark */
+          opacity: 0.08; /* Super subtle, smooth watermark */
           width: 100%;
         }
         .jump-silhouette {
-          width: 160px;
-          height: 160px;
+          width: 130px;
+          height: 130px;
           color: ${T.primary};
         }
 
-        /* Signature Block */
-        .signature-block {
+        /* Side-by-Side English Signature Block (Page 6) */
+        .signature-row {
           margin-top: 40px;
           display: flex;
-          flex-direction: column;
-          align-items: flex-end;
+          justify-content: space-between;
+          gap: 40px;
           width: 100%;
         }
+        .signature-col {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          flex: 1;
+        }
         .signature-line {
-          width: 180px;
+          width: 100%;
+          max-width: 180px;
           border-top: 2px solid ${T.primary};
           margin-bottom: 8px;
         }
@@ -742,7 +742,7 @@ export function generateWelcomePackHTML({
           letter-spacing: 1px;
         }
         .signature-title {
-          font-size: 10.5px;
+          font-size: 10px;
           font-weight: 700;
           color: ${T.muted};
           text-transform: uppercase;
@@ -816,8 +816,8 @@ export function generateWelcomePackHTML({
             </div>
           </div>
         </div>
-        <div class="page-footer ${coverLang === 'ar' ? 'rtl' : 'ltr'}">
-          <span>${coverLang === 'ar' ? 'بييك فورس للأداء الرياضي' : 'Peak Force Performance'}</span>
+        <div class="page-footer ltr">
+          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
           <span>Page 1 of 6</span>
         </div>
       </section>
@@ -863,16 +863,16 @@ export function generateWelcomePackHTML({
           </p>
         </div>
 
-        <!-- Jump Athlete Silhouette Watermark -->
+        <!-- Jump Athlete Silhouette Watermark (Thin smooth line-art style) -->
         <div class="jump-silhouette-container">
-          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="15" cy="4" r="2" />
-            <path d="M11.5 9c-.6 0-1.1-.3-1.3-.8L8.4 5.3C8.1 4.5 7.3 4 6.5 4H3c-.6 0-1 .4-1 1s.4 1 1 1h3.5c.2 0 .4.1.5.3l1.8 2.9c.7 1.1 1.9 1.8 3.2 1.8H15c.6 0 1-.4 1-1s-.4-1-1-1h-3.5zm7.3.3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l2.3 2.3-4.2 8.4-4-6c-.3-.5-.8-.8-1.4-.8H7c-.6 0-1 .4-1 1s.4 1 1 1h2.5l3.8 5.7c.3.5.8.8 1.4.8.3 0 .6-.1.8-.3l5.3-10.6z" />
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="2.5" />
+            <path d="M12 7.5v6.5M8 11.5l4-2.5 4 2.5M7 21.5c1.5-2 3.5-3 5-3s3.5 1 5 3" />
           </svg>
         </div>
 
-        <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
-          <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
+        <div class="page-footer ltr">
+          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
           <span>Page 2 of 6</span>
         </div>
       </section>
@@ -925,16 +925,16 @@ export function generateWelcomePackHTML({
           </div>
         </div>
 
-        <!-- Jump Athlete Silhouette Watermark -->
+        <!-- Jump Athlete Silhouette Watermark (Thin smooth line-art style) -->
         <div class="jump-silhouette-container" style="margin-top: 15px;">
-          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="currentColor">
-            <circle cx="15" cy="4" r="2" />
-            <path d="M11.5 9c-.6 0-1.1-.3-1.3-.8L8.4 5.3C8.1 4.5 7.3 4 6.5 4H3c-.6 0-1 .4-1 1s.4 1 1 1h3.5c.2 0 .4.1.5.3l1.8 2.9c.7 1.1 1.9 1.8 3.2 1.8H15c.6 0 1-.4 1-1s-.4-1-1-1h-3.5zm7.3.3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l2.3 2.3-4.2 8.4-4-6c-.3-.5-.8-.8-1.4-.8H7c-.6 0-1 .4-1 1s.4 1 1 1h2.5l3.8 5.7c.3.5.8.8 1.4.8.3 0 .6-.1.8-.3l5.3-10.6z" />
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="5" r="2.5" />
+            <path d="M12 7.5v6.5M8 11.5l4-2.5 4 2.5M7 21.5c1.5-2 3.5-3 5-3s3.5 1 5 3" />
           </svg>
         </div>
 
-        <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
-          <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
+        <div class="page-footer ltr">
+          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
           <span>Page 3 of 6</span>
         </div>
       </section>
@@ -961,7 +961,7 @@ export function generateWelcomePackHTML({
         </div>
 
         <div class="page-footer ltr">
-          <span>Peak Force Performance</span>
+          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
           <span>Page 4 of 6</span>
         </div>
       </section>
@@ -1002,15 +1002,15 @@ export function generateWelcomePackHTML({
               </div>
               <div class="summary-advice">
                 ${langMode === 'english' 
-                  ? `💡 <strong>Coach Note:</strong> Focus on video cues and auto-regulation. Ensure proper recovery window between explosive plyo blocks and maximum strength sets.`
-                  : `💡 <strong>ملاحظة الكوتش:</strong> ركز على أداء التمارين بأقصى قدرة تفجيرية وصور مجموعاتك الفعالة. حافظ على فترات الراحة بين المجموعات لضمان التكيف العصبي الكامل.`}
+                  ? `💡 <strong>Coach Note:</strong> Focus on proper movement mechanics, record your working sets for technique verification, and communicate any fatigue fluctuations immediately.`
+                  : `💡 <strong>ملاحظة الكوتش:</strong> التزم التكنيك الفني الصحيح لكل تمرين وسجل مجموعاتك الأساسية للتعديل والمتابعة. تواصل مع المدرب في حال وجود أي استفسار.`}
               </div>
             </div>
           </div>
         </div>
 
         <div class="page-footer ltr">
-          <span>Peak Force Performance</span>
+          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
           <span>Page 5 of 6</span>
         </div>
       </section>
@@ -1049,23 +1049,30 @@ export function generateWelcomePackHTML({
           </p>
         </div>
 
-        <!-- Jump Athlete Silhouette Watermark -->
+        <!-- Jump Athlete Silhouette Watermark (Thin smooth line-art style) -->
         <div class="jump-silhouette-container" style="margin-top: 15px; margin-bottom: 10px;">
-          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="currentColor" style="width: 100px; height: 100px;">
-            <circle cx="15" cy="4" r="2" />
-            <path d="M11.5 9c-.6 0-1.1-.3-1.3-.8L8.4 5.3C8.1 4.5 7.3 4 6.5 4H3c-.6 0-1 .4-1 1s.4 1 1 1h3.5c.2 0 .4.1.5.3l1.8 2.9c.7 1.1 1.9 1.8 3.2 1.8H15c.6 0 1-.4 1-1s-.4-1-1-1h-3.5zm7.3.3c.4-.4.4-1 0-1.4l-3-3c-.4-.4-1-.4-1.4 0s-.4 1 0 1.4l2.3 2.3-4.2 8.4-4-6c-.3-.5-.8-.8-1.4-.8H7c-.6 0-1 .4-1 1s.4 1 1 1h2.5l3.8 5.7c.3.5.8.8 1.4.8.3 0 .6-.1.8-.3l5.3-10.6z" />
+          <svg class="jump-silhouette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width: 100px; height: 100px;">
+            <circle cx="12" cy="5" r="2.5" />
+            <path d="M12 7.5v6.5M8 11.5l4-2.5 4 2.5M7 21.5c1.5-2 3.5-3 5-3s3.5 1 5 3" />
           </svg>
         </div>
 
-        <!-- Coach Signature Block -->
-        <div class="signature-block ${langMode === 'english' ? 'ltr' : 'rtl'}" style="align-items: ${langMode === 'english' ? 'flex-end' : 'flex-start'};">
-          <div class="signature-line"></div>
-          <div class="signature-text">${coachNameTranslated}</div>
-          <div class="signature-title">${coachTitleTranslated}</div>
+        <!-- Side-by-Side Signature Block (Page 6) - Strictly in English -->
+        <div class="signature-row ltr">
+          <div class="signature-col">
+            <div class="signature-line"></div>
+            <div class="signature-text">Coach Mahmoud Ali</div>
+            <div class="signature-title">PEAK FORCE Head Coach</div>
+          </div>
+          <div class="signature-col">
+            <div class="signature-line"></div>
+            <div class="signature-text">Coach Mostafa Ali</div>
+            <div class="signature-title">PEAK FORCE Assistant Coach</div>
+          </div>
         </div>
 
-        <div class="page-footer ${langMode === 'english' ? 'ltr' : 'rtl'}">
-          <span>${langMode === 'english' ? 'Peak Force Performance' : 'بييك فورس للأداء الرياضي'}</span>
+        <div class="page-footer ltr">
+          <span>PEAK FORCE ATHLETIC PERFORMANCE</span>
           <span>Page 6 of 6</span>
         </div>
       </section>
