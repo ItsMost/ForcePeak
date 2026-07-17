@@ -4,15 +4,45 @@ import { Lock, LogOut, Sparkles } from 'lucide-react';
 import './index.css';
 import './App.css';
 
+import { supabase } from './supabaseClient';
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passcode, setPasscode] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
+  
+  const [viewPackHtml, setViewPackHtml] = useState<string | null>(null);
+  const [loadingPack, setLoadingPack] = useState<boolean>(false);
+  const [packError, setPackError] = useState<string | null>(null);
 
   useEffect(() => {
     const authStatus = localStorage.getItem('peakforce_authenticated');
     if (authStatus === 'true') {
       setIsAuthenticated(true);
+    }
+
+    // Check if viewing a shared welcome pack
+    const urlParams = new URLSearchParams(window.location.search);
+    const packFile = urlParams.get('view-pack');
+    if (packFile) {
+      setLoadingPack(true);
+      supabase.storage
+        .from('welcome-packs')
+        .download(packFile)
+        .then(({ data, error }) => {
+          if (error) throw error;
+          if (!data) throw new Error('Empty file received');
+          return data.text();
+        })
+        .then((html) => {
+          setViewPackHtml(html);
+          setLoadingPack(false);
+        })
+        .catch((err) => {
+          console.error('Error loading welcome pack:', err);
+          setPackError('كتيّب الترحيب غير موجود أو منتهي الصلاحية // Welcome pack not found or expired.');
+          setLoadingPack(false);
+        });
     }
   }, []);
 
@@ -32,6 +62,41 @@ function App() {
     setIsAuthenticated(false);
     setPasscode('');
   };
+
+  if (loadingPack) {
+    return (
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4 antialiased font-sans">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-zinc-400 font-bold uppercase tracking-wider text-xs">جاري تحميل البرنامج التدريبي / Loading Training Blueprint...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (packError) {
+    return (
+      <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4 antialiased font-sans">
+        <div className="w-full max-w-md bg-[#1e1e1e] border border-zinc-800 rounded-3xl p-8 text-center space-y-6">
+          <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto text-xl">⚠️</div>
+          <p className="text-white font-bold leading-relaxed text-sm">{packError}</p>
+          <a href="/" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl border border-zinc-700">
+            الذهاب للرئيسية / Go Home
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewPackHtml) {
+    return (
+      <iframe
+        srcDoc={viewPackHtml}
+        className="w-full h-screen border-none"
+        title="PEAK FORCE Welcome Pack"
+      />
+    );
+  }
 
   if (!isAuthenticated) {
     return (

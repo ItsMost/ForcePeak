@@ -1032,10 +1032,7 @@ export function generateWelcomePackHTML({
           const blobUrl = URL.createObjectURL(blob);
           window.open(blobUrl, '_blank');
         } else {
-          const { data: publicUrlData } = supabase.storage
-            .from('welcome-packs')
-            .getPublicUrl(filename);
-          const publicUrl = publicUrlData.publicUrl;
+          const publicUrl = `${window.location.origin}/?view-pack=${filename}`;
           
           // Copy public URL to clipboard
           navigator.clipboard.writeText(publicUrl).then(() => {
@@ -1044,7 +1041,7 @@ export function generateWelcomePackHTML({
             console.error('Clipboard error:', err);
           });
           
-          // Open the public CDN link in new tab
+          // Open the public link in new tab
           window.open(publicUrl, '_blank');
         }
       });
