@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import WeeklyPlanner from './components/WeeklyPlanner/index.jsx';
 import BiomechanicsDashboard from './components/BiomechanicsDashboard';
-import GymSystem from './components/GymSystem/index.tsx';
+import GymSystem from './components/GymSystem';
 import { Lock, Dumbbell, Activity, Users, LogOut, Sparkles } from 'lucide-react';
 import './index.css';
 import './App.css';
