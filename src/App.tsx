@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import WeeklyPlanner from './components/WeeklyPlanner/index.jsx';
-import BiomechanicsDashboard from './components/BiomechanicsDashboard';
-import GymSystem from './components/GymSystem';
-import { Lock, Dumbbell, Activity, Users, LogOut, Sparkles } from 'lucide-react';
+import { Lock, LogOut, Sparkles } from 'lucide-react';
 import './index.css';
 import './App.css';
 
@@ -10,11 +8,6 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [passcode, setPasscode] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
-  
-  // Tab states: 'planner' | 'biomechanics' | 'gym'
-  const [activeTab, setActiveTab] = useState<'planner' | 'biomechanics' | 'gym'>(() => {
-    return (localStorage.getItem('peakforce_active_tab') as any) || 'biomechanics';
-  });
 
   useEffect(() => {
     const authStatus = localStorage.getItem('peakforce_authenticated');
@@ -38,11 +31,6 @@ function App() {
     localStorage.removeItem('peakforce_authenticated');
     setIsAuthenticated(false);
     setPasscode('');
-  };
-
-  const handleTabChange = (tab: 'planner' | 'biomechanics' | 'gym') => {
-    setActiveTab(tab);
-    localStorage.setItem('peakforce_active_tab', tab);
   };
 
   if (!isAuthenticated) {
@@ -105,58 +93,18 @@ function App() {
 
   return (
     <div className="App selection:bg-orange-500/20 antialiased font-sans flex flex-col min-h-screen bg-[#121212] text-white">
-      {/* Top Professional Navigation Header */}
-      <header className="bg-[#1a1a1a] border-b border-zinc-800 px-4 py-2.5 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4 z-50 shrink-0 select-none print:hidden">
+      {/* Top Header with Logout Button */}
+      <header className="bg-[#1a1a1a] border-b border-zinc-800 px-4 py-2.5 sm:px-6 flex items-center justify-between z-50 shrink-0 select-none print:hidden">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center font-black text-white text-sm shadow-md">
             PF
           </div>
           <div>
             <h1 className="text-sm font-black text-white tracking-widest uppercase">PEAK FORCE</h1>
-            <p className="text-[9px] text-orange-500 font-bold uppercase tracking-wider -mt-0.5">Control Center</p>
+            <p className="text-[9px] text-orange-500 font-bold uppercase tracking-wider -mt-0.5">Weekly Planner</p>
           </div>
         </div>
 
-        {/* Navigation Tabs */}
-        <nav className="flex items-center bg-[#121212] border border-zinc-800 rounded-xl p-1 gap-1">
-          <button
-            onClick={() => handleTabChange('planner')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-              activeTab === 'planner'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <Dumbbell className="w-3.5 h-3.5" />
-            <span>Planner</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('biomechanics')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-              activeTab === 'biomechanics'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <Activity className="w-3.5 h-3.5" />
-            <span>Biomechanics</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('gym')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${
-              activeTab === 'gym'
-                ? 'bg-orange-500 text-white shadow-md'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Gym Management</span>
-          </button>
-        </nav>
-
-        {/* Logout Control */}
         <button
           onClick={handleLogout}
           className="text-xs font-bold text-zinc-400 hover:text-red-500 transition-colors flex items-center gap-1 bg-zinc-800 hover:bg-red-500/10 px-3 py-1.5 rounded-lg border border-zinc-800"
@@ -167,11 +115,9 @@ function App() {
         </button>
       </header>
 
-      {/* Main Content Area */}
+      {/* Main Content Area: Renders only the WeeklyPlanner */}
       <main className="flex-1 min-h-0 relative">
-        {activeTab === 'planner' && <WeeklyPlanner />}
-        {activeTab === 'biomechanics' && <BiomechanicsDashboard />}
-        {activeTab === 'gym' && <GymSystem />}
+        <WeeklyPlanner />
       </main>
     </div>
   );
