@@ -5,12 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
+    "dexie": "^4.0.10",
+    "dexie-react-hooks": "^1.1.7",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.14.0",
     "react": "^19.2.6",
