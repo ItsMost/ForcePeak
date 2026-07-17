@@ -19,7 +19,9 @@ export function generateWelcomePackHTML({
   weekDatesFull, 
   selectedAthlete, 
   calculateDayVolume,
-  langMode = 'mix' // 'mix' | 'arabic' | 'english'
+  langMode = 'mix', // 'mix' | 'arabic' | 'english'
+  supabase,
+  onToast
 }) {
   const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const athleteName = selectedAthlete ? selectedAthlete.name : 'Elite Athlete';
@@ -1014,6 +1016,40 @@ export function generateWelcomePackHTML({
 
   // Create UTF-8 HTML Blob to ensure perfect character rendering and link behavior
   const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, '_blank');
+  
+  if (supabase) {
+    const filename = `welcome_pack_${selectedAthlete?.id || 'athlete'}_${Date.now()}.html`;
+    if (onToast) onToast('Uploading Welcome Pack to secure cloud...');
+    
+    supabase.storage
+      .from('welcome-packs')
+      .upload(filename, blob, { contentType: 'text/html', cacheControl: '3600' })
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Error uploading Welcome Pack:', error);
+          if (onToast) onToast('Error uploading: ' + error.message);
+          // Fallback to opening local blob if upload fails
+          const blobUrl = URL.createObjectURL(blob);
+          window.open(blobUrl, '_blank');
+        } else {
+          const { data: publicUrlData } = supabase.storage
+            .from('welcome-packs')
+            .getPublicUrl(filename);
+          const publicUrl = publicUrlData.publicUrl;
+          
+          // Copy public URL to clipboard
+          navigator.clipboard.writeText(publicUrl).then(() => {
+            if (onToast) onToast('Link copied to clipboard! // تم نسخ الرابط المباشر');
+          }).catch(err => {
+            console.error('Clipboard error:', err);
+          });
+          
+          // Open the public CDN link in new tab
+          window.open(publicUrl, '_blank');
+        }
+      });
+  } else {
+    const blobUrl = URL.createObjectURL(blob);
+    window.open(blobUrl, '_blank');
+  }
 }

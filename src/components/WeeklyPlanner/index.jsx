@@ -343,7 +343,9 @@ export default function WeeklyPlanner() {
         weekDatesFull,
         selectedAthlete: athletes.find(a => a.id === selectedAthleteId),
         calculateDayVolume,
-        langMode: lang
+        langMode: lang,
+        supabase,
+        onToast: handleToast
       });
       handleToast('Generating PEAK FORCE Welcome Pack...');
     } catch (error) {
