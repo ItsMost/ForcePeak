@@ -194,33 +194,8 @@ function App() {
   }
 
   return (
-    <div className="App selection:bg-orange-500/20 antialiased font-sans flex flex-col min-h-screen bg-[#121212] text-white">
-      {/* Top Header with Logout Button */}
-      <header className="bg-[#1a1a1a] border-b border-zinc-800 px-4 py-2.5 sm:px-6 flex items-center justify-between z-50 shrink-0 select-none print:hidden">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center font-black text-white text-sm shadow-md">
-            PF
-          </div>
-          <div>
-            <h1 className="text-sm font-black text-white tracking-widest uppercase">PEAK FORCE</h1>
-            <p className="text-[9px] text-orange-500 font-bold uppercase tracking-wider -mt-0.5">Weekly Planner</p>
-          </div>
-        </div>
-
-        <button
-          onClick={handleLogout}
-          className="text-xs font-bold text-zinc-400 hover:text-red-500 transition-colors flex items-center gap-1 bg-zinc-800 hover:bg-red-500/10 px-3 py-1.5 rounded-lg border border-zinc-800"
-          title="تسجيل الخروج / Logout"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Logout</span>
-        </button>
-      </header>
-
-      {/* Main Content Area: Renders only the WeeklyPlanner */}
-      <main className="flex-1 min-h-0 relative">
-        <WeeklyPlanner />
-      </main>
+    <div className="App selection:bg-orange-500/20 antialiased font-sans min-h-screen bg-[#121212]">
+      <WeeklyPlanner />
     </div>
   );
 }
