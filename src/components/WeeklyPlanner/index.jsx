@@ -4438,6 +4438,41 @@ export default function WeeklyPlanner() {
         </div>
       )}
 
+      {/* 📱 Floating Mobile Bottom Control Dock (Mobile-Exclusive UI) */}
+      <div className="fixed bottom-4 left-4 right-4 z-[90] sm:hidden bg-slate-900/90 backdrop-blur-xl border border-slate-700/80 rounded-full px-4 py-2 shadow-2xl flex items-center justify-around text-white">
+        <button
+          onClick={() => setShowProfileModal(true)}
+          className="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-orange-500 transition-colors p-1"
+        >
+          <User className="w-4 h-4 text-orange-500" />
+          <span>اللاعب</span>
+        </button>
+
+        <button
+          onClick={() => setShowStatsModal(true)}
+          className="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-orange-500 transition-colors p-1"
+        >
+          <BarChart3 className="w-4 h-4 text-blue-400" />
+          <span>الأحمال</span>
+        </button>
+
+        <button
+          onClick={() => setWelcomePackModal({ isOpen: true, langMode: 'mix' })}
+          className="flex flex-col items-center gap-1 text-[10px] font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 px-3.5 py-1.5 rounded-full shadow-lg shadow-orange-500/20 active:scale-95 transition-all"
+        >
+          <Sparkles className="w-4 h-4 text-white animate-pulse" />
+          <span>Welcome Pack</span>
+        </button>
+
+        <button
+          onClick={() => setShowLibrary(!showLibrary)}
+          className="flex flex-col items-center gap-1 text-[10px] font-bold text-slate-300 hover:text-orange-500 transition-colors p-1"
+        >
+          <Library className="w-4 h-4 text-indigo-400" />
+          <span>المكتبة</span>
+        </button>
+      </div>
+
     </div>
   );
 }

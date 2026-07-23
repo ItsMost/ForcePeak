@@ -572,3 +572,57 @@
     content: counter(page) !important;
   }
 }
+
+/* ==========================================================
+   MOBILE-EXCLUSIVE THEME OVERHAUL (max-width: 640px)
+   Ultra-luxurious OLED dark mode & App feel for mobile phones only.
+   ========================================================== */
+@media (max-width: 640px) {
+  /* 1. Deep OLED Background on Mobile */
+  .dark, 
+  .dark body, 
+  .dark.bg-slate-900,
+  .dark .bg-slate-900 {
+    background-color: #050608 !important;
+  }
+
+  /* 2. Glassmorphic App Cards on Mobile */
+  .dark .bg-white,
+  .dark .dark\:bg-slate-800,
+  .dark .dark\:bg-slate-850 {
+    background: linear-gradient(180deg, #111522 0%, #0b0e18 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  /* 3. Mobile Touch Interactions & Active Scale Feedback */
+  .dark button,
+  .dark a,
+  .dark div[role="button"] {
+    transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.15s ease !important;
+  }
+  .dark button:active,
+  .dark a:active {
+    transform: scale(0.97) !important;
+    opacity: 0.9 !important;
+  }
+
+  /* 4. Mobile Bottom Sheet Modals */
+  .dark div[class*="z-[200]"] > div,
+  .dark div[class*="z-[100]"] > div {
+    border-top-left-radius: 28px !important;
+    border-top-right-radius: 28px !important;
+    border-bottom-left-radius: 0px !important;
+    border-bottom-right-radius: 0px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: #0d111c !important;
+    box-shadow: 0 -20px 40px rgba(0, 0, 0, 0.8) !important;
+  }
+
+  /* 5. Mobile Safe Area Bottom Padding */
+  main {
+    padding-bottom: 90px !important;
+  }
+}
+
