@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import WeeklyPlanner from './components/WeeklyPlanner/index.jsx';
-import { Lock, LogOut, Sparkles } from 'lucide-react';
+import { Lock, LogOut, Sparkles, Printer } from 'lucide-react';
 import './index.css';
 import './App.css';
 
@@ -88,13 +88,50 @@ function App() {
     );
   }
 
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
+
+  const handlePrintPack = () => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      iframeRef.current.contentWindow.print();
+    }
+  };
+
   if (viewPackHtml) {
     return (
-      <iframe
-        srcDoc={viewPackHtml}
-        className="w-full h-screen border-none"
-        title="PEAK FORCE Welcome Pack"
-      />
+      <div className="flex flex-col h-screen bg-[#121212] overflow-hidden select-none">
+        {/* Floating Mobile Control Bar */}
+        <header className="bg-[#1e1e1e]/95 backdrop-blur-md border-b border-zinc-800 px-4 py-2.5 sm:px-6 flex items-center justify-between z-50 shrink-0 print:hidden">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-lg shadow-orange-500/20">
+              PF
+            </div>
+            <div>
+              <h1 className="text-xs font-black text-white tracking-widest uppercase">PEAK FORCE</h1>
+              <p className="text-[9px] text-orange-500 font-bold uppercase tracking-wider -mt-0.5">Welcome Pack</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrintPack}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-md transition-all flex items-center gap-1.5 active:scale-95"
+            >
+              <Printer className="w-4 h-4" />
+              <span>حفظ / طباعة PDF</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Full-bleed iframe viewer */}
+        <main className="flex-1 w-full h-full relative overflow-hidden bg-[#121212]">
+          <iframe
+            ref={iframeRef}
+            srcDoc={viewPackHtml}
+            className="w-full h-full border-none"
+            title="PEAK FORCE Welcome Pack"
+          />
+        </main>
+      </div>
     );
   }
 

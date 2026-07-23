@@ -3154,8 +3154,11 @@ export default function WeeklyPlanner() {
       )}
 
       {welcomePackModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl transition-all text-left">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-hidden shadow-2xl transition-all text-left">
+            {/* Mobile Drag Indicator Handle */}
+            <div className="w-12 h-1 bg-slate-700 rounded-full mx-auto mt-2.5 sm:hidden" />
+
             {/* Header */}
             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-start">
               <div>
