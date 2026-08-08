@@ -556,8 +556,5 @@ export function generateWeeklyHTMLPrint({
     </html>
   `;
 
-  // Create UTF-8 HTML Blob to ensure perfect Arabic shaping and character rendering
-  const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
-  const blobUrl = URL.createObjectURL(blob);
-  window.open(blobUrl, '_blank');
+  return htmlContent;
 }

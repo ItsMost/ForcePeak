@@ -1022,34 +1022,22 @@ export function generateWelcomePackHTML({
   
   if (supabase) {
     const filename = `welcome_pack_${selectedAthlete?.id || 'athlete'}_${Date.now()}.html`;
-    if (onToast) onToast('Uploading Welcome Pack to secure cloud...');
     
     supabase.storage
       .from('welcome-packs')
       .upload(filename, blob, { contentType: 'text/html', cacheControl: '3600' })
       .then(({ data, error }) => {
         if (error) {
-          console.error('Error uploading Welcome Pack:', error);
-          if (onToast) onToast('Error uploading: ' + error.message);
-          // Fallback to opening local blob if upload fails
-          const blobUrl = URL.createObjectURL(blob);
-          window.open(blobUrl, '_blank');
+          console.error('Cloud backup note:', error.message);
         } else {
           const publicUrl = `${window.location.origin}/?view-pack=${filename}`;
-          
-          // Copy public URL to clipboard
-          navigator.clipboard.writeText(publicUrl).then(() => {
-            if (onToast) onToast('Link copied to clipboard! // تم نسخ الرابط المباشر');
-          }).catch(err => {
-            console.error('Clipboard error:', err);
-          });
-          
-          // Open the public link in new tab
-          window.open(publicUrl, '_blank');
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(publicUrl).catch(err => console.error(err));
+          }
         }
-      });
-  } else {
-    const blobUrl = URL.createObjectURL(blob);
-    window.open(blobUrl, '_blank');
+      })
+      .catch(err => console.error('Cloud backup error:', err));
   }
+
+  return htmlContent;
 }

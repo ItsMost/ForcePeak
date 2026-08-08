@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, Play, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search, Printer, FileText, Layout, Layers } from 'lucide-react';
 
 import Header from './Header.jsx';
@@ -225,8 +225,9 @@ export default function WeeklyPlanner() {
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
-  const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
   const [welcomePackModal, setWelcomePackModal] = useState({ isOpen: false, langMode: 'mix' });
+  const [htmlViewerModal, setHtmlViewerModal] = useState({ isOpen: false, htmlContent: '', title: '' });
+  const viewerIframeRef = useRef(null);
 
   const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' });
   const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
@@ -318,7 +319,7 @@ export default function WeeklyPlanner() {
   const handlePrintStudioHTML = () => {
     setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
     try {
-      generateWeeklyHTMLPrint({
+      const htmlContent = generateWeeklyHTMLPrint({
         schedule,
         dayTitles,
         weekDatesFull,
@@ -327,7 +328,14 @@ export default function WeeklyPlanner() {
         orientation: printStudioModal.orientation,
         theme: printStudioModal.theme
       });
-      handleToast('Opened browser print preview!');
+      if (htmlContent) {
+        setHtmlViewerModal({
+          isOpen: true,
+          htmlContent,
+          title: 'Weekly Training Blueprint'
+        });
+        handleToast('Print & PDF Preview Ready!');
+      }
     } catch (error) {
       console.error('Error generating HTML Print:', error);
       handleToast('Error starting print page');
@@ -337,7 +345,7 @@ export default function WeeklyPlanner() {
   const handlePrintWelcomePack = (lang = 'mix') => {
     setWelcomePackModal({ isOpen: false, langMode: 'mix' });
     try {
-      generateWelcomePackHTML({
+      const htmlContent = generateWelcomePackHTML({
         schedule,
         dayTitles,
         weekDatesFull,
@@ -347,7 +355,14 @@ export default function WeeklyPlanner() {
         supabase,
         onToast: handleToast
       });
-      handleToast('Generating PEAK FORCE Welcome Pack...');
+      if (htmlContent) {
+        setHtmlViewerModal({
+          isOpen: true,
+          htmlContent,
+          title: 'PEAK FORCE Welcome Pack'
+        });
+        handleToast('PEAK FORCE Welcome Pack Ready!');
+      }
     } catch (error) {
       console.error('Error generating Welcome Pack:', error);
       handleToast('Error: ' + error.message);
@@ -4180,7 +4195,7 @@ export default function WeeklyPlanner() {
           </div>
 
           {/* Premium Mobile-Native Smart Tabs Interface */}
-          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-4 space-y-4 ${showLibrary ? 'pb-[52vh]' : 'pb-16'}`}>
+          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-4 space-y-4 ${showLibrary ? 'pb-20' : 'pb-16'}`}>
             {/* Day Selector Pills */}
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x snap-mandatory">
               {DAYS_OF_WEEK.map((day, index) => {
@@ -4397,8 +4412,8 @@ export default function WeeklyPlanner() {
           )}
         </div>
 
-        <div className="absolute inset-0 pointer-events-none z-30 overflow-hidden">
-           <div className={`h-full absolute right-0 transition-all duration-300 ${showLibrary ? 'w-full md:w-80 pointer-events-auto' : 'w-0 md:w-0 pointer-events-none'}`} onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
+        <div className={`fixed inset-0 pointer-events-none z-40 transition-all duration-300 ${showLibrary ? 'md:w-96' : 'w-0'}`}>
+           <div className="h-full w-full relative" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
              <ExerciseLibrary 
                showLibrary={showLibrary} 
                setShowLibrary={setShowLibrary} 
@@ -4432,9 +4447,58 @@ export default function WeeklyPlanner() {
              />
            </div>
         </div>
+      </div>
+    )}
 
-        </div>
-      )}
+        {/* 📄 Full-Screen In-App Interactive HTML & PDF Print Viewer Modal */}
+        {htmlViewerModal.isOpen && (
+          <div className="fixed inset-0 z-[1000] bg-slate-950 flex flex-col h-screen w-screen overflow-hidden select-none animate-fadeIn">
+            {/* Top Control Bar */}
+            <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 sm:px-6 flex items-center justify-between z-50 shrink-0 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-md">
+                  PF
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-black text-white tracking-wider uppercase">{htmlViewerModal.title}</h3>
+                  <p className="text-[9px] sm:text-[10px] text-orange-400 font-bold uppercase tracking-wider">Interactive Print & PDF Engine</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 sm:gap-3">
+                <button
+                  onClick={() => {
+                    if (viewerIframeRef.current && viewerIframeRef.current.contentWindow) {
+                      viewerIframeRef.current.contentWindow.print();
+                    }
+                  }}
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-black text-xs px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2 active:scale-95 cursor-pointer"
+                >
+                  <Printer className="w-4 h-4" />
+                  <span>حفظ / طباعة PDF</span>
+                </button>
+
+                <button
+                  onClick={() => setHtmlViewerModal({ isOpen: false, htmlContent: '', title: '' })}
+                  className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl border border-slate-700 transition-all"
+                  title="إغلاق / Close"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </header>
+
+            {/* Iframe View */}
+            <main className="flex-1 w-full h-full relative overflow-hidden bg-[#121212]">
+              <iframe
+                ref={viewerIframeRef}
+                srcDoc={htmlViewerModal.htmlContent}
+                className="w-full h-full border-none"
+                title={htmlViewerModal.title}
+              />
+            </main>
+          </div>
+        )}
 
     </div>
   );

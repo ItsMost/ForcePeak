@@ -691,5 +691,27 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
   // Save PDF file safely using only ASCII characters for the filename to prevent browser download crashes
   const asciiAthleteName = athleteName.replace(/[^\x20-\x7E]/g, '').replace(/\s+/g, '_').trim() || 'Athlete';
   const fileName = `PeakForce_${orientation === 'landscape' ? 'Weekly_Grid' : 'Vertical_Plan'}_${asciiAthleteName}.pdf`;
-  doc.save(fileName);
+
+  const isMobile = typeof navigator !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  if (isMobile) {
+    try {
+      const blob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        if (document.body.contains(link)) document.body.removeChild(link);
+      }, 1000);
+    } catch (e) {
+      console.error('Mobile blob error, falling back to doc.save:', e);
+      doc.save(fileName);
+    }
+  } else {
+    doc.save(fileName);
+  }
+  return doc;
 }

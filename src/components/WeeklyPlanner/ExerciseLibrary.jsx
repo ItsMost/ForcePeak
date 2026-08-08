@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, Tag, Sparkles, Edit3 } from 'lucide-react';
+import { Search, Plus, Trash2, Edit2, Layers, Bookmark, CalendarDays, Calendar, Tag, Sparkles, Edit3, X, BookOpen } from 'lucide-react';
 
 const SUBCATEGORIES = {
   core: {
@@ -97,24 +97,55 @@ export default function ExerciseLibrary({
   });
 
   return (
-    <div className={`fixed z-30 bg-white dark:bg-slate-800 transition-all duration-300 flex flex-col shadow-2xl
-      bottom-0 left-0 right-0 h-[50vh] w-full border-t border-slate-200 dark:border-slate-750 rounded-t-[2rem]
-      ${showLibrary ? 'translate-y-0' : 'translate-y-full'}
-      md:top-16 md:bottom-auto md:left-auto md:right-0 md:w-80 md:h-[calc(100vh-64px)] md:border-l md:border-t-0 md:rounded-t-none
-      ${showLibrary ? 'md:translate-y-0 md:translate-x-0' : 'md:translate-y-0 md:translate-x-full'}
-    `}>
-      
-      {/* Mobile Bottom Sheet Handle Bar */}
-      <div className="md:hidden flex items-center justify-between px-6 py-2 bg-slate-50 dark:bg-slate-900/60 rounded-t-[2rem] border-b border-slate-100 dark:border-slate-850 shrink-0 select-none">
-        <div className="w-10"></div>
-        <div className="w-12 h-1 bg-slate-350 dark:bg-slate-700 rounded-full"></div>
-        <button 
-          onClick={() => setShowLibrary(false)} 
-          className="text-xs font-bold text-slate-500 hover:text-slate-800 dark:hover:text-white p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors"
-        >
-          Close
-        </button>
-      </div>
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {showLibrary && (
+        <div 
+          className="fixed inset-0 bg-slate-950/75 backdrop-blur-md z-40 md:hidden animate-fadeIn"
+          onClick={() => setShowLibrary(false)}
+        />
+      )}
+
+      <div className={`fixed inset-0 top-0 bottom-0 left-0 right-0 z-[999] h-screen w-screen bg-[#121212] dark:bg-slate-900 transition-all duration-300 flex flex-col shadow-2xl rounded-none border-none
+        ${showLibrary ? 'translate-y-0 opacity-100 pointer-events-auto' : 'translate-y-full opacity-0 pointer-events-none'}
+        md:top-16 md:bottom-auto md:left-auto md:right-0 md:w-96 md:h-[calc(100vh-64px)] md:border-l md:border-slate-200 md:dark:border-slate-750 md:rounded-none md:shadow-2xl md:opacity-100 md:pointer-events-auto
+        ${showLibrary ? 'md:translate-y-0 md:translate-x-0' : 'md:translate-y-0 md:translate-x-full'}
+      `}>
+        
+        {/* Mobile Full-Screen Header Bar */}
+        <div className="md:hidden flex items-center justify-between px-4 py-3 bg-slate-900 text-white border-b border-slate-800 shrink-0 select-none shadow-md">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-orange-500/20 border border-orange-500/30 flex items-center justify-center text-orange-400 font-bold shrink-0">
+              <BookOpen className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-xs font-black text-white uppercase tracking-wider">مكتبة التمارين // Exercise Library</h3>
+              <p className="text-[9px] text-orange-400 font-bold uppercase tracking-wider">Peak Force Athletic Database</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setShowLibrary(false)} 
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-red-500 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition-all active:scale-95 border border-slate-700 shadow-sm shrink-0"
+          >
+            <X className="w-4 h-4" />
+            <span>إغلاق / Close</span>
+          </button>
+        </div>
+
+        {/* Desktop Header Bar */}
+        <div className="hidden md:flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 select-none">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-orange-500" />
+            <span className="text-xs font-black uppercase text-slate-800 dark:text-slate-200 tracking-wider">Exercise Library</span>
+          </div>
+          <button 
+            onClick={() => setShowLibrary(false)} 
+            className="text-xs font-bold text-slate-400 hover:text-red-500 p-1 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Close Library"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       
       {/* Tabs Navigation Switcher */}
       <div className="flex border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 p-2 gap-1 shrink-0 overflow-x-auto scrollbar-none">
@@ -501,5 +532,6 @@ export default function ExerciseLibrary({
 
       </div>
     </div>
-  );
+  </>
+);
 }
