@@ -224,7 +224,7 @@ export default function WeeklyPlanner() {
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [printMode, setPrintMode] = useState('landscape');
+  const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
   const [welcomePackModal, setWelcomePackModal] = useState({ isOpen: false, langMode: 'mix' });
   const [htmlViewerModal, setHtmlViewerModal] = useState({ isOpen: false, htmlContent: '', title: '' });
   const viewerIframeRef = useRef(null);
