@@ -12,6 +12,16 @@ export function generateWeeklyHTMLPrint({
   orientation = 'portrait', 
   theme = 'crimson' 
 }) {
+  const esc = (str) => {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  };
+
   const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const athleteName = selectedAthlete ? selectedAthlete.name : 'Elite Athlete';
   const dateStart = weekDatesFull[0] ? new Date(weekDatesFull[0]).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
@@ -154,12 +164,12 @@ export function generateWeeklyHTMLPrint({
               <div class="param-badge"><strong>${drill.sets || '-'}</strong> Sets</div>
               <div class="param-badge"><strong>${repsVal || '-'}${unitStr}</strong> Volume</div>
               <div class="param-badge"><strong>${intensityVal || '-'}</strong> Intensity</div>
-              ${(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) ? `<div class="param-badge text-cyan-600 font-bold">⚡ <strong>${drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity} m/s</strong> MV</div>` : ''}
-              ${(drill.peakVelocity || drill.peak_velocity || drill.rpe) ? `<div class="param-badge text-purple-600 font-bold">🚀 <strong>${drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s</strong> PV</div>` : ''}
-              ${drill.velocityLoss ? `<div class="param-badge text-pink-600 font-bold">📉 <strong>${drill.velocityLoss}</strong> Loss</div>` : ''}
-              ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest}</strong> Rest</div>` : ''}
-              ${drill.tempo ? `<div class="param-badge font-mono text-[10px]">T: <strong>${drill.tempo}</strong></div>` : ''}
-              ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${drill.focus}</div>` : ''}
+              ${(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) ? `<div class="param-badge text-cyan-600 font-bold">⚡ <strong>${esc(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity)} m/s</strong> MV</div>` : ''}
+              ${(drill.peakVelocity || drill.peak_velocity || drill.rpe) ? `<div class="param-badge text-purple-600 font-bold">🚀 <strong>${esc(drill.peakVelocity || drill.peak_velocity || drill.rpe)} m/s</strong> PV</div>` : ''}
+              ${drill.velocityLoss ? `<div class="param-badge text-pink-600 font-bold">📉 <strong>${esc(drill.velocityLoss)}</strong> Loss</div>` : ''}
+              ${drill.rest ? `<div class="param-badge">⏱ <strong>${esc(drill.rest)}</strong> Rest</div>` : ''}
+              ${drill.tempo ? `<div class="param-badge font-mono text-[10px]">T: <strong>${esc(drill.tempo)}</strong></div>` : ''}
+              ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${esc(drill.focus)}</div>` : ''}
             </div>
 
             ${cleanNotes ? `<div class="drill-notes">${cleanNotes}</div>` : ''}
