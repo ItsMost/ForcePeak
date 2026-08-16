@@ -1570,8 +1570,8 @@ export default function WeeklyPlanner() {
       subcategory: drill.subcategory || '',
       bwRatio: drill.bwRatio ? parseFloat(drill.bwRatio) : null,
       video_url: drill.video_url || '',
-      velocity_target_m_s: (drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity) ? parseFloat(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity) : null,
-      rpe: (drill.peakVelocity || drill.peak_velocity || drill.rpe) ? parseFloat(drill.peakVelocity || drill.peak_velocity || drill.rpe) : null
+      velocity_target_m_s: !isNaN(parseFloat(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity)) ? parseFloat(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity) : null,
+      rpe: !isNaN(parseFloat(drill.peakVelocity || drill.peak_velocity || drill.rpe)) ? parseFloat(drill.peakVelocity || drill.peak_velocity || drill.rpe) : null
     };
     const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
     if (!error && data) { 
@@ -2127,8 +2127,8 @@ export default function WeeklyPlanner() {
       video_url: addExerciseModal.video_url || '',
       tempo: addExerciseModal.tempo || '',
       focus: addExerciseModal.focus || '',
-      velocity_target_m_s: addExerciseModal.meanVelocity ? parseFloat(addExerciseModal.meanVelocity) : null,
-      rpe: addExerciseModal.peakVelocity ? parseFloat(addExerciseModal.peakVelocity) : null
+      velocity_target_m_s: !isNaN(parseFloat(addExerciseModal.meanVelocity)) ? parseFloat(addExerciseModal.meanVelocity) : null,
+      rpe: !isNaN(parseFloat(addExerciseModal.peakVelocity)) ? parseFloat(addExerciseModal.peakVelocity) : null
     }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
@@ -3629,9 +3629,8 @@ export default function WeeklyPlanner() {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">Mean Velocity (m/s)</label>
                     <input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="e.g. 0.85" 
+                      type="text" 
+                      placeholder="e.g. 0.85 or 0.75-0.85" 
                       value={addExerciseModal.meanVelocity || ''} 
                       onChange={(e) => setAddExerciseModal({...addExerciseModal, meanVelocity: e.target.value})} 
                       className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
@@ -3640,9 +3639,8 @@ export default function WeeklyPlanner() {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">Peak Velocity (m/s)</label>
                     <input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="e.g. 1.20" 
+                      type="text" 
+                      placeholder="e.g. 1.20 or >1.10" 
                       value={addExerciseModal.peakVelocity || ''} 
                       onChange={(e) => setAddExerciseModal({...addExerciseModal, peakVelocity: e.target.value})} 
                       className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
@@ -3777,9 +3775,8 @@ export default function WeeklyPlanner() {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">Mean Velocity (m/s)</label>
                     <input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="e.g. 0.85" 
+                      type="text" 
+                      placeholder="e.g. 0.85 or 0.75-0.85" 
                       value={dayDrillModal.drill.meanVelocity || dayDrillModal.drill.targetVelocity || ''} 
                       onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, meanVelocity: e.target.value, targetVelocity: e.target.value}})} 
                       className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
@@ -3788,9 +3785,8 @@ export default function WeeklyPlanner() {
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 mb-1">Peak Velocity (m/s)</label>
                     <input 
-                      type="number" 
-                      step="0.01" 
-                      placeholder="e.g. 1.20" 
+                      type="text" 
+                      placeholder="e.g. 1.20 or >1.10" 
                       value={dayDrillModal.drill.peakVelocity || ''} 
                       onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, peakVelocity: e.target.value}})} 
                       className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
