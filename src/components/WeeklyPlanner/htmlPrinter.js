@@ -154,6 +154,9 @@ export function generateWeeklyHTMLPrint({
               <div class="param-badge"><strong>${drill.sets || '-'}</strong> Sets</div>
               <div class="param-badge"><strong>${repsVal || '-'}${unitStr}</strong> Volume</div>
               <div class="param-badge"><strong>${intensityVal || '-'}</strong> Intensity</div>
+              ${(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) ? `<div class="param-badge text-cyan-600 font-bold">⚡ <strong>${drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity} m/s</strong> MV</div>` : ''}
+              ${(drill.peakVelocity || drill.peak_velocity || drill.rpe) ? `<div class="param-badge text-purple-600 font-bold">🚀 <strong>${drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s</strong> PV</div>` : ''}
+              ${drill.velocityLoss ? `<div class="param-badge text-pink-600 font-bold">📉 <strong>${drill.velocityLoss}</strong> Loss</div>` : ''}
               ${drill.rest ? `<div class="param-badge">⏱ <strong>${drill.rest}</strong> Rest</div>` : ''}
               ${drill.tempo ? `<div class="param-badge font-mono text-[10px]">T: <strong>${drill.tempo}</strong></div>` : ''}
               ${drill.focus ? `<div class="param-badge text-rose-500 font-bold">${drill.focus}</div>` : ''}

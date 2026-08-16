@@ -202,7 +202,7 @@ export default function ExerciseLibrary({
         {/* Tab 1: Exercises Module Archive */}
         {activeTab === 'exercises' && (
           <>
-            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
+            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
               <Plus className="w-4 h-4" /> Add Global Exercise
             </button>
             
@@ -220,6 +220,17 @@ export default function ExerciseLibrary({
                         </span>
                       )}
                       <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{drill.title}</h5>
+                      
+                      {(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity) && (
+                        <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded border border-cyan-200/50 dark:border-cyan-800/40">
+                          MV: {drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity} m/s
+                        </span>
+                      )}
+                      {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
+                        <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded border border-purple-200/50 dark:border-purple-800/40">
+                          PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s
+                        </span>
+                      )}
                     </div>
                     {drill.details && <p className="text-[10px] text-slate-400 mt-1 truncate">{drill.details}</p>}
                     

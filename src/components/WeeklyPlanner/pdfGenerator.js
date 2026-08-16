@@ -381,13 +381,30 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             doc.setFont(fName, 'bold');
           }
 
+          // Draw VBT speed indicators if present
+          const meanVel = drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity;
+          const peakVel = drill.peakVelocity || drill.peak_velocity || drill.rpe;
+          let vbtStr = '';
+          if (meanVel || peakVel) {
+            vbtStr = [meanVel ? `MV: ${meanVel} m/s` : '', peakVel ? `PV: ${peakVel} m/s` : '', drill.velocityLoss ? `Loss: ${drill.velocityLoss}` : ''].filter(Boolean).join(' | ');
+          }
+
+          let currentNoteY = y + 5 + titleHeight + 1;
+          if (vbtStr) {
+            doc.setFontSize(7.5);
+            doc.setFont(fName, 'bold');
+            doc.setTextColor(0, 150, 214);
+            doc.text(vbtStr, margin + 10, currentNoteY);
+            currentNoteY += 3.5;
+          }
+
           // Draw FULL Exercise Notes (Absolutely no truncation, wraps perfectly!)
           if (noteStr) {
             doc.setFontSize(7.5);
             doc.setFont(fName, 'italic');
             doc.setTextColor(...C.mid);
             noteLines.forEach((nLine, nIdx) => {
-              doc.text(nLine, margin + 10, y + 5 + titleHeight + 1 + (nIdx * 3.2));
+              doc.text(nLine, margin + 10, currentNoteY + (nIdx * 3.2));
             });
           }
 
@@ -647,9 +664,19 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           const intensityStr = drill.percentage ? `@${drill.percentage}%` : '';
           doc.text(`${setsStr} x ${repsStr} ${intensityStr}`.trim(), colX + 4.5, drillY + paramOffset);
 
-          // Rest interval and notes combined
+          // Rest interval, VBT and notes combined
           let footerTxt = '';
-          if (drill.rest) footerTxt += `Rest: ${drill.rest}`;
+          const meanVelL = drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity;
+          const peakVelL = drill.peakVelocity || drill.peak_velocity || drill.rpe;
+          if (meanVelL) footerTxt += `MV:${meanVelL}`;
+          if (peakVelL) {
+            if (footerTxt) footerTxt += ' ';
+            footerTxt += `PV:${peakVelL}`;
+          }
+          if (drill.rest) {
+            if (footerTxt) footerTxt += ' | ';
+            footerTxt += `R:${drill.rest}`;
+          }
           if (drill.details) {
             const cleanNote = safeTxt(drill.details);
             if (cleanNote) {

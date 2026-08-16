@@ -221,7 +221,7 @@ export default function WeeklyPlanner() {
   const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
   const [deployBlockModal, setDeployBlockModal] = useState({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
@@ -1569,10 +1569,16 @@ export default function WeeklyPlanner() {
       focus: drill.focus || '',
       subcategory: drill.subcategory || '',
       bwRatio: drill.bwRatio ? parseFloat(drill.bwRatio) : null,
-      video_url: drill.video_url || ''
+      video_url: drill.video_url || '',
+      velocity_target_m_s: (drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity) ? parseFloat(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity) : null,
+      rpe: (drill.peakVelocity || drill.peak_velocity || drill.rpe) ? parseFloat(drill.peakVelocity || drill.peak_velocity || drill.rpe) : null
     };
     const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-    if (!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); handleToast('Exercise saved to library sidebar!'); }
+    if (!error && data) { 
+      const newItem = { ...data[0], meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' };
+      setLibrary(prev => ({ ...prev, drills: [newItem, ...prev.drills] })); 
+      handleToast('Exercise saved to library sidebar!'); 
+    }
     setDraggedItem(null);
   };
 
@@ -1584,7 +1590,10 @@ export default function WeeklyPlanner() {
         ...drill, 
         id: `lib-drill-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         subcategory: drill.subcategory || '',
-        video_url: drill.video_url || ''
+        video_url: drill.video_url || '',
+        meanVelocity: drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity || '',
+        peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '',
+        velocityLoss: drill.velocityLoss || drill.velocity_loss || ''
       };
       newSchedule[dayName].push(newDrill);
       pushToHistory(newSchedule, dayTitles);
@@ -1597,8 +1606,8 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '', video_url: '' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '', video_url: drill.video_url || '' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', targetVelocity: '', velocityLoss: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', targetVelocity: drill.targetVelocity || drill.meanVelocity || drill.mean_velocity || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }, isNew: false }); };
 
   const getCalculatedIntensityInModal = (modalDrill) => {
     if (!selectedAthlete || !modalDrill || !modalDrill.bwRatio) return null;
@@ -2097,7 +2106,7 @@ export default function WeeklyPlanner() {
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
@@ -2117,14 +2126,26 @@ export default function WeeklyPlanner() {
       distance: addExerciseModal.distance ? parseFloat(addExerciseModal.distance) : null,
       video_url: addExerciseModal.video_url || '',
       tempo: addExerciseModal.tempo || '',
-      focus: addExerciseModal.focus || ''
+      focus: addExerciseModal.focus || '',
+      velocity_target_m_s: addExerciseModal.meanVelocity ? parseFloat(addExerciseModal.meanVelocity) : null,
+      rpe: addExerciseModal.peakVelocity ? parseFloat(addExerciseModal.peakVelocity) : null
     }; 
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? data[0] : d) })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' }); handleToast('Exercise updated'); }
+      if(!error && data) { 
+        const updatedItem = { ...data[0], meanVelocity: addExerciseModal.meanVelocity, peakVelocity: addExerciseModal.peakVelocity, velocityLoss: addExerciseModal.velocityLoss };
+        setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? updatedItem : d) })); 
+        setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' }); 
+        handleToast('Exercise updated'); 
+      }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
-      if(!error && data) { setLibrary(prev => ({ ...prev, drills: [data[0], ...prev.drills] })); setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '' }); handleToast('Exercise added'); }
+      if(!error && data) { 
+        const newItem = { ...data[0], meanVelocity: addExerciseModal.meanVelocity, peakVelocity: addExerciseModal.peakVelocity, velocityLoss: addExerciseModal.velocityLoss };
+        setLibrary(prev => ({ ...prev, drills: [newItem, ...prev.drills] })); 
+        setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' }); 
+        handleToast('Exercise added'); 
+      }
     }
   };
 
@@ -2383,11 +2404,23 @@ export default function WeeklyPlanner() {
                                       </>
                                     )}
                                     {drill.focus && (
-                                      <>
-                                        <span className="text-slate-300">•</span>
-                                        <span className="text-rose-600 dark:text-rose-400">{drill.focus}</span>
-                                      </>
-                                    )}
+                                       <>
+                                         <span className="text-slate-300">•</span>
+                                         <span className="text-rose-600 dark:text-rose-400">{drill.focus}</span>
+                                       </>
+                                     )}
+                                     {(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) && (
+                                       <>
+                                         <span className="text-slate-300">•</span>
+                                         <span className="text-cyan-600 dark:text-cyan-400 font-black">MV: {drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity}m/s</span>
+                                       </>
+                                     )}
+                                     {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
+                                       <>
+                                         <span className="text-slate-300">•</span>
+                                         <span className="text-purple-600 dark:text-purple-400 font-black">PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe}m/s</span>
+                                       </>
+                                     )}
                                   </div>
                                   {drill.intensity && (
                                     <span className="text-[8px] font-black text-red-500 mt-0.5 block">{drill.intensity}% 1RM</span>
@@ -3582,6 +3615,52 @@ export default function WeeklyPlanner() {
                 />
               </div>
               
+              {/* VBT & Velocity Profiling (Mean & Peak Velocity) */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Zap className="w-3.5 h-3.5 text-cyan-500" /> Velocity Based Training (VBT)
+                  </span>
+                  <span className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
+                    m/s Speed Metrics
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Mean Velocity (m/s)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="e.g. 0.85" 
+                      value={addExerciseModal.meanVelocity || ''} 
+                      onChange={(e) => setAddExerciseModal({...addExerciseModal, meanVelocity: e.target.value})} 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Peak Velocity (m/s)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="e.g. 1.20" 
+                      value={addExerciseModal.peakVelocity || ''} 
+                      onChange={(e) => setAddExerciseModal({...addExerciseModal, peakVelocity: e.target.value})} 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Velocity Loss (%)</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 20%" 
+                      value={addExerciseModal.velocityLoss || ''} 
+                      onChange={(e) => setAddExerciseModal({...addExerciseModal, velocityLoss: e.target.value})} 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-pink-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Tempo & Contraction Focus */}
               <div className="flex gap-3">
                 <div className="flex-1">
@@ -3605,7 +3684,7 @@ export default function WeeklyPlanner() {
               </div>
             </div>
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
+              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
               <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button>
             </div>
           </div>
@@ -3684,15 +3763,49 @@ export default function WeeklyPlanner() {
                 <div className="flex-1"><label className="block text-xs font-bold text-slate-500 mb-1">Rest</label><input type="text" value={dayDrillModal.drill.rest || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, rest: e.target.value}})} className="w-full px-3 py-2 border rounded-xl outline-none" /></div>
               </div>
 
-              {/* VBT parameters (Velocity Based Training) */}
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">Target Velocity (m/s)</label>
-                  <input type="text" placeholder="e.g. 0.75" value={dayDrillModal.drill.targetVelocity || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, targetVelocity: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+              {/* VBT & Velocity Profiling (Mean & Peak Velocity) */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
+                    <Zap className="w-3.5 h-3.5 text-cyan-500" /> Velocity Based Training (VBT)
+                  </span>
+                  <span className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
+                    m/s Speed Metrics
+                  </span>
                 </div>
-                <div className="flex-1">
-                  <label className="block text-xs font-bold text-slate-500 mb-1 flex items-center gap-1">Velocity Loss Limit (%)</label>
-                  <input type="text" placeholder="e.g. 20%" value={dayDrillModal.drill.velocityLoss || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, velocityLoss: e.target.value}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Mean Velocity (m/s)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="e.g. 0.85" 
+                      value={dayDrillModal.drill.meanVelocity || dayDrillModal.drill.targetVelocity || ''} 
+                      onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, meanVelocity: e.target.value, targetVelocity: e.target.value}})} 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Peak Velocity (m/s)</label>
+                    <input 
+                      type="number" 
+                      step="0.01" 
+                      placeholder="e.g. 1.20" 
+                      value={dayDrillModal.drill.peakVelocity || ''} 
+                      onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, peakVelocity: e.target.value}})} 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                    />
+                  </div>
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className="block text-[10px] font-bold text-slate-500 mb-1">Velocity Loss (%)</label>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 20%" 
+                      value={dayDrillModal.drill.velocityLoss || ''} 
+                      onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, velocityLoss: e.target.value}})} 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-pink-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                    />
+                  </div>
                 </div>
               </div>
 

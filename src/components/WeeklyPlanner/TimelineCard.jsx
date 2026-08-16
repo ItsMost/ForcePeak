@@ -207,14 +207,20 @@ export default function TimelineCard({
               </span>
             )}
 
-            {drill.targetVelocity && (
-              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/20 text-purple-600 dark:text-purple-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
-                V Target: {drill.targetVelocity} m/s
+            {(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) && (
+              <span className="px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600 dark:text-cyan-400 rounded-md font-black text-[9.5px] tracking-wider uppercase flex items-center gap-1 border border-cyan-200/50 dark:border-cyan-800/40">
+                <Zap className="w-3 h-3 text-cyan-500" /> MV: {drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity} m/s
+              </span>
+            )}
+
+            {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
+              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 rounded-md font-black text-[9.5px] tracking-wider uppercase flex items-center gap-1 border border-purple-200/50 dark:border-purple-800/40">
+                <Zap className="w-3 h-3 text-purple-500" /> PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s
               </span>
             )}
 
             {drill.velocityLoss && (
-              <span className="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/20 text-pink-600 dark:text-pink-400 rounded-md font-black text-[9.5px] tracking-wider uppercase">
+              <span className="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400 rounded-md font-black text-[9.5px] tracking-wider uppercase border border-pink-200/50 dark:border-pink-800/40">
                 V Loss: {drill.velocityLoss}
               </span>
             )}
