@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity,
-  Layers, TrendingUp, LayoutDashboard, X
+  Layers, TrendingUp, LayoutDashboard, X, Edit2, Trash2
 } from 'lucide-react';
 
 export default function Header({
@@ -13,7 +13,7 @@ export default function Header({
   isMobileView, setIsMobileView, isDarkMode, setIsDarkMode,
   showLibrary, setShowLibrary, handleToast, setSaveWeekTemplateModal,
   weeklyStats,
-  isOnline, syncStatus, onDelete,
+  isOnline, syncStatus, onDelete, onDeleteBlock,
   currentView, setCurrentView,
   onMoveAthlete,
   setShowPeriodizationPlanner,
@@ -161,7 +161,7 @@ export default function Header({
             setAthleteSearch('');
             setBlockSearch('');
           }}
-          className="flex-1 max-w-[210px] mx-1 flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 shadow-sm active:scale-95 transition-all text-left"
+          className="flex-1 mx-1.5 flex items-center justify-between gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 shadow-xs active:scale-95 transition-all text-left"
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="w-5 h-5 rounded-full bg-orange-500/15 text-orange-500 flex items-center justify-center shrink-0">
@@ -279,41 +279,90 @@ export default function Header({
               {mobileSheetTab === 'athletes' ? (
                 <>
                   {filteredAthletes.length > 0 ? (
-                    filteredAthletes.map(athlete => (
-                      <button
-                        key={athlete.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedAthleteId(athlete.id);
-                          setSelectedBlockId(null);
-                          if (onExitMeso) onExitMeso();
-                          if (onExitMacro) onExitMacro();
-                          setShowMobileAthleteSheet(false);
-                          setAthleteSearch('');
-                          handleToast(`تم اختيار: ${athlete.name}`);
-                        }}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-right active:scale-98 ${
-                          selectedAthlete?.id === athlete.id && !isTemplateEditing
-                            ? 'bg-orange-50 dark:bg-orange-950/20 border-orange-500 text-orange-600 dark:text-orange-400 font-black'
-                            : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-150 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-xs flex items-center justify-center shrink-0">
-                            {athlete.name?.substring(0, 2).toUpperCase() || 'PF'}
+                    filteredAthletes.map(athlete => {
+                      const isSelected = selectedAthlete?.id === athlete.id && !isTemplateEditing;
+                      return (
+                        <div
+                          key={athlete.id}
+                          className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all ${
+                            isSelected
+                              ? 'bg-orange-50/80 dark:bg-orange-950/20 border-orange-500 shadow-sm'
+                              : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/70 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          {/* Athlete Info (Click to select) */}
+                          <div 
+                            onClick={() => {
+                              setSelectedAthleteId(athlete.id);
+                              setSelectedBlockId(null);
+                              if (onExitMeso) onExitMeso();
+                              if (onExitMacro) onExitMacro();
+                              setShowMobileAthleteSheet(false);
+                              setAthleteSearch('');
+                              handleToast(`تم اختيار: ${athlete.name}`);
+                            }}
+                            className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer select-none"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-sm">
+                              {athlete.name?.substring(0, 2).toUpperCase() || 'PF'}
+                            </div>
+                            <div className="min-w-0 text-right">
+                              <div className="flex items-center gap-1.5">
+                                <span className={`text-xs font-black truncate ${isSelected ? 'text-orange-600 dark:text-orange-400' : 'text-slate-800 dark:text-white'}`}>
+                                  {athlete.name}
+                                </span>
+                                {isSelected && (
+                                  <span className="w-1.5 h-1.5 rounded-full bg-orange-500 shrink-0"></span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                {athlete.groupName && (
+                                  <span className="px-1.5 py-0.2 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[9px] font-black">
+                                    {athlete.groupName}
+                                  </span>
+                                )}
+                                <span className="text-[9.5px] text-slate-400 font-semibold truncate">
+                                  {athlete.weight ? `${athlete.weight}kg` : ''} {athlete.verticalJump ? `• CMJ: ${athlete.verticalJump}cm` : ''}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                          <div className="min-w-0">
-                            <span className="block text-xs font-black truncate">{athlete.name}</span>
-                            <span className="text-[9.5px] text-slate-400 font-medium">
-                              {athlete.groupName || 'فردي'} {athlete.weight ? `• ${athlete.weight}kg` : ''}
-                            </span>
+
+                          {/* Quick Action Icons: Edit & Delete */}
+                          <div className="flex items-center gap-1 shrink-0 mr-2">
+                            {/* Edit Athlete Numbers Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedAthleteId(athlete.id);
+                                setShowMobileAthleteSheet(false);
+                                setShowProfileModal(true);
+                              }}
+                              className="p-2 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xs active:scale-90 transition-all"
+                              title="تعديل أرقام الرياضي"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            {/* Delete Athlete Button */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`هل أنت متأكد من حذف ملف الرياضي "${athlete.name}"؟`)) {
+                                  onDelete(athlete.id);
+                                }
+                              }}
+                              className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xs active:scale-90 transition-all"
+                              title="حذف الرياضي"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                           </div>
                         </div>
-                        {selectedAthlete?.id === athlete.id && !isTemplateEditing && (
-                          <div className="w-2 h-2 rounded-full bg-orange-500 shrink-0"></div>
-                        )}
-                      </button>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8 text-xs text-slate-400">لا يوجد رياضيين بهذا الاسم</div>
                   )}
@@ -350,35 +399,55 @@ export default function Header({
 
                   {filteredBlocks.length > 0 ? (
                     filteredBlocks.map(block => (
-                      <button
+                      <div
                         key={block.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedBlockId(block.id);
-                          setSelectedAthleteId(null);
-                          setShowMobileAthleteSheet(false);
-                          setBlockSearch('');
-                          handleToast(`قالب: ${block.program_name}`);
-                        }}
-                        className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all text-right active:scale-98 ${
+                        className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition-all ${
                           selectedBlockId === block.id
-                            ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-500 text-violet-600 dark:text-violet-400 font-black'
-                            : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-150 dark:border-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100'
+                            ? 'bg-violet-50 dark:bg-violet-950/20 border-violet-500'
+                            : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-150 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBlockId(block.id);
+                            setSelectedAthleteId(null);
+                            setShowMobileAthleteSheet(false);
+                            setBlockSearch('');
+                            handleToast(`قالب: ${block.program_name}`);
+                          }}
+                          className="flex items-center gap-3 min-w-0 flex-1 text-right"
+                        >
                           <div className="w-9 h-9 rounded-xl bg-violet-500/15 text-violet-500 font-black text-xs flex items-center justify-center shrink-0">
                             <Layers className="w-4 h-4" />
                           </div>
                           <div className="min-w-0">
-                            <span className="block text-xs font-black truncate">{block.program_name}</span>
+                            <span className="block text-xs font-black truncate text-slate-800 dark:text-white">{block.program_name}</span>
                             <span className="text-[9.5px] text-slate-400 font-medium">{block.program_type || 'Meso-Block'}</span>
                           </div>
+                        </button>
+
+                        <div className="flex items-center gap-1 shrink-0 mr-2">
+                          {onDeleteBlock && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (window.confirm(`هل أنت متأكد من حذف القالب "${block.program_name}"؟`)) {
+                                  onDeleteBlock(block.id);
+                                }
+                              }}
+                              className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xs active:scale-90 transition-all"
+                              title="حذف القالب"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {selectedBlockId === block.id && (
+                            <div className="w-2 h-2 rounded-full bg-violet-500 shrink-0 ml-1"></div>
+                          )}
                         </div>
-                        {selectedBlockId === block.id && (
-                          <div className="w-2 h-2 rounded-full bg-violet-500 shrink-0"></div>
-                        )}
-                      </button>
+                      </div>
                     ))
                   ) : (
                     <div className="text-center py-8 text-xs text-slate-400">لا توجد قوالب محفوظة بهذا الاسم</div>

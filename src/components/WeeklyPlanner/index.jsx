@@ -153,7 +153,14 @@ const distributeWeeksToPhases = (numWeeks) => {
 };
 
 export default function WeeklyPlanner() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('forcepeak_theme');
+    if (savedTheme !== null) return savedTheme === 'dark';
+    if (typeof window !== 'undefined' && window.innerWidth < 768) {
+      return true;
+    }
+    return false;
+  });
   const [isMobileView, setIsMobileView] = useState(false);
   const [currentView, setCurrentView] = useState('planner');
   const [dashboardSearch, setDashboardSearch] = useState('');
@@ -376,6 +383,7 @@ export default function WeeklyPlanner() {
   useEffect(() => {
     if (isDarkMode) document.documentElement.classList.add('dark');
     else document.documentElement.classList.remove('dark');
+    localStorage.setItem('forcepeak_theme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
   const getDbDateStr = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -406,8 +414,20 @@ export default function WeeklyPlanner() {
       const { data } = await supabase.from('agilitylap_athletes').select('*').order('created_at', { ascending: false });
       if (data && data.length > 0) {
         const formattedData = data.map(a => ({ 
-          ...a, birthYear: a.birth_year, bodyFat: a.body_fat, verticalJump: a.vertical_jump, 
-          standingLongJump: a.standing_long_jump, squatJump: a.squat_jump, halfSquat: a.half_squat, quarterSquat: a.quarter_squat, fullSquat: a.full_squat, deadlift: a.deadlift 
+          ...a, 
+          birthYear: a.birth_year, 
+          bodyFat: a.body_fat, 
+          verticalJump: a.vertical_jump, 
+          squatJump: a.squat_jump, 
+          rsi: a.rsi,
+          fullSquat: a.full_squat, 
+          frontSquat: a.front_squat,
+          deadlift: a.deadlift,
+          bench: a.bench,
+          powerClean: a.power_clean || a.clean,
+          clean: a.power_clean || a.clean,
+          hangClean: a.hang_clean,
+          groupName: a.group_name || a.groupName
         }));
 
         // Sort by forcepeak_athlete_order from localStorage
@@ -1617,11 +1637,12 @@ export default function WeeklyPlanner() {
     
     const title = (modalDrill.title || '').toLowerCase();
     let maxWeight = null;
-    if (title.includes('clean')) maxWeight = selectedAthlete.clean;
+    if (title.includes('power clean')) maxWeight = selectedAthlete.powerClean || selectedAthlete.clean;
+    else if (title.includes('hang clean')) maxWeight = selectedAthlete.hangClean;
+    else if (title.includes('clean')) maxWeight = selectedAthlete.powerClean || selectedAthlete.clean;
     else if (title.includes('bench')) maxWeight = selectedAthlete.bench;
     else if (title.includes('deadlift')) maxWeight = selectedAthlete.deadlift;
-    else if (title.includes('half squat')) maxWeight = selectedAthlete.halfSquat;
-    else if (title.includes('quarter squat')) maxWeight = selectedAthlete.quarterSquat;
+    else if (title.includes('front squat')) maxWeight = selectedAthlete.frontSquat;
     else if (title.includes('squat')) maxWeight = selectedAthlete.fullSquat;
 
     if (maxWeight > 0) {
@@ -2084,8 +2105,69 @@ export default function WeeklyPlanner() {
     handleToast(`Day template applied to ${targetDay}!`);
   };
 
-  const handleAddAthlete = async () => { if(newAthleteData.name.trim()) { const newAthlete = { name: newAthleteData.name, birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null }; const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); if (data && data.length > 0) { const addedAthlete = { ...data[0], birthYear: data[0].birth_year, bodyFat: data[0].body_fat, verticalJump: data[0].vertical_jump, halfSquat: data[0].half_squat, quarterSquat: data[0].quarter_squat }; const updatedAthletes = [addedAthlete, ...athletes]; setAthletes(updatedAthletes); const newOrderIds = updatedAthletes.map(a => a.id); localStorage.setItem('forcepeak_athlete_order', JSON.stringify(newOrderIds)); setSelectedAthleteId(addedAthlete.id); setNewAthleteData({ name: '', birthYear: '', weight: '' }); setShowAddAthleteModal(false); } } };
-  const handleSaveProfile = async (updatedProfile) => { const { error } = await supabase.from('agilitylap_athletes').update({ name: updatedProfile.name, birth_year: updatedProfile.birthYear ? parseInt(updatedProfile.birthYear) : null, weight: updatedProfile.weight ? parseFloat(updatedProfile.weight) : null, height: updatedProfile.height ? parseFloat(updatedProfile.height) : null, body_fat: updatedProfile.bodyFat ? parseFloat(updatedProfile.bodyFat) : null, vertical_jump: updatedProfile.verticalJump ? parseFloat(updatedProfile.verticalJump) : null, standing_long_jump: updatedProfile.standingLongJump ? parseFloat(updatedProfile.standingLongJump) : null, squat_jump: updatedProfile.squatJump ? parseFloat(updatedProfile.squatJump) : null, clean: updatedProfile.clean ? parseFloat(updatedProfile.clean) : null, half_squat: updatedProfile.halfSquat ? parseFloat(updatedProfile.halfSquat) : null, quarter_squat: updatedProfile.quarterSquat ? parseFloat(updatedProfile.quarterSquat) : null, full_squat: updatedProfile.fullSquat ? parseFloat(updatedProfile.fullSquat) : null, bench: updatedProfile.bench ? parseFloat(updatedProfile.bench) : null, deadlift: updatedProfile.deadlift ? parseFloat(updatedProfile.deadlift) : null, }).eq('id', updatedProfile.id); if (!error) { setAthletes(prev => prev.map(a => a.id === updatedProfile.id ? updatedProfile : a)); setShowProfileModal(false); handleToast('Profile updated'); } };
+  const handleAddAthlete = async () => { 
+    if(newAthleteData.name.trim()) { 
+      const newAthlete = { 
+        name: newAthleteData.name, 
+        birth_year: newAthleteData.birthYear ? parseInt(newAthleteData.birthYear) : null, 
+        weight: newAthleteData.weight ? parseFloat(newAthleteData.weight) : null 
+      }; 
+      const { data } = await supabase.from('agilitylap_athletes').insert([newAthlete]).select(); 
+      if (data && data.length > 0) { 
+        const addedAthlete = { 
+          ...data[0], 
+          birthYear: data[0].birth_year, 
+          bodyFat: data[0].body_fat, 
+          verticalJump: data[0].vertical_jump, 
+          squatJump: data[0].squat_jump, 
+          rsi: data[0].rsi,
+          fullSquat: data[0].full_squat, 
+          frontSquat: data[0].front_squat,
+          deadlift: data[0].deadlift,
+          bench: data[0].bench,
+          powerClean: data[0].power_clean || data[0].clean,
+          clean: data[0].power_clean || data[0].clean,
+          hangClean: data[0].hang_clean,
+          groupName: data[0].group_name || data[0].groupName
+        }; 
+        const updatedAthletes = [addedAthlete, ...athletes]; 
+        setAthletes(updatedAthletes); 
+        const newOrderIds = updatedAthletes.map(a => a.id); 
+        localStorage.setItem('forcepeak_athlete_order', JSON.stringify(newOrderIds)); 
+        setSelectedAthleteId(addedAthlete.id); 
+        setNewAthleteData({ name: '', birthYear: '', weight: '' }); 
+        setShowAddAthleteModal(false); 
+      } 
+    } 
+  };
+  const handleSaveProfile = async (updatedProfile) => {
+    const payload = {
+      name: updatedProfile.name,
+      group_name: updatedProfile.groupName || null,
+      birth_year: updatedProfile.birthYear ? parseInt(updatedProfile.birthYear) : null,
+      weight: updatedProfile.weight ? parseFloat(updatedProfile.weight) : null,
+      height: updatedProfile.height ? parseFloat(updatedProfile.height) : null,
+      body_fat: updatedProfile.bodyFat ? parseFloat(updatedProfile.bodyFat) : null,
+      vertical_jump: updatedProfile.verticalJump ? parseFloat(updatedProfile.verticalJump) : null,
+      squat_jump: updatedProfile.squatJump ? parseFloat(updatedProfile.squatJump) : null,
+      rsi: updatedProfile.rsi ? parseFloat(updatedProfile.rsi) : null,
+      clean: updatedProfile.powerClean || updatedProfile.clean ? parseFloat(updatedProfile.powerClean || updatedProfile.clean) : null,
+      power_clean: updatedProfile.powerClean ? parseFloat(updatedProfile.powerClean) : null,
+      hang_clean: updatedProfile.hangClean ? parseFloat(updatedProfile.hangClean) : null,
+      full_squat: updatedProfile.fullSquat ? parseFloat(updatedProfile.fullSquat) : null,
+      front_squat: updatedProfile.frontSquat ? parseFloat(updatedProfile.frontSquat) : null,
+      bench: updatedProfile.bench ? parseFloat(updatedProfile.bench) : null,
+      deadlift: updatedProfile.deadlift ? parseFloat(updatedProfile.deadlift) : null,
+    };
+    const { error } = await supabase.from('agilitylap_athletes').update(payload).eq('id', updatedProfile.id);
+    if (!error) {
+      setAthletes(prev => prev.map(a => a.id === updatedProfile.id ? { ...a, ...updatedProfile } : a));
+      setShowProfileModal(false);
+      handleToast('Profile updated');
+    } else {
+      handleToast('Error updating profile: ' + error.message);
+    }
+  };
 
   const handleDeleteAthlete = async (athleteId) => {
     if (!athleteId) return;
@@ -2104,6 +2186,22 @@ export default function WeeklyPlanner() {
       handleToast('Athlete profile deleted successfully!');
     } else {
       handleToast('Error deleting athlete profile.');
+    }
+  };
+
+  const handleDeleteBlockTemplate = async (blockId) => {
+    if (!blockId) return;
+    try {
+      const { error } = await supabase.from('agilitylap_programs').delete().eq('id', blockId);
+      if (!error) {
+        if (selectedBlockId === blockId) setSelectedBlockId(null);
+        setPrograms(prev => prev.filter(p => p.id !== blockId));
+        handleToast('تم حذف القالب بنجاح');
+      } else {
+        handleToast('فشل في حذف القالب: ' + error.message);
+      }
+    } catch (err) {
+      console.error(err);
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
@@ -4068,6 +4166,7 @@ export default function WeeklyPlanner() {
         setShowAddAthleteModal={setShowAddAthleteModal} setShowProfileModal={setShowProfileModal} isMobileView={isMobileView} setIsMobileView={setIsMobileView} isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode}
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal} weeklyStats={weeklyStats}
         isOnline={isOnline} syncStatus={syncStatus} onDelete={handleDeleteAthlete}
+        onDeleteBlock={handleDeleteBlockTemplate}
         onMoveAthlete={handleMoveAthlete}
         setShowPeriodizationPlanner={setShowPeriodizationPlanner}
         selectedBlockId={selectedBlockId}
@@ -4410,57 +4509,58 @@ export default function WeeklyPlanner() {
                 }`}>
                   
                   {/* Header of Active Day */}
-                  <div className="flex flex-col pb-3 border-b border-slate-100 dark:border-slate-700/80">
-                    <div className="flex justify-between items-baseline mb-2">
+                  <div className="flex flex-col pb-3.5 border-b border-slate-100 dark:border-slate-700/80 gap-2.5">
+                    <div className="flex justify-between items-center">
                       <div className="flex items-center gap-2">
                         {!isTemplateEditing && (
                           <button
                             onClick={() => handleToggleDayCompleted(day)}
-                            className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                            className={`w-6 h-6 rounded-lg border flex items-center justify-center transition-all ${
                               completedDays[day]
-                                ? 'bg-green-500 border-green-500 text-white'
-                                : 'border-slate-350 dark:border-slate-600 hover:border-green-500 bg-white dark:bg-slate-900 text-transparent'
+                                ? 'bg-green-500 border-green-500 text-white shadow-sm'
+                                : 'border-slate-300 dark:border-slate-600 hover:border-green-500 bg-white dark:bg-slate-900 text-transparent'
                             }`}
                           >
                             <Check className="w-3.5 h-3.5 stroke-[3]" />
                           </button>
                         )}
-                        <span className="text-xs font-black uppercase text-orange-500 tracking-widest">{day}</span>
+                        <span className="text-xs font-black uppercase text-orange-500 tracking-wider">{day}</span>
+                        <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500">• {fullDateStr}</span>
                       </div>
-                      <span className="text-xs text-slate-400">{fullDateStr}</span>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 shrink-0 rounded-full border border-slate-200 dark:border-slate-700 flex items-center justify-center text-base font-black text-slate-700 dark:text-slate-250 bg-slate-50 dark:bg-slate-900 shadow-inner">
-                          {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
-                        </div>
-                        <textarea 
-                          data-autoresize
-                          value={dayTitles[day] || ''} 
-                          onChange={(e) => handleDayTitleChange(day, e.target.value)} 
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              e.target.blur();
-                            }
-                          }}
-                          placeholder="Add Focus" 
-                          rows={1}
-                          className="text-base font-bold text-slate-800 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400 resize-none overflow-hidden leading-tight py-0.5" 
-                          readOnly={isPreviewMode}
-                        />
-                      </div>
+
+                      {/* Day Action Buttons Bar (Clean, rounded, spaced) */}
                       {!isPreviewMode && (
-                        <div className="flex items-center gap-1">
-                          <button onClick={() => handleCopyDay(day)} className="p-2 text-slate-400 hover:text-blue-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Copy Day"><Copy className="w-4 h-4" /></button>
+                        <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-900/60 p-1 rounded-xl">
+                          <button onClick={() => handleCopyDay(day)} className="p-1.5 text-slate-400 hover:text-blue-500 dark:hover:text-blue-400 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors" title="Copy Day"><Copy className="w-3.5 h-3.5" /></button>
                           {clipboard && (
-                            <button onClick={() => handlePasteIntoDay(day)} className="p-2 text-slate-400 hover:text-green-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Paste Day"><ClipboardPaste className="w-4 h-4" /></button>
+                            <button onClick={() => handlePasteIntoDay(day)} className="p-1.5 text-slate-400 hover:text-green-500 dark:hover:text-green-400 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors" title="Paste Day"><ClipboardPaste className="w-3.5 h-3.5" /></button>
                           )}
-                          <button onClick={() => setSaveTemplateModal({isOpen: true, day, name: dayTitles[day] || ''})} className="p-2 text-slate-400 hover:text-orange-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Save as Template"><BookmarkPlus className="w-4 h-4" /></button>
-                          <button onClick={() => setDeleteConfirmation({isOpen: true, type: 'day', targetDay: day})} className="p-2 text-slate-350 hover:text-red-500 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors" title="Clear Day"><Trash2 className="w-4 h-4" /></button>
+                          <button onClick={() => setSaveTemplateModal({isOpen: true, day, name: dayTitles[day] || ''})} className="p-1.5 text-slate-400 hover:text-orange-500 dark:hover:text-orange-400 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors" title="Save as Template"><BookmarkPlus className="w-3.5 h-3.5" /></button>
+                          <button onClick={() => setDeleteConfirmation({isOpen: true, type: 'day', targetDay: day})} className="p-1.5 text-slate-400 hover:text-red-500 dark:hover:text-red-400 rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors" title="Clear Day"><Trash2 className="w-3.5 h-3.5" /></button>
                         </div>
                       )}
+                    </div>
+                    
+                    {/* Full-width Focus / Title Input Row */}
+                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-2xl border border-slate-150 dark:border-slate-800/80">
+                      <div className="w-9 h-9 shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-sm font-black text-slate-700 dark:text-slate-200 bg-white dark:bg-slate-800 shadow-xs">
+                        {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
+                      </div>
+                      <textarea 
+                        data-autoresize
+                        value={dayTitles[day] || ''} 
+                        onChange={(e) => handleDayTitleChange(day, e.target.value)} 
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.target.blur();
+                          }
+                        }}
+                        placeholder="Add day focus or theme..." 
+                        rows={1}
+                        className="text-sm font-bold text-slate-800 dark:text-white bg-transparent border-none outline-none w-full placeholder:text-slate-400 resize-none overflow-hidden leading-tight py-1" 
+                        readOnly={isPreviewMode}
+                      />
                     </div>
                   </div>
 
