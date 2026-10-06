@@ -7,6 +7,7 @@ import TimelineCard from './TimelineCard.jsx';
 import ExerciseLibrary from './ExerciseLibrary.jsx';
 import AthleteProfileModal from './AthleteProfileModal.jsx';
 import PeriodizationPlanner from './PeriodizationPlanner.jsx';
+import MobileBottomNav from './MobileBottomNav.jsx';
 import { supabase } from '../../supabaseClient.js';
 import { generateWeeklyPDF } from './pdfGenerator.js';
 import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
@@ -2474,7 +2475,7 @@ export default function WeeklyPlanner() {
     return (
       <div className="flex-1 overflow-hidden flex flex-col md:flex-row h-[calc(100vh-64px)] bg-[#F4F5F7] dark:bg-slate-900 font-sans" dir="rtl">
         {/* Left Side: Athletes Grid & Filters */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8 flex flex-col gap-6 pb-28 md:pb-8">
           {/* Greeting / Summary Cards */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
@@ -2650,7 +2651,7 @@ export default function WeeklyPlanner() {
         </div>
 
         {/* Right Side: Meso-Blocks directory sidebar */}
-        <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 flex flex-col gap-6 overflow-y-auto shrink-0">
+        <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 flex flex-col gap-6 overflow-y-auto shrink-0 pb-28 md:pb-6">
           <div>
             <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">
               Meso Blocks & Templates
@@ -3203,8 +3204,8 @@ export default function WeeklyPlanner() {
       )}
 
       {welcomePackModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl transition-all text-left">
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[92vh] overflow-y-auto shadow-2xl transition-all text-left animate-slideUp">
 
             {/* Header */}
             <div className="p-6 border-b border-slate-800 bg-slate-900/50 flex justify-between items-start">
@@ -3511,8 +3512,8 @@ export default function WeeklyPlanner() {
       )}
 
       {addExerciseModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4 print:hidden">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden p-6">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4 print:hidden animate-fadeIn">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto p-5 sm:p-6 animate-slideUp">
             <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
               <Plus className="w-6 h-6 text-orange-500" /> {addExerciseModal.id ? 'Edit Exercise' : 'Create Exercise'}
             </h3>
@@ -3681,17 +3682,17 @@ export default function WeeklyPlanner() {
                 <textarea value={addExerciseModal.details} onChange={(e) => setAddExerciseModal({...addExerciseModal, details: e.target.value})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-orange-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" />
               </div>
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: ''})} className="px-5 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
-              <button onClick={handleSaveLibraryExercise} className="px-8 py-2 bg-orange-500 text-white rounded-xl font-bold text-sm">Save</button>
+            <div className="flex justify-end gap-3 mt-6 pt-3 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 z-10">
+              <button onClick={() => setAddExerciseModal({isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: ''})} className="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm">Cancel</button>
+              <button onClick={handleSaveLibraryExercise} className="px-8 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold text-sm shadow-md">Save</button>
             </div>
           </div>
         </div>
       )}
 
       {dayDrillModal.isOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[150] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto p-5 sm:p-6 animate-slideUp">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold flex items-center gap-2">{dayDrillModal.isNew ? <Plus className="w-5 h-5 text-green-500" /> : <Edit2 className="w-5 h-5 text-blue-500" />} {dayDrillModal.isNew ? 'Add Exercise' : 'Edit Metrics'}</h3>
               <button onClick={() => setDayDrillModal({ isOpen: false, day: null, drill: null, isNew: false })} className="p-1 bg-slate-100 rounded-full"><X className="w-5 h-5"/></button>
@@ -3826,11 +3827,11 @@ export default function WeeklyPlanner() {
               <div><label className="block text-xs font-bold text-slate-500 mb-1">Video URL</label><input type="text" placeholder="e.g. https://youtube.com/..." value={dayDrillModal.drill.video_url || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, video_url: e.target.value}})} className="w-full px-4 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" /></div>
               <div><label className="block text-xs font-bold text-slate-500 mb-1">Notes</label><textarea value={dayDrillModal.drill.details} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, details: e.target.value}})} className="w-full px-4 py-2 border rounded-xl h-20 outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" /></div>
             </div>
-            <div className="pt-4 mt-4 border-t flex justify-between items-center">
-               {!dayDrillModal.isNew ? ( <button onClick={() => { handleDeleteExercise(dayDrillModal.day, dayDrillModal.drill.id); setDayDrillModal({isOpen: false, day: null, drill: null, isNew: false}); }} className="px-4 py-2 text-red-500 font-bold text-sm flex gap-2"><Trash2 className="w-4 h-4"/> Delete</button> ) : <div></div>}
+            <div className="pt-3 mt-4 border-t border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 sticky bottom-0 flex justify-between items-center z-10">
+               {!dayDrillModal.isNew ? ( <button onClick={() => { handleDeleteExercise(dayDrillModal.day, dayDrillModal.drill.id); setDayDrillModal({isOpen: false, day: null, drill: null, isNew: false}); }} className="px-3.5 py-2 text-red-500 font-bold text-sm flex items-center gap-1.5 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-all"><Trash2 className="w-4 h-4"/> Delete</button> ) : <div></div>}
               <div className="flex gap-2">
-                <button onClick={() => setDayDrillModal({ isOpen: false, day: null, drill: null, isNew: false })} className="px-4 py-2 bg-slate-100 rounded-xl font-bold text-sm">Cancel</button>
-                <button onClick={handleSaveDayDrillModal} className={`px-6 py-2 ${dayDrillModal.isNew ? 'bg-green-500' : 'bg-blue-500'} text-white rounded-xl font-bold text-sm flex gap-2`}><Save className="w-4 h-4"/> {dayDrillModal.isNew ? 'Add' : 'Save'}</button>
+                <button onClick={() => setDayDrillModal({ isOpen: false, day: null, drill: null, isNew: false })} className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm">Cancel</button>
+                <button onClick={handleSaveDayDrillModal} className={`px-6 py-2 ${dayDrillModal.isNew ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'} text-white rounded-xl font-bold text-sm flex items-center gap-2 shadow-md`}><Save className="w-4 h-4"/> {dayDrillModal.isNew ? 'Add' : 'Save'}</button>
               </div>
             </div>
           </div>
@@ -3838,8 +3839,8 @@ export default function WeeklyPlanner() {
       )}
 
       {showStatsModal && (
-        <div className="fixed inset-0 bg-slate-900/60 z-[200] flex items-center justify-center p-4" onClick={() => setShowStatsModal(false)}>
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 scrollbar-thin" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn" onClick={() => setShowStatsModal(false)}>
+          <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 scrollbar-thin animate-slideUp" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold flex items-center gap-2"><BarChart3 className="w-6 h-6 text-orange-500" /> Workload Analytics</h3>
               <button onClick={() => setShowStatsModal(false)} className="p-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 rounded-full transition-colors"><X className="w-5 h-5 dark:text-white"/></button>
@@ -4305,7 +4306,62 @@ export default function WeeklyPlanner() {
           </div>
 
           {/* Premium Mobile-Native Smart Tabs Interface */}
-          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-4 space-y-4 ${showLibrary ? 'pb-20' : 'pb-16'}`}>
+          <div className={`${isMobileView ? 'block' : 'block md:hidden'} print:hidden p-3.5 sm:p-4 space-y-3.5 pb-28`}>
+            {/* Mobile Week Bar: Previous / Date Range / Next & Today */}
+            {!isTemplateEditing && (
+              <div className="flex items-center justify-between bg-white dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700/80 rounded-2xl px-3 py-2 shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newDate = new Date(currentDate);
+                    newDate.setDate(newDate.getDate() - 7);
+                    setCurrentDate(newDate);
+                  }}
+                  className="p-2 text-slate-600 dark:text-slate-350 hover:text-orange-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
+                  title="الأسبوع السابق"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xs font-black text-slate-800 dark:text-white leading-tight">
+                      {monthYearString}
+                    </span>
+                    <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wider">
+                      {(() => {
+                        const start = new Date(currentWeekStart);
+                        const end = new Date(start);
+                        end.setDate(end.getDate() + 6);
+                        return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+                      })()}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentDate(new Date())}
+                    className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-350 hover:text-orange-500 bg-slate-100 dark:bg-slate-700/60 rounded-lg transition-all active:scale-95"
+                  >
+                    اليوم
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newDate = new Date(currentDate);
+                    newDate.setDate(newDate.getDate() + 7);
+                    setCurrentDate(newDate);
+                  }}
+                  className="p-2 text-slate-600 dark:text-slate-350 hover:text-orange-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-all active:scale-95"
+                  title="الأسبوع التالي"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
             {/* Day Selector Pills */}
             <div className="flex overflow-x-auto gap-2 pb-2 scrollbar-none snap-x snap-mandatory">
               {DAYS_OF_WEEK.map((day, index) => {
@@ -4609,6 +4665,32 @@ export default function WeeklyPlanner() {
             </main>
           </div>
         )}
+
+      {/* 📱 Native Mobile Bottom Navigation Bar */}
+      <MobileBottomNav
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        showLibrary={showLibrary}
+        setShowLibrary={setShowLibrary}
+        onShowStats={() => setShowStatsModal(true)}
+        onCopyWeek={handleCopyWeek}
+        onPasteWeek={handlePasteWeek}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        canUndo={historyIndex > 0}
+        canRedo={historyIndex < history.length - 1}
+        onExportPDF={handleExportPDF}
+        onOpenWelcomePack={() => setWelcomePackModal({ isOpen: true, langMode: 'mix' })}
+        onClearWeek={() => setDeleteConfirmation({ isOpen: true, type: 'week' })}
+        onBulkSave={() => setBulkSaveModal({ isOpen: true, startDate: '', endDate: '', programName: '', tags: '', saveType: 'mix', deficitProtocol: 'FDP', level: 'Beginner' })}
+        isFourWeekView={currentView === 'four_week'}
+        onToggleFourWeekView={() => setCurrentView(currentView === 'four_week' ? 'planner' : 'four_week')}
+        isPreviewMode={isPreviewMode}
+        setIsPreviewMode={setIsPreviewMode}
+        isEditingBlock={isEditingBlock}
+        onDeployBlock={handleOpenDeployBlockModal}
+        selectedAthlete={selectedAthlete}
+      />
 
     </div>
   );

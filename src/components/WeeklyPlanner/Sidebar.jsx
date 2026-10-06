@@ -8,7 +8,7 @@ export default function Sidebar({
   onOpenWelcomePack
 }) {
   return (
-    <aside className="fixed bottom-0 left-0 w-full h-16 md:relative md:w-16 md:h-full bg-white dark:bg-slate-800 border-t md:border-t-0 md:border-r border-slate-200 dark:border-slate-700 flex flex-row md:flex-col items-center justify-between px-2 sm:px-4 md:py-4 md:px-0 z-[100] shrink-0 print:hidden overflow-x-auto md:overflow-visible transition-colors duration-200">
+    <aside className="hidden md:flex md:relative md:w-16 md:h-full bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex-col items-center justify-between py-4 px-0 z-30 shrink-0 print:hidden overflow-visible transition-colors duration-200">
       
       {/* Top/Left Action Tools */}
       <div className="flex flex-row md:flex-col items-center gap-1 sm:gap-3 w-max md:w-full">
