@@ -429,7 +429,10 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
           doc.text(repVal ? `${repVal}${unitStr}` : '-', margin + 124, dataY, { align: 'center' });
 
           const pct = safeTxt(drill.percentage);
-          doc.text(pct ? `${pct}%` : '-', margin + 148, dataY, { align: 'center' });
+          const hasW = drill.weight !== undefined && drill.weight !== null && drill.weight !== '';
+          const wStr = hasW ? `${drill.weight}${(drill.weightUnit || drill.weight_unit || 'kg').toUpperCase()}` : '';
+          const loadDisplay = (pct && wStr) ? `${wStr} (${pct}%)` : (wStr || (pct ? `${pct}%` : '-'));
+          doc.text(loadDisplay, margin + 148, dataY, { align: 'center' });
 
           const rest = safeTxt(drill.rest);
           doc.text(rest || '-', margin + 168, dataY, { align: 'center' });
@@ -661,8 +664,10 @@ export async function generateWeeklyPDF({ schedule, dayTitles, weekDatesFull, se
             else if (u === 'min') repsStr += 'm';
             else if (u === 'jumps') repsStr += 'j';
           }
+          const weightStr = (drill.weight !== undefined && drill.weight !== null && drill.weight !== '') ? `${drill.weight}${(drill.weightUnit || drill.weight_unit || 'kg').toUpperCase()}` : '';
           const intensityStr = drill.percentage ? `@${drill.percentage}%` : '';
-          doc.text(`${setsStr} x ${repsStr} ${intensityStr}`.trim(), colX + 4.5, drillY + paramOffset);
+          const loadStr = [weightStr, intensityStr].filter(Boolean).join(' ');
+          doc.text(`${setsStr} x ${repsStr} ${loadStr}`.trim(), colX + 4.5, drillY + paramOffset);
 
           // Rest interval, VBT and notes combined
           let footerTxt = '';

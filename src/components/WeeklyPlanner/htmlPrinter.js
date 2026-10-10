@@ -140,6 +140,9 @@ export function generateWeeklyHTMLPrint({
           else if (u === 'jumps') unitStr = 'j';
         }
 
+        const weightVal = (drill.weight !== undefined && drill.weight !== null && drill.weight !== '') 
+          ? `${drill.weight} ${(drill.weightUnit || drill.weight_unit || 'kg').toUpperCase()}` 
+          : '';
         const intensityVal = drill.percentage ? `@${drill.percentage}%` : '';
 
         // Extract and clean notes to prevent quotes escaping bugs
@@ -161,6 +164,7 @@ export function generateWeeklyHTMLPrint({
             </div>
             
             <div class="drill-params">
+              ${weightVal ? `<div class="param-badge text-blue-600 font-bold">🏋️ <strong>${esc(weightVal)}</strong></div>` : ''}
               <div class="param-badge"><strong>${drill.sets || '-'}</strong> Sets</div>
               <div class="param-badge"><strong>${repsVal || '-'}${unitStr}</strong> Volume</div>
               <div class="param-badge"><strong>${intensityVal || '-'}</strong> Intensity</div>

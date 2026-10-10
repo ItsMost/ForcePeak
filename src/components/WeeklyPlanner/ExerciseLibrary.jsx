@@ -202,7 +202,7 @@ export default function ExerciseLibrary({
         {/* Tab 1: Exercises Module Archive */}
         {activeTab === 'exercises' && (
           <>
-            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
+            <button onClick={() => setAddExerciseModal({ isOpen: true, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' })} className="w-full py-2.5 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl flex items-center justify-center gap-2 text-slate-500 hover:text-orange-500 hover:border-orange-500/50 text-xs font-bold transition-all mb-3">
               <Plus className="w-4 h-4" /> Add Global Exercise
             </button>
             
@@ -221,6 +221,11 @@ export default function ExerciseLibrary({
                       )}
                       <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{drill.title}</h5>
                       
+                      {(drill.weight !== undefined && drill.weight !== null && drill.weight !== '') && (
+                        <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/50 dark:border-blue-800/40">
+                          {drill.weight} {drill.weightUnit || drill.weight_unit || 'kg'}
+                        </span>
+                      )}
                       {(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity) && (
                         <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded border border-cyan-200/50 dark:border-cyan-800/40">
                           MV: {drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity} m/s

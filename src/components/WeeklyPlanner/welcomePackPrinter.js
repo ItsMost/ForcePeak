@@ -217,6 +217,9 @@ export function generateWelcomePackHTML({
 
       const repsVal = (drillUnit === 'meters' || drillUnit === 'm') ? drill.distance : drill.reps;
       const repsDisplay = repsVal ? `${repsVal} ${repsUnitStr}` : '';
+      const weightVal = (drill.weight !== undefined && drill.weight !== null && drill.weight !== '') 
+        ? `${drill.weight} ${(drill.weightUnit || drill.weight_unit || 'kg').toUpperCase()}` 
+        : '';
       const intensityVal = drill.percentage ? `@${drill.percentage}%` : '';
 
       // Clean double quotes safely
@@ -234,6 +237,7 @@ export function generateWelcomePackHTML({
           </div>
           
           <div class="drill-params">
+            ${weightVal ? `<div class="param-badge text-blue">🏋️ <strong>${esc(weightVal)}</strong></div>` : ''}
             ${drill.sets ? `<div class="param-badge"><strong>${esc(drill.sets)}</strong> Sets</div>` : ''}
             ${repsDisplay ? `<div class="param-badge"><strong>${esc(repsDisplay)}</strong></div>` : ''}
             ${intensityVal ? `<div class="param-badge text-orange"><strong>${esc(intensityVal)}</strong></div>` : ''}

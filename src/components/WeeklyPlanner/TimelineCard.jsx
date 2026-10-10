@@ -67,6 +67,7 @@ export default function TimelineCard({
   let calculatedWeight = null;
   let calculatedBwWeight = null;
   let calculatedIntensityFromBw = null;
+  let calculatedIntensityFromDirectWeight = null;
 
   const title = (drill.title || '').toLowerCase();
   let maxWeight = null;
@@ -79,6 +80,16 @@ export default function TimelineCard({
     else if (title.includes('deadlift')) maxWeight = athlete.deadlift;
     else if (title.includes('front squat')) maxWeight = athlete.frontSquat;
     else if (title.includes('squat')) maxWeight = athlete.fullSquat;
+  }
+
+  // Direct Target Weight (explicit KG / LB prescribed by coach)
+  const hasDirectWeight = drill.weight !== undefined && drill.weight !== null && drill.weight !== '' && !isNaN(parseFloat(drill.weight));
+  const directWeight = hasDirectWeight ? parseFloat(drill.weight) : null;
+  const weightUnit = (drill.weightUnit || 'kg').toLowerCase();
+
+  if (hasDirectWeight && maxWeight > 0) {
+    const weightInKg = weightUnit === 'lb' ? directWeight * 0.45359237 : directWeight;
+    calculatedIntensityFromDirectWeight = Math.round((weightInKg / maxWeight) * 100);
   }
 
   // 1. Calculate from percentage (% 1RM)
@@ -177,24 +188,34 @@ export default function TimelineCard({
             {drill.title || "Unnamed Exercise"}
           </h4>
 
-          {/* Calculated Weight or Intensity Capsule */}
+          {/* Calculated / Prescribed Weight Capsule */}
           <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-            {calculatedWeight && (
+            {hasDirectWeight ? (
+              <span className="px-2 py-0.5 text-[9.5px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
+                {drill.weight} {weightUnit.toUpperCase()}
+              </span>
+            ) : calculatedWeight ? (
               <span className="px-2 py-0.5 text-[9.5px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
                 {calculatedWeight} KG
               </span>
-            )}
-            {drill.percentage && (
+            ) : null}
+
+            {drill.percentage ? (
               <span className="px-2 py-0.5 text-[9.5px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
                 {drill.percentage}% 1RM
               </span>
-            )}
+            ) : calculatedIntensityFromDirectWeight ? (
+              <span className="px-2 py-0.5 text-[9.5px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
+                ~{calculatedIntensityFromDirectWeight}% 1RM
+              </span>
+            ) : null}
+
             {drill.bwRatio && (
               <span className="px-2 py-0.5 text-[9.5px] font-black bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-lg border border-teal-200/50 dark:border-teal-800/40 shadow-xs">
                 {drill.bwRatio}x BW {calculatedBwWeight ? `(${calculatedBwWeight} KG)` : ''}
               </span>
             )}
-            {calculatedIntensityFromBw && (
+            {!drill.percentage && !calculatedIntensityFromDirectWeight && calculatedIntensityFromBw && (
               <span className="px-2 py-0.5 text-[9.5px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
                 {calculatedIntensityFromBw}%
               </span>

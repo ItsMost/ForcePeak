@@ -229,7 +229,7 @@ export default function WeeklyPlanner() {
   const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
   const [deployBlockModal, setDeployBlockModal] = useState({ isOpen: false, blockId: null, athleteId: '', startDate: '' });
 
-  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' });
+  const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [printMode, setPrintMode] = useState('landscape');
@@ -538,9 +538,14 @@ export default function WeeklyPlanner() {
 
   const fetchLibraryData = async () => {
     const { data: drillsData } = await supabase.from('library_drills').select('*').order('created_at', { ascending: false });
+    const formattedDrills = (drillsData || []).map(d => ({
+      ...d,
+      weight: d.weight !== undefined && d.weight !== null ? d.weight : '',
+      weightUnit: d.weight_unit || d.weightUnit || 'kg'
+    }));
     const { data: templatesData } = await supabase.from('agilitylap_templates').select('*').order('created_at', { ascending: false });
     const formattedTemplates = (templatesData || []).map(t => ({ id: t.id, title: t.template_name, type: t.template_type, drills: t.drills }));
-    setLibrary({ drills: drillsData || [], templates: formattedTemplates });
+    setLibrary({ drills: formattedDrills, templates: formattedTemplates });
 
     const { data: progData } = await supabase.from('agilitylap_programs').select('*').order('created_at', { ascending: false });
     setPrograms(progData || []);
@@ -1581,6 +1586,8 @@ export default function WeeklyPlanner() {
       details: drill.details || '', 
       type: drill.type || 'strength', 
       percentage: drill.percentage ? parseFloat(drill.percentage) : null, 
+      weight: drill.weight !== '' && !isNaN(parseFloat(drill.weight)) ? parseFloat(drill.weight) : null,
+      weight_unit: drill.weightUnit || drill.weight_unit || 'kg',
       sets: drill.sets || '', 
       reps: drill.reps || '', 
       rest: drill.rest || '', 
@@ -1596,7 +1603,7 @@ export default function WeeklyPlanner() {
     };
     const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
     if (!error && data) { 
-      const newItem = { ...data[0], meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' };
+      const newItem = { ...data[0], weight: drill.weight || '', weightUnit: drill.weightUnit || drill.weight_unit || 'kg', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' };
       setLibrary(prev => ({ ...prev, drills: [newItem, ...prev.drills] })); 
       handleToast('Exercise saved to library sidebar!'); 
     }
@@ -1610,6 +1617,8 @@ export default function WeeklyPlanner() {
       const newDrill = { 
         ...drill, 
         id: `lib-drill-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        weight: drill.weight !== undefined && drill.weight !== null ? drill.weight : '',
+        weightUnit: drill.weightUnit || drill.weight_unit || 'kg',
         subcategory: drill.subcategory || '',
         video_url: drill.video_url || '',
         meanVelocity: drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity || drill.targetVelocity || '',
@@ -1627,24 +1636,52 @@ export default function WeeklyPlanner() {
   const moveDrillUp = (day, index) => { if (index === 0) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index - 1], drills[index]] = [drills[index], drills[index - 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
   const moveDrillDown = (day, index) => { if (index === schedule[day].length - 1) return; setSchedule(prev => { const newSchedule = { ...prev }; const drills = [...newSchedule[day]]; [drills[index + 1], drills[index]] = [drills[index], drills[index + 1]]; newSchedule[day] = drills; pushToHistory(newSchedule, dayTitles); autoSaveDay(day, drills, dayTitles[day]); return newSchedule; }); };
 
-  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', targetVelocity: '', velocityLoss: '' }, isNew: true }); };
-  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', targetVelocity: drill.targetVelocity || drill.meanVelocity || drill.mean_velocity || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }, isNew: false }); };
+  const handleAddExerciseBtn = (day) => { setDayDrillModal({ isOpen: true, day: day, drill: { id: `w-${Date.now()}`, type: 'strength', subcategory: '', title: '', details: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', superset: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', targetVelocity: '', velocityLoss: '' }, isNew: true }); };
+  const handleEditExerciseBtn = (day, drill) => { setDayDrillModal({ isOpen: true, day: day, drill: { ...drill, weight: drill.weight !== undefined && drill.weight !== null ? drill.weight : '', weightUnit: drill.weightUnit || drill.weight_unit || 'kg', subcategory: drill.subcategory || '', bwRatio: drill.bwRatio || '', unit: drill.unit || 'reps', distance: drill.distance || '', superset: drill.superset || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', targetVelocity: drill.targetVelocity || drill.meanVelocity || drill.mean_velocity || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }, isNew: false }); };
+
+  const getAthleteMaxWeightForExercise = (title) => {
+    if (!selectedAthlete || !title) return null;
+    const lowerTitle = title.toLowerCase();
+    let maxWeight = null;
+    if (lowerTitle.includes('power clean')) maxWeight = selectedAthlete.powerClean || selectedAthlete.clean;
+    else if (lowerTitle.includes('hang clean')) maxWeight = selectedAthlete.hangClean;
+    else if (lowerTitle.includes('clean')) maxWeight = selectedAthlete.powerClean || selectedAthlete.clean;
+    else if (lowerTitle.includes('bench')) maxWeight = selectedAthlete.bench;
+    else if (lowerTitle.includes('deadlift')) maxWeight = selectedAthlete.deadlift;
+    else if (lowerTitle.includes('front squat')) maxWeight = selectedAthlete.frontSquat;
+    else if (lowerTitle.includes('squat')) maxWeight = selectedAthlete.fullSquat;
+    return maxWeight > 0 ? maxWeight : null;
+  };
+
+  const getCalculatedWeightFromPercentageInModal = (modalDrill) => {
+    if (!selectedAthlete || !modalDrill || !modalDrill.percentage) return null;
+    const pct = parseFloat(modalDrill.percentage);
+    if (isNaN(pct) || pct <= 0) return null;
+    const maxWeight = getAthleteMaxWeightForExercise(modalDrill.title);
+    if (maxWeight > 0) {
+      return Math.round((maxWeight * pct) / 100);
+    }
+    return null;
+  };
+
+  const getCalculatedIntensityFromWeightInModal = (modalDrill) => {
+    if (!selectedAthlete || !modalDrill || modalDrill.weight === undefined || modalDrill.weight === '' || isNaN(parseFloat(modalDrill.weight))) return null;
+    const wVal = parseFloat(modalDrill.weight);
+    if (wVal <= 0) return null;
+    const maxWeight = getAthleteMaxWeightForExercise(modalDrill.title);
+    if (maxWeight > 0) {
+      const wKg = (modalDrill.weightUnit === 'lb') ? wVal * 0.45359237 : wVal;
+      return Math.round((wKg / maxWeight) * 100);
+    }
+    return null;
+  };
 
   const getCalculatedIntensityInModal = (modalDrill) => {
     if (!selectedAthlete || !modalDrill || !modalDrill.bwRatio) return null;
     const bwVal = parseFloat(modalDrill.bwRatio);
     if (isNaN(bwVal) || bwVal <= 0 || !selectedAthlete.weight) return null;
     
-    const title = (modalDrill.title || '').toLowerCase();
-    let maxWeight = null;
-    if (title.includes('power clean')) maxWeight = selectedAthlete.powerClean || selectedAthlete.clean;
-    else if (title.includes('hang clean')) maxWeight = selectedAthlete.hangClean;
-    else if (title.includes('clean')) maxWeight = selectedAthlete.powerClean || selectedAthlete.clean;
-    else if (title.includes('bench')) maxWeight = selectedAthlete.bench;
-    else if (title.includes('deadlift')) maxWeight = selectedAthlete.deadlift;
-    else if (title.includes('front squat')) maxWeight = selectedAthlete.frontSquat;
-    else if (title.includes('squat')) maxWeight = selectedAthlete.fullSquat;
-
+    const maxWeight = getAthleteMaxWeightForExercise(modalDrill.title);
     if (maxWeight > 0) {
       const calculatedWeight = bwVal * selectedAthlete.weight;
       return Math.round((calculatedWeight / maxWeight) * 100);
@@ -2205,7 +2242,7 @@ export default function WeeklyPlanner() {
     }
   };
   const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
-  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }); };
+  const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', weight: drill.weight !== undefined && drill.weight !== null ? drill.weight : '', weightUnit: drill.weightUnit || drill.weight_unit || 'kg', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }); };
   const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
@@ -2218,6 +2255,8 @@ export default function WeeklyPlanner() {
       subcategory: addExerciseModal.subcategory || null,
       percentage: addExerciseModal.percentage ? parseFloat(addExerciseModal.percentage) : null, 
       bwRatio: addExerciseModal.bwRatio ? parseFloat(addExerciseModal.bwRatio) : null,
+      weight: addExerciseModal.weight !== '' && !isNaN(parseFloat(addExerciseModal.weight)) ? parseFloat(addExerciseModal.weight) : null,
+      weight_unit: addExerciseModal.weightUnit || 'kg',
       sets: addExerciseModal.sets, 
       reps: addExerciseModal.reps, 
       rest: addExerciseModal.rest, 
@@ -2232,17 +2271,17 @@ export default function WeeklyPlanner() {
     if (addExerciseModal.id) {
       const { data, error } = await supabase.from('library_drills').update(drillData).eq('id', addExerciseModal.id).select();
       if(!error && data) { 
-        const updatedItem = { ...data[0], meanVelocity: addExerciseModal.meanVelocity, peakVelocity: addExerciseModal.peakVelocity, velocityLoss: addExerciseModal.velocityLoss };
+        const updatedItem = { ...data[0], weight: addExerciseModal.weight, weightUnit: addExerciseModal.weightUnit || 'kg', meanVelocity: addExerciseModal.meanVelocity, peakVelocity: addExerciseModal.peakVelocity, velocityLoss: addExerciseModal.velocityLoss };
         setLibrary(prev => ({ ...prev, drills: prev.drills.map(d => d.id === addExerciseModal.id ? updatedItem : d) })); 
-        setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' }); 
+        setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' }); 
         handleToast('Exercise updated'); 
       }
     } else {
       const { data, error } = await supabase.from('library_drills').insert([drillData]).select();
       if(!error && data) { 
-        const newItem = { ...data[0], meanVelocity: addExerciseModal.meanVelocity, peakVelocity: addExerciseModal.peakVelocity, velocityLoss: addExerciseModal.velocityLoss };
+        const newItem = { ...data[0], weight: addExerciseModal.weight, weightUnit: addExerciseModal.weightUnit || 'kg', meanVelocity: addExerciseModal.meanVelocity, peakVelocity: addExerciseModal.peakVelocity, velocityLoss: addExerciseModal.velocityLoss };
         setLibrary(prev => ({ ...prev, drills: [newItem, ...prev.drills] })); 
-        setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' }); 
+        setAddExerciseModal({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' }); 
         handleToast('Exercise added'); 
       }
     }
@@ -3646,21 +3685,74 @@ export default function WeeklyPlanner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Direct Target Weight */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">Target Weight</label>
+                    {getCalculatedIntensityFromWeightInModal(addExerciseModal) && (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded-md">
+                        ~{getCalculatedIntensityFromWeightInModal(addExerciseModal)}% 1RM
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 focus-within:ring-orange-500">
+                    <input 
+                      type="number" 
+                      step="0.5" 
+                      value={addExerciseModal.weight !== undefined && addExerciseModal.weight !== null ? addExerciseModal.weight : ''} 
+                      onChange={(e) => setAddExerciseModal({...addExerciseModal, weight: e.target.value})} 
+                      className="w-full text-sm px-3 py-2 outline-none dark:bg-slate-900 dark:text-white" 
+                      placeholder="e.g. 80" 
+                    />
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 border-l border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setAddExerciseModal({...addExerciseModal, weightUnit: 'kg'})}
+                        className={`px-2 py-1 text-[11px] font-black rounded-lg transition-all ${
+                          (addExerciseModal.weightUnit || 'kg') === 'kg'
+                            ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-xs'
+                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        KG
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAddExerciseModal({...addExerciseModal, weightUnit: 'lb'})}
+                        className={`px-2 py-1 text-[11px] font-black rounded-lg transition-all ${
+                          addExerciseModal.weightUnit === 'lb'
+                            ? 'bg-white dark:bg-slate-700 text-orange-600 dark:text-orange-400 shadow-xs'
+                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        LB
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Intensity (% 1RM) */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-bold text-slate-500">Intensity (% 1RM)</label>
-                    {getCalculatedIntensityInModal(addExerciseModal) && (
+                    {getCalculatedWeightFromPercentageInModal(addExerciseModal) ? (
+                      <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md">
+                        {getCalculatedWeightFromPercentageInModal(addExerciseModal)} kg
+                      </span>
+                    ) : getCalculatedIntensityInModal(addExerciseModal) ? (
                       <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md">
                         Auto: {getCalculatedIntensityInModal(addExerciseModal)}%
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="relative w-full">
                     <input type="number" value={addExerciseModal.percentage || ''} onChange={(e) => setAddExerciseModal({...addExerciseModal, percentage: e.target.value})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500" placeholder="0" />
                     <Percent className="w-3.5 h-3.5 absolute left-2 top-2.5 text-slate-400" />
                   </div>
                 </div>
+
+                {/* BW Ratio */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-bold text-slate-500">BW Ratio</label>
@@ -3826,21 +3918,74 @@ export default function WeeklyPlanner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Direct Target Weight */}
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-xs font-bold text-slate-500">Target Weight</label>
+                    {getCalculatedIntensityFromWeightInModal(dayDrillModal.drill) && (
+                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded-md">
+                        ~{getCalculatedIntensityFromWeightInModal(dayDrillModal.drill)}% 1RM
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                    <input 
+                      type="number" 
+                      step="0.5" 
+                      value={dayDrillModal.drill.weight !== undefined && dayDrillModal.drill.weight !== null ? dayDrillModal.drill.weight : ''} 
+                      onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, weight: e.target.value}})} 
+                      className="w-full text-sm px-3 py-2 outline-none dark:bg-slate-900 dark:text-white" 
+                      placeholder="e.g. 80" 
+                    />
+                    <div className="flex bg-slate-100 dark:bg-slate-800 p-0.5 border-l border-slate-200 dark:border-slate-700">
+                      <button
+                        type="button"
+                        onClick={() => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, weightUnit: 'kg'}})}
+                        className={`px-2 py-1 text-[11px] font-black rounded-lg transition-all ${
+                          (dayDrillModal.drill.weightUnit || 'kg') === 'kg'
+                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        KG
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, weightUnit: 'lb'}})}
+                        className={`px-2 py-1 text-[11px] font-black rounded-lg transition-all ${
+                          dayDrillModal.drill.weightUnit === 'lb'
+                            ? 'bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 shadow-xs'
+                            : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+                        }`}
+                      >
+                        LB
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Intensity (% 1RM) */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-bold text-slate-500">Intensity (% 1RM)</label>
-                    {getCalculatedIntensityInModal(dayDrillModal.drill) && (
+                    {getCalculatedWeightFromPercentageInModal(dayDrillModal.drill) ? (
+                      <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md">
+                        {getCalculatedWeightFromPercentageInModal(dayDrillModal.drill)} kg
+                      </span>
+                    ) : getCalculatedIntensityInModal(dayDrillModal.drill) ? (
                       <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 px-1.5 py-0.2 rounded-md">
                         Auto: {getCalculatedIntensityInModal(dayDrillModal.drill)}%
                       </span>
-                    )}
+                    ) : null}
                   </div>
                   <div className="relative w-full">
                     <input type="number" value={dayDrillModal.drill.percentage || ''} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, percentage: e.target.value}})} className="w-full text-sm py-2 pl-7 pr-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="0" />
                     <Percent className="w-3.5 h-3.5 absolute left-2 top-2.5 text-slate-400" />
                   </div>
                 </div>
+
+                {/* BW Ratio */}
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-bold text-slate-500">BW Ratio</label>
