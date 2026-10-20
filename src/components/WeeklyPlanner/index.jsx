@@ -8,12 +8,13 @@ import ExerciseLibrary from './ExerciseLibrary.jsx';
 import AthleteProfileModal from './AthleteProfileModal.jsx';
 import PeriodizationPlanner from './PeriodizationPlanner.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
-import { supabase } from '../../supabaseClient.js';
-import { generateWeeklyPDF } from './pdfGenerator.js';
+import { supabase } from '../../supabaseClient';
+import { generateWeeklyPDF } from '../../utils/pdfGenerator';
 import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
 import { generateWelcomePackHTML } from './welcomePackPrinter.js';
 
-const EXERCISE_CATEGORIES = { mobility: 'Mobility', core: 'Core', isometric: 'Isometric', power: 'Power', plyometric: 'Plyometric', strength: 'Strength', speed: 'Speed', endurance: 'Endurance', physical: 'Physical' };
+import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY, getUnifiedCategory } from '../../data/constants.js';
+
 const PHASE_COLORS = [
   { bg: 'bg-blue-500/15', border: 'border-blue-400', text: 'text-blue-600 dark:text-blue-400', hex: '#3b82f6', label: 'blue' },
   { bg: 'bg-violet-500/15', border: 'border-violet-400', text: 'text-violet-600 dark:text-violet-400', hex: '#8b5cf6', label: 'violet' },
@@ -23,6 +24,15 @@ const PHASE_COLORS = [
   { bg: 'bg-cyan-500/15', border: 'border-cyan-400', text: 'text-cyan-600 dark:text-cyan-400', hex: '#06b6d4', label: 'cyan' },
 ];
 const EXERCISE_TYPE_DOTS = {
+  max_strength_lower: { color: 'bg-blue-600', label: 'Strength Lower' },
+  max_strength_upper: { color: 'bg-indigo-600', label: 'Strength Upper' },
+  rofd_ballistics: { color: 'bg-orange-500', label: 'RFD & Power' },
+  elasticity_plyo: { color: 'bg-violet-500', label: 'Elastic Plyo' },
+  isometric_tendon: { color: 'bg-amber-500', label: 'Isometrics' },
+  sprint_speed: { color: 'bg-emerald-500', label: 'Sprint & Speed' },
+  trunk_rotation: { color: 'bg-purple-500', label: 'Trunk & Core' },
+  prehab_mobility: { color: 'bg-rose-500', label: 'Prehab & Mobility' },
+  // Legacy aliases
   power: { color: 'bg-orange-500', label: 'Power' },
   plyometric: { color: 'bg-indigo-500', label: 'Plyometric' },
   strength: { color: 'bg-blue-500', label: 'Strength' },
@@ -32,34 +42,6 @@ const EXERCISE_TYPE_DOTS = {
   isometric: { color: 'bg-cyan-500', label: 'Isometric' },
   endurance: { color: 'bg-pink-500', label: 'Endurance' },
   physical: { color: 'bg-slate-400', label: 'Physical' },
-};
-const SUBCATEGORIES = {
-  core: {
-    anti_extension: 'Anti-Extension',
-    anti_rotation: 'Anti-Rotation',
-    anti_lateral_flexion: 'Anti-Lateral Flexion',
-    anti_flexion: 'Anti-Flexion',
-    dynamic_rotational: 'Dynamic / Rotational',
-    // Fallbacks
-    rotation: 'Dynamic / Rotational',
-    extension: 'Anti-Extension',
-    flexion: 'Anti-Flexion',
-    lateral_flexion: 'Anti-Lateral Flexion'
-  },
-  strength: {
-    upper_body: 'Upper Body',
-    double_leg: 'Bilateral (Double Leg)',
-    single_leg: 'Unilateral (Single Leg)'
-  },
-  plyometric: {
-    upper_body: 'Upper Body',
-    double_leg: 'Bilateral (Double Leg)',
-    single_leg: 'Unilateral (Single Leg)'
-  },
-  power: {
-    double_leg: 'Bilateral (Double Leg)',
-    single_leg: 'Unilateral (Single Leg)'
-  }
 };
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -543,9 +525,27 @@ export default function WeeklyPlanner() {
       weight: d.weight !== undefined && d.weight !== null ? d.weight : '',
       weightUnit: d.weight_unit || d.weightUnit || 'kg'
     }));
+
+    // Merge standard enriched library drills from constants if not already present in Supabase
+    const existingTitles = new Set(formattedDrills.map(d => (d.title || d.name || '').toLowerCase().trim()));
+    const enrichedDrills = (INITIAL_LIBRARY.drills || [])
+      .filter(d => !existingTitles.has((d.title || d.name || '').toLowerCase().trim()))
+      .map(d => ({
+        ...d,
+        id: d.id || `preset-${Math.random().toString(36).substring(2, 9)}`,
+        title: d.title || d.name,
+        name: d.name || d.title,
+        weight: d.weight || '',
+        weightUnit: d.weightUnit || 'kg'
+      }));
+
+    const allDrills = [...formattedDrills, ...enrichedDrills];
+
     const { data: templatesData } = await supabase.from('agilitylap_templates').select('*').order('created_at', { ascending: false });
     const formattedTemplates = (templatesData || []).map(t => ({ id: t.id, title: t.template_name, type: t.template_type, drills: t.drills }));
-    setLibrary({ drills: formattedDrills, templates: formattedTemplates });
+    const finalTemplates = formattedTemplates.length > 0 ? formattedTemplates : (INITIAL_LIBRARY.templates || []);
+
+    setLibrary({ drills: allDrills, templates: finalTemplates });
 
     const { data: progData } = await supabase.from('agilitylap_programs').select('*').order('created_at', { ascending: false });
     setPrograms(progData || []);
@@ -3659,7 +3659,10 @@ export default function WeeklyPlanner() {
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
                   <select value={addExerciseModal.type} onChange={(e) => setAddExerciseModal({...addExerciseModal, type: e.target.value, subcategory: ''})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-orange-500">
-                    {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                    {Object.entries(ELITE_EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                    {!ELITE_EXERCISE_CATEGORIES[addExerciseModal.type] && EXERCISE_CATEGORIES[addExerciseModal.type] && (
+                      <option value={addExerciseModal.type}>{EXERCISE_CATEGORIES[addExerciseModal.type]}</option>
+                    )}
                   </select>
                 </div>
                 {SUBCATEGORIES[addExerciseModal.type] && (
@@ -3892,7 +3895,10 @@ export default function WeeklyPlanner() {
                 <div className="flex-1">
                   <label className="block text-xs font-bold text-slate-500 mb-1">Category</label>
                   <select value={dayDrillModal.drill.type} onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, type: e.target.value, subcategory: ''}})} className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500">
-                    {Object.entries(EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                    {Object.entries(ELITE_EXERCISE_CATEGORIES).map(([key, label]) => (<option key={key} value={key}>{label}</option>))}
+                    {!ELITE_EXERCISE_CATEGORIES[dayDrillModal.drill.type] && EXERCISE_CATEGORIES[dayDrillModal.drill.type] && (
+                      <option value={dayDrillModal.drill.type}>{EXERCISE_CATEGORIES[dayDrillModal.drill.type]}</option>
+                    )}
                   </select>
                 </div>
                 {SUBCATEGORIES[dayDrillModal.drill.type] && (

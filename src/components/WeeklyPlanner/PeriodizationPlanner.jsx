@@ -3,7 +3,7 @@ import {
   X, Layers, Calendar, Plus, Trash2, Edit2, Check, HelpCircle, 
   Sparkles, Dumbbell, Play, AlertTriangle, Save
 } from 'lucide-react';
-import { supabase } from '../../supabaseClient.js';
+import { supabase } from '../../supabaseClient';
 
 
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];

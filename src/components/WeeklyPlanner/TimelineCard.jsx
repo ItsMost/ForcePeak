@@ -1,7 +1,16 @@
 import React, { useState } from 'react';
 import { GripVertical, Edit2, Trash2, Dumbbell, Zap, Shield, Target, Copy, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Timer, Activity, ClipboardList, Video } from 'lucide-react';
+import { getUnifiedCategory } from '../../data/constants.js';
 
 const CATEGORY_STYLES = {
+  max_strength_lower: { label: 'MAX STRENGTH (LOWER)', color: 'text-blue-600 border-blue-500', bg: 'border-blue-100 bg-blue-50/50 dark:bg-blue-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> },
+  max_strength_upper: { label: 'MAX STRENGTH (UPPER)', color: 'text-indigo-600 border-indigo-500', bg: 'border-indigo-100 bg-indigo-50/50 dark:bg-indigo-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> },
+  rofd_ballistics: { label: 'RFD & BALLISTICS', color: 'text-orange-500 border-orange-500', bg: 'border-orange-100 bg-orange-50/50 dark:bg-orange-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
+  elasticity_plyo: { label: 'ELASTIC PLYOS', color: 'text-violet-500 border-violet-500', bg: 'border-violet-100 bg-violet-50/50 dark:bg-violet-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
+  isometric_tendon: { label: 'ISOMETRICS & TENDON', color: 'text-amber-500 border-amber-500', bg: 'border-amber-100 bg-amber-50/50 dark:bg-amber-950/20', icon: <Target className="w-3.5 h-3.5" /> },
+  sprint_speed: { label: 'SPRINT & SPEED', color: 'text-emerald-500 border-emerald-500', bg: 'border-emerald-100 bg-emerald-50/50 dark:bg-emerald-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
+  trunk_rotation: { label: 'TRUNK & ROTATION', color: 'text-purple-500 border-purple-500', bg: 'border-purple-100 bg-purple-50/50 dark:bg-purple-950/20', icon: <Shield className="w-3.5 h-3.5" /> },
+  prehab_mobility: { label: 'PREHAB & MOBILITY', color: 'text-rose-500 border-rose-500', bg: 'border-rose-100 bg-rose-50/50 dark:bg-rose-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
   mobility: { label: 'MOBILITY', color: 'text-rose-500 border-rose-500', bg: 'border-rose-100 bg-rose-50/50 dark:bg-rose-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
   core: { label: 'CORE', color: 'text-purple-500 border-purple-500', bg: 'border-purple-100 bg-purple-50/50 dark:bg-purple-950/20', icon: <Shield className="w-3.5 h-3.5" /> },
   isometric: { label: 'ISOMETRIC', color: 'text-amber-500 border-amber-500', bg: 'border-amber-100 bg-amber-50/50 dark:bg-amber-950/20', icon: <Target className="w-3.5 h-3.5" /> },
@@ -58,7 +67,8 @@ export default function TimelineCard({
   const [showNotes, setShowNotes] = useState(false);
 
   const safeType = drill.type ? drill.type.toLowerCase() : 'physical';
-  const style = CATEGORY_STYLES[safeType] || CATEGORY_STYLES.physical;
+  const unifiedKey = getUnifiedCategory(drill);
+  const style = CATEGORY_STYLES[safeType] || CATEGORY_STYLES[unifiedKey] || CATEGORY_STYLES.physical;
 
   const currentGroup = supersetGroup ? supersetGroup.toUpperCase() : '';
   const sStyle = SUPERSET_STYLES[currentGroup] || SUPERSET_STYLES.A;
