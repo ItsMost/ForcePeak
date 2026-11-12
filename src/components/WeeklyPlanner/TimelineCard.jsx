@@ -169,11 +169,11 @@ export default function TimelineCard({
         <div className="flex items-center justify-between gap-1.5 mb-1.5">
           <div className="flex items-center gap-1.5 flex-wrap">
             {isSuperset && (
-              <span className={`text-[8.5px] font-black px-1.5 py-0.5 rounded tracking-wider shadow-xs shrink-0 flex items-center gap-0.5 ${sStyle.badge}`}>
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded tracking-wider shadow-xs shrink-0 flex items-center gap-0.5 ${sStyle.badge}`}>
                 <Zap className="w-2.5 h-2.5 text-white" /> {supersetLabel}
               </span>
             )}
-            <span className={`text-[9px] font-black uppercase tracking-wider ${style.color}`}>
+            <span className={`text-[10px] font-black uppercase tracking-wider ${style.color}`}>
               {style.label}
             </span>
           </div>
@@ -201,32 +201,32 @@ export default function TimelineCard({
           {/* Calculated / Prescribed Weight Capsule */}
           <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
             {hasDirectWeight ? (
-              <span className="px-2 py-0.5 text-[9.5px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
                 {drill.weight} {weightUnit.toUpperCase()}
               </span>
             ) : calculatedWeight ? (
-              <span className="px-2 py-0.5 text-[9.5px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
                 {calculatedWeight} KG
               </span>
             ) : null}
 
             {drill.percentage ? (
-              <span className="px-2 py-0.5 text-[9.5px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
                 {drill.percentage}% 1RM
               </span>
             ) : calculatedIntensityFromDirectWeight ? (
-              <span className="px-2 py-0.5 text-[9.5px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
                 ~{calculatedIntensityFromDirectWeight}% 1RM
               </span>
             ) : null}
 
             {drill.bwRatio && (
-              <span className="px-2 py-0.5 text-[9.5px] font-black bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-lg border border-teal-200/50 dark:border-teal-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-lg border border-teal-200/50 dark:border-teal-800/40 shadow-xs">
                 {drill.bwRatio}x BW {calculatedBwWeight ? `(${calculatedBwWeight} KG)` : ''}
               </span>
             )}
             {!drill.percentage && !calculatedIntensityFromDirectWeight && calculatedIntensityFromBw && (
-              <span className="px-2 py-0.5 text-[9.5px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-orange-50 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400 rounded-lg border border-orange-200/50 dark:border-orange-800/40 shadow-xs">
                 {calculatedIntensityFromBw}%
               </span>
             )}
@@ -241,7 +241,7 @@ export default function TimelineCard({
                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-md font-black text-[10px] tracking-wider uppercase border border-slate-200/60 dark:border-slate-700/60">
                   {drill.sets || '-'} Sets
                 </span>
-                <span className="text-slate-400 text-[9px] font-black">x</span>
+                <span className="text-slate-400 text-[10px] font-black">x</span>
                 <span className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-md font-black text-[10px] tracking-wider uppercase border border-slate-200/60 dark:border-slate-700/60">
                   {(isMeters ? drill.distance : drill.reps) || '-'} {formatUnit(drill.unit)}
                 </span>

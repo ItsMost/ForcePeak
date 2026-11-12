@@ -1267,13 +1267,32 @@ export default function WeeklyPlanner({ onLogout }) {
   }, [selectedAthleteId, weekStartDateStr]);
 
   // Dynamic auto-resizing hook for day workout focus textareas to prevent title truncation
-  useEffect(() => {
-    const elements = document.querySelectorAll('textarea[data-autoresize]');
-    elements.forEach(el => {
+  // Skips hidden textareas (measuring them gives 0px and hides the title) and re-measures when the
+  // viewport width changes, since a narrower column needs more lines.
+  const resizeDayTitleTextareas = () => {
+    document.querySelectorAll('textarea[data-autoresize]').forEach(el => {
+      if (!el.offsetParent) return;
       el.style.height = 'auto';
       el.style.height = el.scrollHeight + 'px';
     });
-  }, [dayTitles, activeMobileDay, schedule]);
+  };
+
+  useEffect(() => {
+    resizeDayTitleTextareas();
+  }, [dayTitles, activeMobileDay, schedule, isMobileView]);
+
+  useEffect(() => {
+    let frame = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(resizeDayTitleTextareas);
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
 
   const handleSaveProgramBlock = async () => {
     if (!createProgramModal.name.trim()) return;
@@ -2363,7 +2382,7 @@ export default function WeeklyPlanner({ onLogout }) {
 
           {/* Week badge within deployment (top right, desktop only) */}
           {weekInfo && !isSelected && (
-            <span className="absolute top-1.5 right-1.5 text-[8px] font-black uppercase tracking-wider hidden sm:block opacity-60" style={{ color: deployment.color }}>
+            <span className="absolute top-1.5 right-1.5 text-[10px] font-black uppercase tracking-wider hidden sm:block opacity-60" style={{ color: deployment.color }}>
               W{weekInfo.week}/{weekInfo.total}
             </span>
           )}
@@ -2397,7 +2416,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 return <span key={ti} className={`w-1.5 h-1.5 rounded-full ${dotInfo.color}`} title={dotInfo.label}></span>;
               })}
               {exerciseTypes.length > 4 && (
-                <span className="text-[7px] font-bold text-slate-400">+{exerciseTypes.length - 4}</span>
+                <span className="text-[10px] font-bold text-slate-400">+{exerciseTypes.length - 4}</span>
               )}
             </div>
           )}
@@ -2408,7 +2427,7 @@ export default function WeeklyPlanner({ onLogout }) {
           )}
 
           {/* Bottom Plan Status Text Label (hidden on mobile) */}
-          <span className={`text-[8px] font-black uppercase tracking-wider sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block 
+          <span className={`text-[10px] font-black uppercase tracking-wider sm:text-left text-center w-full mt-auto truncate leading-none hidden sm:block 
             ${isSelected 
               ? 'text-orange-600 dark:text-orange-400' 
               : deployment
@@ -2489,7 +2508,7 @@ export default function WeeklyPlanner({ onLogout }) {
                     <div className={`mb-3 flex flex-col border-b pb-2 px-1.5 select-none ${isCompleted ? 'bg-green-500/10 border-green-200 dark:border-green-900/30 rounded-xl pt-2' : 'border-slate-200 dark:border-slate-800'}`}>
                       <div className="flex justify-between items-baseline mb-1.5">
                         <span className="text-[10px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">{day.dayName}</span>
-                        <span className="text-[9px] font-bold text-slate-400/80 dark:text-slate-600">{day.fullDateStr}</span>
+                        <span className="text-[10px] font-bold text-slate-400/80 dark:text-slate-600">{day.fullDateStr}</span>
                       </div>
                       {title && (
                         <span className="text-[11px] font-black text-slate-700 dark:text-slate-300 leading-tight" title={title}>{title}</span>
@@ -2517,9 +2536,9 @@ export default function WeeklyPlanner({ onLogout }) {
                                 <div className={`w-3.5 h-3.5 rounded-full border-2 shrink-0 mt-0.5 ${typeColor.replace('text-', 'border-')} bg-white dark:bg-slate-900`}></div>
                                 {/* Content */}
                                 <div className="flex-1 min-w-0">
-                                  <span className={`text-[8px] font-black uppercase tracking-wider block ${typeColor}`}>{(drill.type || 'physical').toUpperCase()}</span>
-                                  <span className="text-[10.5px] font-black text-slate-800 dark:text-slate-100 block leading-tight break-words">{drill.title || 'Unnamed Exercise'}</span>
-                                  <div className="flex items-center gap-1.5 flex-wrap text-[8.5px] font-bold text-slate-500 mt-1">
+                                  <span className={`text-[10px] font-black uppercase tracking-wider block ${typeColor}`}>{(drill.type || 'physical').toUpperCase()}</span>
+                                  <span className="text-[11px] font-black text-slate-800 dark:text-slate-100 block leading-tight break-words">{drill.title || 'Unnamed Exercise'}</span>
+                                  <div className="flex items-center gap-1.5 flex-wrap text-[10px] font-bold text-slate-500 mt-1">
                                     <span>{drill.sets} SETS</span>
                                     <span className="text-slate-300">×</span>
                                     <span>{drill.reps} {drill.unit === 'sec' || drill.unit === 'SEC' ? 'SEC' : 'REPS'}</span>
@@ -2561,10 +2580,10 @@ export default function WeeklyPlanner({ onLogout }) {
                                      )}
                                   </div>
                                   {drill.intensity && (
-                                    <span className="text-[8px] font-black text-red-500 mt-0.5 block">{drill.intensity}% 1RM</span>
+                                    <span className="text-[10px] font-black text-red-500 mt-0.5 block">{drill.intensity}% 1RM</span>
                                   )}
                                   {drill.details && (
-                                    <p className="text-[8px] text-slate-400 italic mt-0.5 leading-snug">📋 {drill.details}</p>
+                                    <p className="text-[10px] text-slate-400 italic mt-0.5 leading-snug">📋 {drill.details}</p>
                                   )}
                                 </div>
                               </div>
@@ -2573,7 +2592,7 @@ export default function WeeklyPlanner({ onLogout }) {
                         })
                       ) : (
                         <div className="flex items-center justify-center py-6 text-slate-300 dark:text-slate-700">
-                          <span className="text-[9px] font-bold">—</span>
+                          <span className="text-[10px] font-bold">—</span>
                         </div>
                       )}
                     </div>
@@ -2581,12 +2600,12 @@ export default function WeeklyPlanner({ onLogout }) {
                     {/* Day stats summary */}
                     {drills.length > 0 && (
                       <div className="mt-auto p-1.5 bg-white dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700/30 space-y-1">
-                        <div className="flex justify-between items-center text-[9px] font-bold flex-wrap gap-y-0.5">
-                          <div className="flex flex-col items-center text-slate-400"><span className="text-[7px] uppercase">Drills</span><span>{dayStats.totalExercises}</span></div>
+                        <div className="flex justify-between items-center text-[10px] font-bold flex-wrap gap-y-0.5">
+                          <div className="flex flex-col items-center text-slate-400"><span className="text-[10px] uppercase">Drills</span><span>{dayStats.totalExercises}</span></div>
                           <div className="w-px h-4 bg-slate-200"></div>
-                          <div className="flex flex-col items-center text-blue-500"><span className="text-[7px] uppercase text-blue-400">Int</span><span>{dayStats.avgIntensity}%</span></div>
+                          <div className="flex flex-col items-center text-blue-500"><span className="text-[10px] uppercase text-blue-400">Int</span><span>{dayStats.avgIntensity}%</span></div>
                           <div className="w-px h-4 bg-slate-200"></div>
-                          <div className="flex flex-col items-center text-orange-500"><span className="text-[7px] uppercase text-orange-400">Load</span><span>{dayStats.totalVolumeScore}</span></div>
+                          <div className="flex flex-col items-center text-orange-500"><span className="text-[10px] uppercase text-orange-400">Load</span><span>{dayStats.totalVolumeScore}</span></div>
                         </div>
                       </div>
                     )}
@@ -2706,7 +2725,7 @@ export default function WeeklyPlanner({ onLogout }) {
                             <span className="text-[10px] text-slate-400 font-bold">• Weight: {athlete.weight} kg</span>
                           )}
                           {athlete.groupName && (
-                            <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 text-[9px] font-black uppercase tracking-wider">
+                            <span className="px-2 py-0.5 rounded-md bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 text-[10px] font-black uppercase tracking-wider">
                               {athlete.groupName}
                             </span>
                           )}
@@ -2717,12 +2736,12 @@ export default function WeeklyPlanner({ onLogout }) {
                     {/* Active Routine Info (Center) */}
                     <div className="flex flex-col gap-1 min-w-0 md:max-w-xs w-full md:w-auto">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Active Block:</span>
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Active Block:</span>
                         <span className="text-[11px] font-black text-slate-700 dark:text-slate-350 truncate">{phaseLabel}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Timeline Position:</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/20 shadow-sm shrink-0">
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Timeline Position:</span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/20 shadow-sm shrink-0">
                           {weekLabel}
                         </span>
                       </div>
@@ -2732,7 +2751,7 @@ export default function WeeklyPlanner({ onLogout }) {
                     <div className="flex items-center gap-2.5 w-full md:w-auto justify-end shrink-0" onClick={e => e.stopPropagation()}>
                       {/* Group Switcher Select Dropdown */}
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Group:</span>
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mr-1">Group:</span>
                         <select
                           value={athlete.groupName || ''}
                           onChange={(e) => handleQuickAssignGroup(athlete.id, e.target.value)}
@@ -2818,7 +2837,7 @@ export default function WeeklyPlanner({ onLogout }) {
 
           {/* Meso programs list */}
           <div className="flex flex-col gap-3 flex-1">
-            <span className="text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Saved Programs List ({programs.length})</span>
+            <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest block">Saved Programs List ({programs.length})</span>
             <div className="flex flex-col gap-2.5">
               {programs.length > 0 ? (
                 programs.map(prog => (
@@ -2829,11 +2848,11 @@ export default function WeeklyPlanner({ onLogout }) {
                     <div>
                       <h5 className="text-xs font-black text-slate-800 dark:text-white">{prog.program_name}</h5>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-855 text-slate-600 dark:text-slate-400 text-[8.5px] font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-855 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
                           {prog.weeks ? prog.weeks.length : 0} Weeks
                         </span>
                         {prog.weeks?.[0]?.blockTags && (
-                          <span className="text-[8.5px] text-orange-500 font-bold">{prog.weeks[0].blockTags}</span>
+                          <span className="text-[10px] text-orange-500 font-bold">{prog.weeks[0].blockTags}</span>
                         )}
                       </div>
                     </div>
@@ -2848,7 +2867,7 @@ export default function WeeklyPlanner({ onLogout }) {
                             startDate: getDbDateStr(new Date())
                           });
                         }}
-                        className="flex-1 py-1.5 bg-white dark:bg-slate-950 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-700 dark:text-slate-200 hover:text-orange-500 border border-slate-200 dark:border-slate-700 rounded-lg text-[9px] font-black uppercase transition-all flex items-center justify-center gap-1"
+                        className="flex-1 py-1.5 bg-white dark:bg-slate-950 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-slate-700 dark:text-slate-200 hover:text-orange-500 border border-slate-200 dark:border-slate-700 rounded-lg text-[10px] font-black uppercase transition-all flex items-center justify-center gap-1"
                       >
                         <Play className="w-3 h-3" /> Deploy
                       </button>
@@ -2981,10 +3000,10 @@ export default function WeeklyPlanner({ onLogout }) {
                         <div className="text-[10px] font-black truncate" style={{ color: dep.color }}>
                           {dep.program_name}
                         </div>
-                        <div className="text-[9px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                        <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-0.5">
                           {weeks}W · {startD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} — {endD.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         </div>
-                        <div className="text-[8px] font-black uppercase tracking-wider mt-1 opacity-60" style={{ color: dep.color }}>
+                        <div className="text-[10px] font-black uppercase tracking-wider mt-1 opacity-60" style={{ color: dep.color }}>
                           {dep.program_type}
                         </div>
                       </div>
@@ -3210,7 +3229,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       <span className="w-5 h-5 rounded-md bg-rose-600 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'crimson' ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-350'}`}>Classic Crimson</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">Classic coach red theme</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Classic coach red theme</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'crimson' && (
@@ -3232,7 +3251,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       <span className="w-5 h-5 rounded-md bg-blue-600 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'navy' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300'}`}>Professional Navy</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">Professional dark blue</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Professional dark blue</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'navy' && (
@@ -3254,7 +3273,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       <span className="w-5 h-5 rounded-md bg-green-700 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'green' ? 'text-green-700 dark:text-green-400' : 'text-slate-700 dark:text-slate-300'}`}>Athletic Green</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">Kinetic athletic green</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Kinetic athletic green</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'green' && (
@@ -3276,7 +3295,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       <span className="w-5 h-5 rounded-md bg-white border border-slate-400 block shrink-0"></span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'minimal' ? 'text-slate-800 dark:text-slate-200' : 'text-slate-700 dark:text-slate-300'}`}>Minimal Ink Saver</h5>
-                        <p className="text-[9px] text-slate-400 font-medium">Printer-friendly (B&W)</p>
+                        <p className="text-[10px] text-slate-400 font-medium">Printer-friendly (B&W)</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'minimal' && (
@@ -3300,7 +3319,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       </span>
                       <div>
                         <h5 className={`text-xs font-bold ${printStudioModal.theme === 'dark' ? 'text-orange-400' : 'text-slate-700 dark:text-slate-350'}`}>Elite Dark (Digital PDF)</h5>
-                        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-medium">Elite sports dark (ideal for digital sharing)</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">Elite sports dark (ideal for digital sharing)</p>
                       </div>
                     </div>
                     {printStudioModal.theme === 'dark' && (
@@ -3815,7 +3834,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
                     <Zap className="w-3.5 h-3.5 text-cyan-500" /> Velocity Based Training (VBT)
                   </span>
-                  <span className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
+                  <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
                     m/s Speed Metrics
                   </span>
                 </div>
@@ -4017,7 +4036,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
                     <Zap className="w-3.5 h-3.5 text-cyan-500" /> Velocity Based Training (VBT)
                   </span>
-                  <span className="text-[9px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
+                  <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
                     m/s Speed Metrics
                   </span>
                 </div>
@@ -4135,7 +4154,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   <div className="h-full bg-amber-500 transition-all" style={{ width: `${weeklyStats.cnsPercentage}%` }} />
                   <div className="h-full bg-blue-500 transition-all" style={{ width: `${weeklyStats.structuralPercentage}%` }} />
                 </div>
-                <div className="flex justify-between text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <div className="flex justify-between text-[10px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   <span>{weeklyStats.cnsPercentage}% CNS (Orange)</span>
                   <span>{weeklyStats.structuralPercentage}% Struct (Blue)</span>
                 </div>
@@ -4214,7 +4233,7 @@ export default function WeeklyPlanner({ onLogout }) {
                                 x={pt.x}
                                 y="125"
                                 textAnchor="middle"
-                                className={`text-[9px] font-black uppercase tracking-wider ${idx === 0 ? 'fill-orange-500' : 'fill-slate-400 dark:fill-slate-500'}`}
+                                className={`text-[10px] font-black uppercase tracking-wider ${idx === 0 ? 'fill-orange-500' : 'fill-slate-400 dark:fill-slate-500'}`}
                               >
                                 {pt.label}
                               </text>
@@ -4240,7 +4259,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       const heightPercent = data.load > 0 ? (data.load / maxLoad) * 100 : 0;
                       return (
                         <div key={i} className="flex flex-col items-center flex-1 group h-full justify-end">
-                          <div className="text-[9px] font-bold text-slate-400 mb-1">{data.load}</div>
+                          <div className="text-[10px] font-bold text-slate-400 mb-1">{data.load}</div>
                           <div className="w-full max-w-[40px] bg-slate-100 dark:bg-slate-900 rounded-t-md relative flex items-end justify-center h-full">
                             <div className="w-full bg-orange-500 rounded-t-md transition-all duration-700" style={{ height: `${heightPercent}%`, minHeight: data.load > 0 ? '4px' : '0' }}></div>
                           </div>
@@ -4396,21 +4415,21 @@ export default function WeeklyPlanner({ onLogout }) {
             {selectedAthlete && (
               <div className="grid grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-200">
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Athlete Name</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Athlete Name</span>
                   <span className="text-xs font-bold text-slate-800">{selectedAthlete.name}</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Birth Year / Weight</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Birth Year / Weight</span>
                   <span className="text-xs font-bold text-slate-800">
                     {selectedAthlete.birthYear || 'N/A'} / {selectedAthlete.weight ? `${selectedAthlete.weight} kg` : 'N/A'}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">CNS Split</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">CNS Split</span>
                   <span className="text-xs font-bold text-slate-800">{weeklyStats.cnsPercentage}% CNS Load</span>
                 </div>
                 <div>
-                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest block">Structural Split</span>
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block">Structural Split</span>
                   <span className="text-xs font-bold text-slate-800">{weeklyStats.structuralPercentage}% Structural Load</span>
                 </div>
               </div>
@@ -4418,7 +4437,7 @@ export default function WeeklyPlanner({ onLogout }) {
           </div>
 
           {/* Desktop/Print Grid Layout */}
-          <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-[1100px] xl:w-full min-w-full`}>
+          <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-full min-w-[1320px] print:min-w-0`}>
             {DAYS_OF_WEEK.map((day, index) => {
               const fullDateStr = isTemplateEditing ? "Training Day" : weekDatesFull[index].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
               const dayDrills = schedule[day] || [];
@@ -4426,9 +4445,9 @@ export default function WeeklyPlanner({ onLogout }) {
               const dayCnsPct = (dayStats.cnsLoad + dayStats.structuralLoad) > 0 ? Math.round((dayStats.cnsLoad / (dayStats.cnsLoad + dayStats.structuralLoad)) * 100) : 0;
 
               return (
-              <div key={day} className="flex flex-col w-full print:break-inside-avoid print:mb-0">
-                
-                <div className={`mb-4 flex flex-col group border-b pb-3 px-1.5 md:px-2 day-header select-none transition-all duration-300 ${
+              <div key={day} className="flex flex-col w-full min-w-0 print:break-inside-avoid print:mb-0">
+
+                <div className={`relative mb-4 flex flex-col group border-b pb-3 px-1.5 md:px-2 day-header select-none transition-all duration-300 ${
                   completedDays[day] 
                     ? 'bg-green-500/10 dark:bg-green-500/5 border-green-200 dark:border-green-900/30 rounded-xl pt-2' 
                     : 'border-slate-200 dark:border-slate-800'
@@ -4447,13 +4466,13 @@ export default function WeeklyPlanner({ onLogout }) {
                           <Check className="w-3 h-3 stroke-[3]" />
                         </button>
                       )}
-                      <span className="text-[9.5px] md:text-[10.5px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">{day}</span>
+                      <span className="text-[11px] font-black tracking-wider text-slate-500 dark:text-slate-400 uppercase">{day}</span>
                     </div>
-                    <span className="text-[9px] md:text-[10px] font-bold text-slate-400/80 dark:text-slate-600">{fullDateStr}</span>
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-500 truncate">{fullDateStr}</span>
                   </div>
-                  <div className="flex items-start gap-1 md:gap-2 justify-between">
-                    <div className="flex items-start gap-2 flex-1">
-                      <div className="w-6.5 h-6.5 md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-205 bg-white dark:bg-slate-900 shadow-sm">
+                  <div className="flex items-start gap-1 md:gap-2 justify-between min-w-0 [@media(hover:none)]:flex-wrap">
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      <div className="w-[26px] h-[26px] md:w-7 md:h-7 shrink-0 rounded-full border border-slate-300 dark:border-slate-700 flex items-center justify-center text-xs md:text-sm font-black text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 shadow-sm">
                         {isTemplateEditing ? `D${index + 1}` : weekDates[index]}
                       </div>
                       <textarea
@@ -4468,12 +4487,14 @@ export default function WeeklyPlanner({ onLogout }) {
                         }}
                         placeholder="Add Workout Focus"
                         rows={1}
-                        className="text-[11px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full placeholder:text-slate-400 resize-none overflow-hidden leading-tight py-0.5"
+                        className="text-[12px] md:text-[13px] font-black text-slate-700 dark:text-slate-300 bg-transparent border-none outline-none w-full min-w-0 placeholder:text-slate-500 dark:placeholder:text-slate-500 resize-none overflow-hidden leading-tight py-0.5"
                         readOnly={isPreviewMode}
                       />
                     </div>
                     {!isPreviewMode && (
-                      <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity print:hidden">
+                      // Overlay on hover (takes no width from the title). On touch screens (no hover) it sits
+                      // in its own row under the title and is always visible.
+                      <div className="day-actions absolute top-1 right-1 z-10 flex items-center rounded-lg bg-white/95 dark:bg-slate-900/95 shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto transition-opacity print:hidden [@media(hover:none)]:static [@media(hover:none)]:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:shadow-none [@media(hover:none)]:ring-0 [@media(hover:none)]:bg-transparent [@media(hover:none)]:justify-end [@media(hover:none)]:w-full">
                          <button onClick={() => handleCopyDay(day)} className="p-1 text-slate-400 hover:text-blue-500"><Copy className="w-3 h-3 md:w-4 md:h-4" /></button>
                          {clipboard && ( <button onClick={() => handlePasteIntoDay(day)} className="p-1 text-slate-400 hover:text-green-500"><ClipboardPaste className="w-3 h-3 md:w-4 md:h-4" /></button> )}
                          <button onClick={() => setSaveTemplateModal({isOpen: true, day, name: dayTitles[day] || ''})} className="p-1 text-slate-400 hover:text-orange-500"><BookmarkPlus className="w-3 h-3 md:w-4 md:h-4" /></button>
@@ -4525,21 +4546,21 @@ export default function WeeklyPlanner({ onLogout }) {
                   {schedule[day].length > 0 && !isPreviewMode && (
                     <div className="mt-4 p-2 bg-white dark:bg-slate-800 rounded-xl border shadow-sm space-y-2 daily-summary">
                       <div className="flex justify-between items-center text-[10px] sm:text-xs font-bold flex-wrap gap-y-1">
-                        <div className="flex flex-col items-center text-slate-400"><span className="text-[8px] uppercase">Drills</span><span>{dayStats.totalExercises}</span></div>
+                        <div className="flex flex-col items-center text-slate-400"><span className="text-[10px] uppercase">Drills</span><span>{dayStats.totalExercises}</span></div>
                         <div className="w-px h-5 bg-slate-200"></div>
-                        <div className="flex flex-col items-center text-blue-500"><span className="text-blue-400 text-[8px] uppercase">Intensity</span><span>{dayStats.avgIntensity}%</span></div>
+                        <div className="flex flex-col items-center text-blue-500"><span className="text-blue-400 text-[10px] uppercase">Intensity</span><span>{dayStats.avgIntensity}%</span></div>
                         <div className="w-px h-5 bg-slate-200"></div>
-                        <div className="flex flex-col items-center text-orange-500"><span className="text-orange-400 text-[8px] uppercase">Load</span><span>{dayStats.totalVolumeScore}</span></div>
+                        <div className="flex flex-col items-center text-orange-500"><span className="text-orange-400 text-[10px] uppercase">Load</span><span>{dayStats.totalVolumeScore}</span></div>
                         {dayStats.jumpsVolume > 0 && (
                           <>
                             <div className="w-px h-5 bg-slate-200"></div>
-                            <div className="flex flex-col items-center text-amber-500"><span className="text-amber-400 text-[8px] uppercase">Jumps</span><span>{dayStats.jumpsVolume}</span></div>
+                            <div className="flex flex-col items-center text-amber-500"><span className="text-amber-400 text-[10px] uppercase">Jumps</span><span>{dayStats.jumpsVolume}</span></div>
                           </>
                         )}
                         {dayStats.totalMeters > 0 && (
                           <>
                             <div className="w-px h-5 bg-slate-200"></div>
-                            <div className="flex flex-col items-center text-indigo-600"><span className="text-indigo-400 text-[8px] uppercase">Run</span><span>{dayStats.totalMeters}m</span></div>
+                            <div className="flex flex-col items-center text-indigo-600"><span className="text-indigo-400 text-[10px] uppercase">Run</span><span>{dayStats.totalMeters}m</span></div>
                           </>
                         )}
                       </div>
@@ -4592,7 +4613,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   <button
                     type="button"
                     onClick={() => setCurrentDate(new Date())}
-                    className="px-2 py-1 text-[9px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-350 hover:text-orange-500 bg-slate-100 dark:bg-slate-700/60 rounded-lg transition-all active:scale-95"
+                    className="px-2 py-1 text-[10px] font-black uppercase tracking-wider text-slate-600 dark:text-slate-350 hover:text-orange-500 bg-slate-100 dark:bg-slate-700/60 rounded-lg transition-all active:scale-95"
                   >
                     اليوم
                   </button>
@@ -4772,26 +4793,26 @@ export default function WeeklyPlanner({ onLogout }) {
                       <h5 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Day Load Summary</h5>
                       <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
                         <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
-                          <span className="text-[9px] uppercase font-black text-slate-400">Drills</span>
+                          <span className="text-[10px] uppercase font-black text-slate-400">Drills</span>
                           <span className="text-base font-black text-slate-800 dark:text-white mt-0.5">{dayStats.totalExercises}</span>
                         </div>
                         <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
-                          <span className="text-[9px] uppercase font-black text-blue-400">Intensity</span>
+                          <span className="text-[10px] uppercase font-black text-blue-400">Intensity</span>
                           <span className="text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">{dayStats.avgIntensity}%</span>
                         </div>
                         <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
-                          <span className="text-[9px] uppercase font-black text-orange-400">Load</span>
+                          <span className="text-[10px] uppercase font-black text-orange-400">Load</span>
                           <span className="text-base font-black text-orange-600 dark:text-orange-500 mt-0.5">{dayStats.totalVolumeScore}</span>
                         </div>
                         {dayStats.jumpsVolume > 0 && (
                           <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
-                            <span className="text-[9px] uppercase font-black text-amber-400">Jumps</span>
+                            <span className="text-[10px] uppercase font-black text-amber-400">Jumps</span>
                             <span className="text-base font-black text-amber-600 dark:text-amber-500 mt-0.5">{dayStats.jumpsVolume}</span>
                           </div>
                         )}
                         {dayStats.totalMeters > 0 && (
                           <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
-                            <span className="text-[9px] uppercase font-black text-indigo-400">Run</span>
+                            <span className="text-[10px] uppercase font-black text-indigo-400">Run</span>
                             <span className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">{dayStats.totalMeters}m</span>
                           </div>
                         )}
@@ -4803,7 +4824,7 @@ export default function WeeklyPlanner({ onLogout }) {
                             <div className="h-full bg-amber-400" style={{ width: `${dayCnsPct}%` }} />
                             <div className="h-full bg-blue-500" style={{ width: `${100 - dayCnsPct}%` }} />
                           </div>
-                          <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                          <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-wider">
                             <span>{dayCnsPct}% CNS (Neurological)</span>
                             <span>{100 - dayCnsPct}% Structural (Muscular)</span>
                           </div>
@@ -4817,7 +4838,7 @@ export default function WeeklyPlanner({ onLogout }) {
           </div>
 
           {/* Premium Printed Report Footer */}
-          <div className="hidden print:block fixed bottom-0 left-0 right-0 border-t border-slate-300 pt-3 pb-2 bg-white text-center text-[9px] font-semibold text-slate-400 uppercase tracking-widest">
+          <div className="hidden print:block fixed bottom-0 left-0 right-0 border-t border-slate-300 pt-3 pb-2 bg-white text-center text-[10px] font-semibold text-slate-400 uppercase tracking-widest">
             <div className="flex justify-between items-center px-4">
               <span>Page <span className="print-page-number"></span> | Generated by Peak Force Lab</span>
               {selectedAthlete && (
@@ -4879,7 +4900,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 </div>
                 <div>
                   <h3 className="text-xs sm:text-sm font-black text-white tracking-wider uppercase">{htmlViewerModal.title}</h3>
-                  <p className="text-[9px] sm:text-[10px] text-orange-400 font-bold uppercase tracking-wider">Interactive Print & PDF Engine</p>
+                  <p className="text-[10px] sm:text-[10px] text-orange-400 font-bold uppercase tracking-wider">Interactive Print & PDF Engine</p>
                 </div>
               </div>
 

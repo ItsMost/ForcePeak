@@ -163,7 +163,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight">نسخ الأسبوع</span>
-                  <span className="text-[9px] text-slate-400 font-normal">Copy Full Week</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Copy Full Week</span>
                 </div>
               </button>
 
@@ -177,7 +177,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight">لصق الأسبوع</span>
-                  <span className="text-[9px] text-slate-400 font-normal">Paste Week</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Paste Week</span>
                 </div>
               </button>
 
@@ -196,7 +196,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight font-bold text-xs">تراجع للخلف</span>
-                  <span className="text-[9px] text-slate-400 font-normal">Undo Action</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Undo Action</span>
                 </div>
               </button>
 
@@ -215,7 +215,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight font-bold text-xs">إعادة الخطوة</span>
-                  <span className="text-[9px] text-slate-400 font-normal">Redo Action</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Redo Action</span>
                 </div>
               </button>
 
@@ -229,7 +229,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight">تصدير PDF</span>
-                  <span className="text-[9px] text-orange-400/80 font-normal">Official Report</span>
+                  <span className="text-[10px] text-orange-400/80 font-normal">Official Report</span>
                 </div>
               </button>
 
@@ -243,7 +243,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight">كتيّب الترحيب</span>
-                  <span className="text-[9px] text-orange-400/80 font-normal">Welcome Pack</span>
+                  <span className="text-[10px] text-orange-400/80 font-normal">Welcome Pack</span>
                 </div>
               </button>
 
@@ -261,7 +261,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight font-bold text-xs">عرض 4 أسابيع</span>
-                  <span className={`text-[9px] font-normal ${isFourWeekView ? 'text-white/80' : 'text-slate-400'}`}>4-Week Overview</span>
+                  <span className={`text-[10px] font-normal ${isFourWeekView ? 'text-white/80' : 'text-slate-400'}`}>4-Week Overview</span>
                 </div>
               </button>
 
@@ -279,7 +279,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight font-bold text-xs">وضع المعاينة</span>
-                  <span className={`text-[9px] font-normal ${isPreviewMode ? 'text-white/80' : 'text-slate-400'}`}>Preview Mode</span>
+                  <span className={`text-[10px] font-normal ${isPreviewMode ? 'text-white/80' : 'text-slate-400'}`}>Preview Mode</span>
                 </div>
               </button>
 
@@ -293,7 +293,7 @@ export default function MobileBottomNav({
                 </div>
                 <div className="text-right">
                   <span className="block leading-tight font-bold text-xs">حفظ ككتلة تدريب</span>
-                  <span className="text-[9px] text-slate-400 font-normal">Save Meso-Block</span>
+                  <span className="text-[10px] text-slate-400 font-normal">Save Meso-Block</span>
                 </div>
               </button>
 
@@ -308,7 +308,7 @@ export default function MobileBottomNav({
                   </div>
                   <div className="text-right">
                     <span className="block leading-tight font-bold text-xs">نشر البرنامج</span>
-                    <span className="text-[9px] text-violet-400 font-normal">Deploy to Athlete</span>
+                    <span className="text-[10px] text-violet-400 font-normal">Deploy to Athlete</span>
                   </div>
                 </button>
               )}

@@ -537,7 +537,7 @@ export default function PeriodizationPlanner({
         <div className="w-full md:w-72 border-b md:border-b-0 md:border-l border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-5 flex flex-col gap-5 overflow-y-auto shrink-0">
           <div>
             <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider">Available Blocks to Drag</h4>
-            <p className="text-[9px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Drag programs to timeline</p>
+            <p className="text-[10px] font-bold text-slate-400 mt-0.5 uppercase tracking-widest">Drag programs to timeline</p>
           </div>
 
           <div className="flex flex-col gap-2.5">
@@ -564,7 +564,7 @@ export default function PeriodizationPlanner({
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 mt-2">
-                    <span className="px-1.5 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[8.5px] font-bold">
+                    <span className="px-1.5 py-0.5 rounded bg-slate-250 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold">
                       {prog.weeks ? prog.weeks.length : 0} Weeks
                     </span>
                   </div>
@@ -655,7 +655,7 @@ export default function PeriodizationPlanner({
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
                               isSelected ? 'bg-orange-500 text-white' : 'text-slate-700 dark:text-slate-255 bg-slate-100 dark:bg-slate-800'
                             }`}>W{wk.index}</span>
-                            <span className="text-[8px] text-slate-400 font-bold mt-1 tracking-tight">{wk.rangeLabel}</span>
+                            <span className="text-[10px] text-slate-400 font-bold mt-1 tracking-tight">{wk.rangeLabel}</span>
                           </div>
                         );
                       })}
@@ -673,7 +673,7 @@ export default function PeriodizationPlanner({
                               const updated = { ...weekTags, [wk.index]: e.target.value };
                               setWeekTags(updated);
                             }}
-                            className="w-full text-center text-[9px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:text-white"
+                            className="w-full text-center text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded-lg outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 dark:text-white"
                           />
                         </div>
                       ))}
@@ -698,7 +698,7 @@ export default function PeriodizationPlanner({
                                 weeksCount: dep.weeks_count
                               }));
                             }}
-                            className="absolute px-3 py-2 rounded-xl border text-[9.5px] font-black uppercase tracking-wider shadow-sm flex items-center justify-between gap-2 text-white transition-all select-none group/pill animate-fadeIn cursor-pointer"
+                            className="absolute px-3 py-2 rounded-xl border text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center justify-between gap-2 text-white transition-all select-none group/pill animate-fadeIn cursor-pointer"
                             style={{
                               left: `${left + 4}px`,
                               width: `${width - 8}px`,
@@ -1151,10 +1151,10 @@ export default function PeriodizationPlanner({
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-base font-black text-slate-800 dark:text-white">{blockData.program_name || 'Block Template'}</h4>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400">
                         {blockData.level || 'Beginner'}
                       </span>
-                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400">
                         {blockData.deficitProtocol || 'FDP'}
                       </span>
                     </div>
@@ -1209,7 +1209,7 @@ export default function PeriodizationPlanner({
                                 <div className="space-y-2">
                                   <div className="flex justify-between items-start">
                                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Phase {pIdx + 1}</span>
-                                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${themeColor.text} ${themeColor.bg}`}>
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${themeColor.text} ${themeColor.bg}`}>
                                       {weeksCount} Weeks
                                     </span>
                                   </div>
@@ -1228,7 +1228,7 @@ export default function PeriodizationPlanner({
                                       return (
                                         <div 
                                           key={wIdx} 
-                                          className={`w-4 h-4 rounded text-[7.5px] font-black flex items-center justify-center border ${wColor}`}
+                                          className={`w-4 h-4 rounded text-[10px] font-black flex items-center justify-center border ${wColor}`}
                                           title={`Week ${wIdx + 1}: ${w.type}`}
                                         >
                                           {w.type === 'None' ? '' : w.type.charAt(0)}
@@ -1308,7 +1308,7 @@ export default function PeriodizationPlanner({
                                               key={btn.key}
                                               type="button"
                                               onClick={() => handleUpdateWeekType(activeMesoPhaseIdx, wIdx, btn.key)}
-                                              className={`px-2 py-0.5 rounded text-[8.5px] font-bold transition-all ${focus === btn.key ? btn.activeColor : 'text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-850'}`}
+                                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${focus === btn.key ? btn.activeColor : 'text-slate-400 hover:bg-slate-200/50 dark:hover:bg-slate-850'}`}
                                             >
                                               {btn.label}
                                             </button>
@@ -1353,7 +1353,7 @@ export default function PeriodizationPlanner({
                             <HelpCircle className="w-4.5 h-4.5 text-violet-500 shrink-0" />
                             <div>
                               <h5 className="text-xs font-black text-slate-800 dark:text-white leading-tight">{guide.title}</h5>
-                              <span className="block text-[9px] text-slate-400 uppercase tracking-wider mt-0.5">{guide.englishTitle}</span>
+                              <span className="block text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">{guide.englishTitle}</span>
                             </div>
                           </div>
 
@@ -1364,7 +1364,7 @@ export default function PeriodizationPlanner({
                           <div className="space-y-2.5 border-t border-b border-slate-200/50 dark:border-slate-800 py-3">
                             {guide.metrics.map((m, mIdx) => (
                               <div key={mIdx} className="flex flex-col gap-0.5 text-[10px]">
-                                <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[9px] uppercase tracking-wide">{m.label}</span>
+                                <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[10px] uppercase tracking-wide">{m.label}</span>
                                 <span className="font-bold text-slate-700 dark:text-slate-350">{m.value}</span>
                               </div>
                             ))}
@@ -1422,7 +1422,7 @@ export default function PeriodizationPlanner({
                           <span className="font-extrabold text-xs text-slate-800 dark:text-white block truncate">
                             {template.program_name}
                           </span>
-                          <span className="text-[9.5px] font-bold text-slate-400 mt-1 block">
+                          <span className="text-[10px] font-bold text-slate-400 mt-1 block">
                             {details.level || 'Beginner'} | {details.deficitProtocol || 'FDP'}
                           </span>
                         </div>
