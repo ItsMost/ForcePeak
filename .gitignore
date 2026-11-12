@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Secrets & personal athlete data (never commit)
+.env
+.env.*
+!.env.example
+backup/*
+!backup/export.mjs
