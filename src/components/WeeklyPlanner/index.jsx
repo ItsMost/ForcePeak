@@ -1267,13 +1267,32 @@ export default function WeeklyPlanner({ onLogout }) {
   }, [selectedAthleteId, weekStartDateStr]);
 
   // Dynamic auto-resizing hook for day workout focus textareas to prevent title truncation
-  useEffect(() => {
-    const elements = document.querySelectorAll('textarea[data-autoresize]');
-    elements.forEach(el => {
+  // Skips hidden textareas (measuring them gives 0px and hides the title) and re-measures when the
+  // viewport width changes, since a narrower column needs more lines.
+  const resizeDayTitleTextareas = () => {
+    document.querySelectorAll('textarea[data-autoresize]').forEach(el => {
+      if (!el.offsetParent) return;
       el.style.height = 'auto';
       el.style.height = el.scrollHeight + 'px';
     });
-  }, [dayTitles, activeMobileDay, schedule]);
+  };
+
+  useEffect(() => {
+    resizeDayTitleTextareas();
+  }, [dayTitles, activeMobileDay, schedule, isMobileView]);
+
+  useEffect(() => {
+    let frame = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(resizeDayTitleTextareas);
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
 
   const handleSaveProgramBlock = async () => {
     if (!createProgramModal.name.trim()) return;
