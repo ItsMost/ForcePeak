@@ -148,7 +148,7 @@ export default function Header({
             <h1 className="text-xs font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
               Peak Force
             </h1>
-            <p className="text-[7.5px] font-black text-orange-500 uppercase tracking-widest leading-none">
+            <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none">
               LAB
             </p>
           </div>
@@ -162,17 +162,17 @@ export default function Header({
             setAthleteSearch('');
             setBlockSearch('');
           }}
-          className="flex-1 mx-1.5 flex items-center justify-between gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 shadow-xs active:scale-95 transition-all text-left"
+          className="flex-1 min-w-0 mx-1.5 flex items-center justify-between gap-2 px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-800/90 border border-slate-200/90 dark:border-slate-700/80 shadow-xs active:scale-95 transition-all text-left"
         >
           <div className="flex items-center gap-1.5 min-w-0">
             <div className="w-5 h-5 rounded-full bg-orange-500/15 text-orange-500 flex items-center justify-center shrink-0">
               <User className="w-3 h-3" />
             </div>
             <div className="min-w-0 flex flex-col items-start leading-none">
-              <span className="text-[10.5px] font-black text-slate-800 dark:text-white truncate max-w-[110px]">
+              <span className="text-[11px] font-black text-slate-800 dark:text-white truncate max-w-[110px]">
                 {isTemplateEditing ? (selectedBlockId && blockData ? blockData.program_name : 'Template') : (selectedAthlete?.name || 'اختر الرياضي')}
               </span>
-              <span className="text-[7.5px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mt-0.5 truncate max-w-[110px]">
+              <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mt-0.5 truncate max-w-[110px]">
                 {isTemplateEditing ? 'Template Mode' : (selectedAthlete?.groupName || 'Live Athlete')}
               </span>
             </div>
@@ -328,11 +328,11 @@ export default function Header({
                               </div>
                               <div className="flex items-center gap-1.5 mt-0.5">
                                 {athlete.groupName && (
-                                  <span className="px-1.5 py-0.2 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[9px] font-black">
+                                  <span className="px-1.5 py-0.2 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px] font-black">
                                     {athlete.groupName}
                                   </span>
                                 )}
-                                <span className="text-[9.5px] text-slate-400 font-semibold truncate">
+                                <span className="text-[10px] text-slate-400 font-semibold truncate">
                                   {athlete.weight ? `${athlete.weight}kg` : ''} {athlete.verticalJump ? `• CMJ: ${athlete.verticalJump}cm` : ''}
                                 </span>
                               </div>
@@ -434,7 +434,7 @@ export default function Header({
                           </div>
                           <div className="min-w-0">
                             <span className="block text-xs font-black truncate text-slate-800 dark:text-white">{block.program_name}</span>
-                            <span className="text-[9.5px] text-slate-400 font-medium">{block.program_type || 'Meso-Block'}</span>
+                            <span className="text-[10px] text-slate-400 font-medium">{block.program_type || 'Meso-Block'}</span>
                           </div>
                         </button>
 
@@ -483,7 +483,7 @@ export default function Header({
               <h1 className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
                 Peak Force
               </h1>
-              <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
+              <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
                 PERFORMANCE CORE
               </p>
             </div>
@@ -520,7 +520,7 @@ export default function Header({
           
           <button 
             onClick={handleGoToday} 
-            className="px-2.5 py-1 text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-white rounded-full transition-all leading-none"
+            className="px-2.5 py-1 text-[10px] font-bold uppercase text-slate-400 dark:text-slate-500 hover:bg-white dark:hover:bg-slate-850 hover:text-slate-800 dark:hover:text-white rounded-full transition-all leading-none"
           >
             {isEditingBlock || isEditingMeso || isEditingMacro ? 'W1' : 'Today'}
           </button>
@@ -558,13 +558,13 @@ export default function Header({
           <div className="hidden 2xl:flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/40 rounded-xl border border-slate-150 dark:border-slate-850/80 order-3 shadow-sm">
             <div className="flex items-center gap-1.5">
               <TrendingUp className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Load:</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Total Load:</span>
               <span className="text-xs font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.load} AU
               </span>
             </div>
             
-            <span className={`px-2 py-0.5 rounded-lg border text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
+            <span className={`px-2 py-0.5 rounded-lg border text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none ${weeklyStats.loadColor}`}>
               {weeklyStats.loadLabel}
             </span>
 
@@ -572,7 +572,7 @@ export default function Header({
 
             <div className="flex items-center gap-1.5">
               <Activity className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-              <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Avg Intensity:</span>
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Avg Intensity:</span>
               <span className="text-xs font-black text-slate-800 dark:text-white leading-none">
                 {weeklyStats.intensity}%
               </span>
@@ -581,10 +581,10 @@ export default function Header({
             <div className="hidden 2xl:block w-px h-4 bg-slate-200 dark:bg-slate-800"></div>
 
             <div className="hidden 2xl:flex items-center gap-2">
-              <span className="px-2 py-0.5 rounded-lg border border-pink-100 bg-pink-50/50 dark:bg-pink-950/10 text-pink-600 dark:text-pink-400 text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none">
+              <span className="px-2 py-0.5 rounded-lg border border-pink-100 bg-pink-50/50 dark:bg-pink-950/10 text-pink-600 dark:text-pink-400 text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 CNS: {weeklyStats.cnsPercentage}%
               </span>
-              <span className="px-2 py-0.5 rounded-lg border border-blue-100 bg-blue-50/50 dark:bg-blue-950/10 text-blue-600 dark:text-blue-400 text-[8.5px] font-bold uppercase tracking-wider shadow-sm leading-none">
+              <span className="px-2 py-0.5 rounded-lg border border-blue-100 bg-blue-50/50 dark:bg-blue-950/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-wider shadow-sm leading-none">
                 Struct: {weeklyStats.structuralPercentage}%
               </span>
             </div>
@@ -596,7 +596,7 @@ export default function Header({
           
           {/* Sync Status Indicator Pill */}
           {syncStatus && (
-            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/50 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0 bg-slate-50 dark:bg-slate-900/50">
+            <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700/50 text-[10px] sm:text-[10px] font-bold uppercase tracking-wider shrink-0 bg-slate-50 dark:bg-slate-900/50">
               {syncStatus === 'synced' && (
                 <>
                   <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
