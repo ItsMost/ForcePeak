@@ -134,7 +134,7 @@ const distributeWeeksToPhases = (numWeeks) => {
   return [base, strength, power, peak];
 };
 
-export default function WeeklyPlanner() {
+export default function WeeklyPlanner({ onLogout }) {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const savedTheme = localStorage.getItem('forcepeak_theme');
     if (savedTheme !== null) return savedTheme === 'dark';
@@ -4318,6 +4318,7 @@ export default function WeeklyPlanner() {
         showLibrary={showLibrary} setShowLibrary={setShowLibrary} handleToast={handleToast} setSaveWeekTemplateModal={setSaveWeekTemplateModal} weeklyStats={weeklyStats}
         isOnline={isOnline} syncStatus={syncStatus} onDelete={handleDeleteAthlete}
         onDeleteBlock={handleDeleteBlockTemplate}
+        onLogout={onLogout}
         onMoveAthlete={handleMoveAthlete}
         setShowPeriodizationPlanner={setShowPeriodizationPlanner}
         selectedBlockId={selectedBlockId}
