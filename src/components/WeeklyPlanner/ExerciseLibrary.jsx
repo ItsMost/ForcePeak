@@ -134,7 +134,7 @@ export default function ExerciseLibrary({
             </div>
             <div>
               <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Exercise Library</h3>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Peak Force Athletic Database</p>
+              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">PEAK FORCE Athletic Database</p>
             </div>
           </div>
           <button 

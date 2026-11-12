@@ -1458,7 +1458,7 @@ export default function PeriodizationPlanner({
 
             {/* Close Button / Bottom info */}
             <div className="pt-4 border-t border-slate-200 dark:border-slate-700 mt-4 text-[10px] text-slate-400 text-center shrink-0">
-              Peak Force Periodization Engine v2.0
+              PEAK FORCE Periodization Engine v2.0
             </div>
           </div>
 

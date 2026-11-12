@@ -1,5 +1,5 @@
 /**
- * HTML Print Engine for ForcePeak Weekly Planner.
+ * HTML Print Engine for PEAK FORCE Weekly Planner.
  * Generates a high-fidelity print layout in a new tab using native browser printing,
  * ensuring 100% clickable links, perfect Arabic font shaping, and zero PDF character corruption.
  */
@@ -205,7 +205,7 @@ export function generateWeeklyHTMLPrint({
     <html lang="ar">
     <head>
       <meta charset="UTF-8">
-      <title>ForcePeak Weekly Plan - ${athleteName}</title>
+      <title>PEAK FORCE Weekly Plan - ${athleteName}</title>
       <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
       <style>
         * {

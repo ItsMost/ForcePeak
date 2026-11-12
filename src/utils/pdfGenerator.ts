@@ -91,7 +91,7 @@ export const generatePDF = (
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text('FORCE PEAK', margin + 8, margin + 14);
+  doc.text('PEAK FORCE', margin + 8, margin + 14);
 
   doc.setTextColor(neonBlue[0], neonBlue[1], neonBlue[2]);
   doc.setFont('helvetica', 'normal');
@@ -388,7 +388,7 @@ export const generatePDF = (
   doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.text('FORCE PEAK Systems LLC • Page 1 of 2', margin + contentWidth / 2, pageHeight - 10, { align: 'center' });
+  doc.text('PEAK FORCE Performance Lab • Page 1 of 2', margin + contentWidth / 2, pageHeight - 10, { align: 'center' });
 
   // -------------------------------------------------------------
   // PAGE 2: Raw Data Tables, Deficit Slider, & Training Prescriptions
@@ -406,7 +406,7 @@ export const generatePDF = (
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text('FORCE PEAK BIOMECHANICAL BIOTYPE REPORT', margin + 6, margin + 7.5);
+  doc.text('PEAK FORCE BIOMECHANICAL BIOTYPE REPORT', margin + 6, margin + 7.5);
 
   doc.setTextColor(neonBlue[0], neonBlue[1], neonBlue[2]);
   doc.setFont('helvetica', 'normal');
@@ -655,11 +655,11 @@ export const generatePDF = (
   doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.text('FORCE PEAK Systems LLC • Page 2 of 2', margin + contentWidth / 2, pageHeight - 10, { align: 'center' });
+  doc.text('PEAK FORCE Performance Lab • Page 2 of 2', margin + contentWidth / 2, pageHeight - 10, { align: 'center' });
 
   // Save the PDF
   const safeName = athlete.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  doc.save(`ForcePeak_Report_${safeName}.pdf`);
+  doc.save(`PeakForce_Report_${safeName}.pdf`);
 };
 
 export interface WeeklyPDFOptions {
@@ -1162,7 +1162,7 @@ export async function generateWeeklyPDF({
       doc.setFontSize(7);
       doc.setTextColor(...C.mid);
       doc.setFont(fName, 'normal');
-      doc.text('Peak Force Lab  |  Elite Training Systems', margin, pageHeight - 8);
+      doc.text('PEAK FORCE Performance Lab', margin, pageHeight - 8);
       doc.text(`Week Cycle: ${dateStart} - ${dateEnd}   |   Page ${dayIndex + 1} of 7`, pageWidth - margin, pageHeight - 8, { align: 'right' });
     });
   }
@@ -1406,7 +1406,7 @@ export async function generateWeeklyPDF({
     doc.setFontSize(7.5);
     doc.setTextColor(...C.mid);
     doc.setFont(fName, 'normal');
-    doc.text('Peak Force Lab  |  Elite Training Systems  |  Landscape Grid Blueprint', margin, pageHeight - 6);
+    doc.text('PEAK FORCE Performance Lab  |  Landscape Grid Blueprint', margin, pageHeight - 6);
     doc.text(`Generated for Athlete: ${athleteName}   |   Page 1 of 1`, pageWidth - margin, pageHeight - 6, { align: 'right' });
   }
 

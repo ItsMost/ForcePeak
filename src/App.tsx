@@ -188,7 +188,7 @@ function App() {
             PEAK FORCE
           </h1>
           <p className="text-xs text-orange-500 font-black uppercase tracking-widest mt-1">
-            Athletic Performance System
+            Performance Lab
           </p>
           <div className="h-px bg-zinc-800 my-6" />
 

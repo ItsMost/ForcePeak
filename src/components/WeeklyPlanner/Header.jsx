@@ -146,7 +146,7 @@ export default function Header({
           </div>
           <div>
             <h1 className="text-xs font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
-              Peak Force
+              PEAK FORCE
             </h1>
             <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none">
               LAB
@@ -481,10 +481,10 @@ export default function Header({
             </div>
             <div>
               <h1 className="text-sm md:text-base font-black text-slate-800 dark:text-white leading-tight uppercase tracking-tight">
-                Peak Force
+                PEAK FORCE
               </h1>
               <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none mt-0.5">
-                PERFORMANCE CORE
+                Performance Lab
               </p>
             </div>
           </div>
