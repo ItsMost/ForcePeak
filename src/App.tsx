@@ -134,7 +134,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-xs font-black text-white tracking-widest uppercase">PEAK FORCE</h1>
-              <p className="text-[9px] text-orange-500 font-bold uppercase tracking-wider -mt-0.5">Welcome Pack</p>
+              <p className="text-[10px] text-orange-500 font-bold uppercase tracking-wider -mt-0.5">Welcome Pack</p>
             </div>
           </div>
 

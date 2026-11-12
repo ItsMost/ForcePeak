@@ -85,7 +85,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               </div>
               <div className="flex-1 space-y-2.5 sm:space-y-3 min-w-0">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL ATHLETE NAME</label>
                   <input 
                     type="text" 
                     name="name" 
@@ -96,7 +96,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">ATHLETE GROUP (e.g. Rehab, Sprinters)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">ATHLETE GROUP (e.g. Rehab, Sprinters)</label>
                   <input 
                     type="text" 
                     name="groupName" 
@@ -116,7 +116,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               </h4>
               <div className="grid grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">BIRTH YEAR</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">BIRTH YEAR</label>
                   <input 
                     type="number" 
                     name="birthYear" 
@@ -127,7 +127,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">BODY FAT (%)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">BODY FAT (%)</label>
                   <input 
                     type="number" 
                     name="bodyFat" 
@@ -139,7 +139,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">WEIGHT (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">WEIGHT (KG)</label>
                   <input 
                     type="number" 
                     name="weight" 
@@ -150,7 +150,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">HEIGHT (CM)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">HEIGHT (CM)</label>
                   <input 
                     type="number" 
                     name="height" 
@@ -170,7 +170,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">COUNTER MOVEMENT JUMP (CM)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">COUNTER MOVEMENT JUMP (CM)</label>
                   <input 
                     type="number" 
                     step="0.1"
@@ -182,7 +182,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">SQUAT JUMP (CM)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">SQUAT JUMP (CM)</label>
                   <input 
                     type="number" 
                     step="0.1"
@@ -194,7 +194,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">REACTIVE STRENGTH INDEX (RSI)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">REACTIVE STRENGTH INDEX (RSI)</label>
                   <input 
                     type="number" 
                     step="0.01"
@@ -220,7 +220,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-5 sm:gap-x-6 gap-y-4 sm:gap-y-5">
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">BENCH PRESS (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">BENCH PRESS (KG)</label>
                   <input 
                     type="number" 
                     name="bench" 
@@ -231,7 +231,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL SQUAT (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">FULL SQUAT (KG)</label>
                   <input 
                     type="number" 
                     name="fullSquat" 
@@ -242,7 +242,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">FRONT SQUAT (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">FRONT SQUAT (KG)</label>
                   <input 
                     type="number" 
                     name="frontSquat" 
@@ -253,7 +253,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">DEADLIFT (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">DEADLIFT (KG)</label>
                   <input 
                     type="number" 
                     name="deadlift" 
@@ -264,7 +264,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">POWER CLEAN (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">POWER CLEAN (KG)</label>
                   <input 
                     type="number" 
                     name="powerClean" 
@@ -275,7 +275,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
                   />
                 </div>
                 <div>
-                  <label className="block text-[9px] font-black uppercase tracking-wider text-slate-400 mb-1">HANG CLEAN (KG)</label>
+                  <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">HANG CLEAN (KG)</label>
                   <input 
                     type="number" 
                     name="hangClean" 

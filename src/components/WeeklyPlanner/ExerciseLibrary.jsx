@@ -103,7 +103,7 @@ export default function ExerciseLibrary({
     }
 
     return (
-      <span key={idx} className={`text-[8.5px] px-1.5 py-0.2 font-bold uppercase rounded border ${colorClass}`}>
+      <span key={idx} className={`text-[10px] px-1.5 py-0.2 font-bold uppercase rounded border ${colorClass}`}>
         {tag}
       </span>
     );
@@ -134,7 +134,7 @@ export default function ExerciseLibrary({
             </div>
             <div>
               <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Exercise Library</h3>
-              <p className="text-[9px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Peak Force Athletic Database</p>
+              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Peak Force Athletic Database</p>
             </div>
           </div>
           <button 
@@ -217,7 +217,7 @@ export default function ExerciseLibrary({
 
               {/* Subcategory Filter Chips */}
               {SUBCATEGORIES[activeCategory] && (
-                <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none text-[9px] font-bold border-t border-slate-200/60 dark:border-slate-800 pt-2">
+                <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-none text-[10px] font-bold border-t border-slate-200/60 dark:border-slate-800 pt-2">
                   {Object.entries(SUBCATEGORIES[activeCategory]).map(([subKey, subLabel]) => {
                     const isSubActive = activeSubcategory === subKey;
                     return (
@@ -299,13 +299,13 @@ export default function ExerciseLibrary({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           {/* Category Badge */}
-                          <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded border border-slate-200/70 dark:border-slate-700">
+                          <span className="text-[10px] px-1.5 py-0.5 font-bold uppercase bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded border border-slate-200/70 dark:border-slate-700">
                             {displayCatName.replace('Max Strength ', '').replace('Rate of Force Development & ', '').replace('Elasticity & ', '').replace('Mechanics & ', '')}
                           </span>
                           
                           {/* Subcategory Badge */}
                           {drill.subcategory && (
-                            <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40">
+                            <span className="text-[10px] px-1.5 py-0.5 font-bold uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40">
                               {SUBCATEGORIES[unifiedCat]?.[drill.subcategory] || SUBCATEGORIES[drill.type]?.[drill.subcategory] || drill.subcategory.replace(/_/g, ' ')}
                             </span>
                           )}
@@ -317,26 +317,26 @@ export default function ExerciseLibrary({
                           
                           {/* Target Weight Badge */}
                           {(drill.weight !== undefined && drill.weight !== null && drill.weight !== '') && (
-                            <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/50 dark:border-blue-800/40">
+                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/50 dark:border-blue-800/40">
                               {drill.weight} {drill.weightUnit || drill.weight_unit || 'kg'}
                             </span>
                           )}
 
                           {/* Intensity Percentage */}
                           {drill.percentage && (
-                            <span className="text-[8.5px] px-1.5 py-0.2 font-bold uppercase bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded border border-orange-200/50 dark:border-orange-800/40">
+                            <span className="text-[10px] px-1.5 py-0.2 font-bold uppercase bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 rounded border border-orange-200/50 dark:border-orange-800/40">
                               {drill.percentage}% 1RM
                             </span>
                           )}
 
                           {/* Velocity VBT Metrics */}
                           {(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity) && (
-                            <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded border border-cyan-200/50 dark:border-cyan-800/40">
+                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded border border-cyan-200/50 dark:border-cyan-800/40">
                               MV: {drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity} m/s
                             </span>
                           )}
                           {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
-                            <span className="text-[8.5px] px-1.5 py-0.2 font-black uppercase bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded border border-purple-200/50 dark:border-purple-800/40">
+                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded border border-purple-200/50 dark:border-purple-800/40">
                               PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s
                             </span>
                           )}
@@ -346,7 +346,7 @@ export default function ExerciseLibrary({
                         {(drill.primaryMuscle || tagsList.length > 0) && (
                           <div className="flex items-center gap-1 flex-wrap mt-1.5">
                             {drill.primaryMuscle && (
-                              <span className="text-[8.5px] px-1.5 py-0.2 font-medium bg-slate-100/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded">
+                              <span className="text-[10px] px-1.5 py-0.2 font-medium bg-slate-100/80 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded">
                                 🎯 {drill.primaryMuscle}
                               </span>
                             )}
@@ -358,7 +358,7 @@ export default function ExerciseLibrary({
                         
                         {/* Quick-Add Day Badges */}
                         <div className="flex flex-wrap gap-1 mt-2 items-center">
-                          <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Add:</span>
+                          <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-wider mr-1">Add:</span>
                           {[
                             { key: 'Saturday', label: 'Sat' },
                             { key: 'Sunday', label: 'Sun' },
@@ -371,7 +371,7 @@ export default function ExerciseLibrary({
                             <button 
                               key={dayObj.key}
                               onClick={(e) => { e.stopPropagation(); onApplyExercise && onApplyExercise(drill, dayObj.key); }}
-                              className="px-1.5 py-0.5 text-[9px] font-bold bg-slate-50 hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-2xs"
+                              className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-50 hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-2xs"
                             >
                               {dayObj.label}
                             </button>
@@ -405,7 +405,7 @@ export default function ExerciseLibrary({
                   >
                     <div className="flex justify-between items-center w-full">
                       <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
-                        <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40 shrink-0">Day</span>
+                        <span className="text-[10px] px-1.5 py-0.5 font-bold uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40 shrink-0">Day</span>
                         <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate" title={tpl.title}>{tpl.title}</span>
                       </div>
                       <button 
@@ -418,7 +418,7 @@ export default function ExerciseLibrary({
 
                     <div className="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-100 dark:border-slate-800 pb-1.5">
                       <span>⚡ {drillCount} Exercises</span>
-                      <span className="text-[9px] text-slate-400 dark:text-slate-500">Drag or tap to apply</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">Drag or tap to apply</span>
                     </div>
 
                     {/* Quick-Apply Day Badges */}
@@ -435,7 +435,7 @@ export default function ExerciseLibrary({
                         <button 
                           key={dayObj.key}
                           onClick={() => onApplyDayTemplate && onApplyDayTemplate(tpl, dayObj.key)}
-                          className="px-1.5 py-0.5 text-[9px] font-bold bg-slate-50 hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-2xs"
+                          className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-50 hover:bg-blue-600 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 text-slate-600 dark:text-slate-300 rounded border border-slate-200 dark:border-slate-700 transition-all active:scale-95 shadow-2xs"
                           title={`Apply to ${dayObj.key}`}
                         >
                           {dayObj.label}
@@ -456,7 +456,7 @@ export default function ExerciseLibrary({
               filteredWeekTemplates.map(tpl => (
                 <div key={tpl.id} className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-200/90 dark:border-slate-750 group flex justify-between items-center transition-all hover:border-blue-500/40 shadow-xs hover:shadow-md">
                   <div className="min-w-0 flex-1 pr-2 flex items-center gap-1.5">
-                    <span className="text-[9px] px-1.5 py-0.5 font-bold uppercase bg-blue-600 text-white rounded shrink-0 shadow-2xs">Weekly</span>
+                    <span className="text-[10px] px-1.5 py-0.5 font-bold uppercase bg-blue-600 text-white rounded shrink-0 shadow-2xs">Weekly</span>
                     <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block truncate" title={tpl.title}>{tpl.title}</span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -554,7 +554,7 @@ export default function ExerciseLibrary({
                         <div className="flex flex-wrap gap-1 items-center pt-1 border-t border-slate-100 dark:border-slate-800">
                           <Tag className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                           {tagBadges.map((badge, bIdx) => (
-                            <span key={bIdx} className="text-[9px] font-bold px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40">
+                            <span key={bIdx} className="text-[10px] font-bold px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40">
                               #{badge}
                             </span>
                           ))}
@@ -651,7 +651,7 @@ export default function ExerciseLibrary({
                         <div className="flex flex-wrap gap-1 items-center pt-1 border-t border-slate-100 dark:border-slate-800">
                           <Tag className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                           {tagBadges.map((badge, bIdx) => (
-                            <span key={bIdx} className="text-[9px] font-bold px-1.5 py-0.2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded border border-indigo-200/60 dark:border-indigo-800/40">
+                            <span key={bIdx} className="text-[10px] font-bold px-1.5 py-0.2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded border border-indigo-200/60 dark:border-indigo-800/40">
                               #{badge}
                             </span>
                           ))}

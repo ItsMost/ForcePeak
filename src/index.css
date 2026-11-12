@@ -28,3 +28,10 @@
   scrollbar-width: none;
 }
 
+
+/* Accessibility (WCAG AA): in LIGHT mode, slate-400 text on white is only ~2.6:1.
+   Bump it to slate-500 (~4.8:1). :where() keeps specificity equal to a Tailwind
+   utility, so hover:/focus: color classes still win. Dark mode is untouched. */
+:where(html:not(.dark)) .text-slate-400 {
+  color: rgb(100 116 139); /* slate-500 */
+}
