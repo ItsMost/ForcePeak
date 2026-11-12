@@ -616,7 +616,7 @@ export default function PeriodizationPlanner({
               {selectedSeasonId && (
                 <div className="flex gap-2">
                   <button onClick={handleSaveSeasonPlan} className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"><Save className="w-3.5 h-3.5" /> Save Changes</button>
-                  <button onClick={() => { setDeploySeasonAthleteId(''); setShowDeploySeasonModal(true); }} className="px-4 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"><Play className="w-3.5 h-3.5" /> Deploy to Athlete</button>
+                  <button onClick={() => { setDeploySeasonAthleteId(''); setShowDeploySeasonModal(true); }} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center gap-1.5"><Play className="w-3.5 h-3.5" /> Deploy to Athlete</button>
                 </div>
               )}
             </div>
@@ -1103,7 +1103,7 @@ export default function PeriodizationPlanner({
         {/* Main Header */}
         <div className="p-4 sm:p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-violet-500/20">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
               <Layers className="w-5 h-5" />
             </div>
             <div>
@@ -1172,7 +1172,7 @@ export default function PeriodizationPlanner({
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="text-base font-black text-slate-800 dark:text-white">{blockData.program_name || 'Block Template'}</h4>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
                         {blockData.level || 'Beginner'}
                       </span>
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-100 dark:bg-orange-950 text-orange-600 dark:text-orange-400">
@@ -1348,7 +1348,7 @@ export default function PeriodizationPlanner({
 
                                       <button
                                         onClick={() => handleEditWeekWorkouts(activeMesoPhaseIdx, wIdx)}
-                                        className="w-full py-2 bg-gradient-to-r from-violet-500 to-indigo-500 hover:from-violet-600 hover:to-indigo-600 text-white rounded-xl font-black text-[11px] shadow-sm flex items-center justify-center gap-1.5"
+                                        className="w-full py-2 bg-gradient-to-r from-blue-500 to-blue-500 hover:from-blue-600 hover:to-blue-600 text-white rounded-xl font-black text-[11px] shadow-sm flex items-center justify-center gap-1.5"
                                       >
                                         <Dumbbell className="w-3.5 h-3.5" /> Edit Week Workouts on Weekly Grid
                                       </button>
@@ -1371,7 +1371,7 @@ export default function PeriodizationPlanner({
                       return (
                         <div className="bg-slate-50 dark:bg-slate-900/60 p-5 border border-slate-200 dark:border-slate-700/60 rounded-3xl space-y-4">
                           <div className="flex items-center gap-2 pb-2.5 border-b border-slate-200 dark:border-slate-800">
-                            <HelpCircle className="w-4.5 h-4.5 text-violet-500 shrink-0" />
+                            <HelpCircle className="w-4.5 h-4.5 text-blue-500 shrink-0" />
                             <div>
                               <h5 className="text-xs font-black text-slate-800 dark:text-white leading-tight">{guide.title}</h5>
                               <span className="block text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">{guide.englishTitle}</span>
@@ -1392,10 +1392,10 @@ export default function PeriodizationPlanner({
                           </div>
 
                           <div className="space-y-1.5">
-                            <span className="text-[10px] font-extrabold text-violet-500 block">💡 Sports Science Tips:</span>
+                            <span className="text-[10px] font-extrabold text-blue-500 block">💡 Sports Science Tips:</span>
                             <ul className="list-disc list-inside space-y-1 text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed pl-1">
                               {guide.tips.map((tip, tIdx) => (
-                                <li key={tIdx} className="text-left list-none relative pl-3 before:content-['•'] before:absolute before:left-0 before:text-violet-500">
+                                <li key={tIdx} className="text-left list-none relative pl-3 before:content-['•'] before:absolute before:left-0 before:text-blue-500">
                                   {tip}
                                 </li>
                               ))}
@@ -1437,7 +1437,7 @@ export default function PeriodizationPlanner({
                       <div 
                         key={template.id}
                         onClick={() => setSelectedBlockId(template.id)}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'bg-violet-500/10 border-violet-500 dark:border-violet-500/80 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isSelected ? 'bg-blue-500/10 border-blue-500 dark:border-blue-500/80 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'}`}
                       >
                         <div className="truncate flex-1 pl-2 text-left">
                           <span className="font-extrabold text-xs text-slate-800 dark:text-white block truncate">
@@ -1600,7 +1600,7 @@ export default function PeriodizationPlanner({
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-left border border-slate-200 dark:border-slate-700 font-sans">
             <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> Deploy Template to Athlete
+              <Play className="w-5 h-5 text-blue-500 animate-pulse" /> Deploy Template to Athlete
             </h3>
             
             <div className="space-y-4">
@@ -1739,7 +1739,7 @@ export default function PeriodizationPlanner({
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-sm p-6 text-left border border-slate-200 dark:border-slate-700 font-sans">
             <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> Deploy Season Plan to Athlete
+              <Play className="w-5 h-5 text-blue-500 animate-pulse" /> Deploy Season Plan to Athlete
             </h3>
             
             <div className="space-y-4">
@@ -1771,7 +1771,7 @@ export default function PeriodizationPlanner({
             <div className="flex gap-3 justify-end mt-6">
               <button
                 onClick={handleDeploySeasonPlanToAthlete}
-                className="px-6 py-2.5 bg-violet-650 hover:bg-violet-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
+                className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md transition-all"
               >
                 Deploy Season Plan
               </button>

@@ -1175,7 +1175,7 @@ export default function WeeklyPlanner({ onLogout }) {
     let loadLabel = 'Low (Deload)'; let loadColor = 'text-green-600 bg-green-50 border-green-200';
     if (totalLoad >= 9000) { loadLabel = 'Very High (Overreaching)'; loadColor = 'text-red-600 bg-red-50 border-red-200'; } 
     else if (totalLoad >= 5000) { loadLabel = 'High (High)'; loadColor = 'text-orange-600 bg-orange-50 border-orange-200'; } 
-    else if (totalLoad >= 2500) { loadLabel = 'Medium (Base)'; loadColor = 'text-yellow-600 bg-yellow-50 border-yellow-200'; }
+    else if (totalLoad >= 2500) { loadLabel = 'Medium (Base)'; loadColor = 'text-amber-600 bg-amber-50 border-amber-200'; }
 
     const combinedLoad = totalCnsLoad + totalStructuralLoad;
     const cnsPercentage = combinedLoad > 0 ? Math.round((totalCnsLoad / combinedLoad) * 100) : 0;
@@ -2399,7 +2399,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 : isActive 
                   ? deployment 
                     ? `${phaseColor.bg} sm:${phaseColor.border} sm:border-2`
-                    : 'bg-emerald-500/10 dark:bg-emerald-500/5 text-[#00c58d] sm:bg-emerald-500/[0.02] sm:border-[#00c58d] sm:border-2'
+                    : 'bg-green-500/10 dark:bg-green-500/5 text-[#00c58d] sm:bg-green-500/[0.02] sm:border-[#00c58d] sm:border-2'
                   : 'bg-transparent text-slate-800 dark:text-slate-200 sm:border-slate-100 sm:dark:border-slate-800 sm:bg-white sm:dark:bg-slate-900/50 sm:hover:bg-slate-50'
             }
           `}
@@ -2430,7 +2430,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 : isActive
                   ? deployment
                     ? 'bg-white/80 dark:bg-slate-800/80'
-                    : 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                    : 'bg-green-100 text-green-600 dark:bg-green-950/40 dark:text-green-400'
                   : 'bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-350 sm:group-hover:bg-slate-100'
             }
           `} style={isActive && deployment && !isSelected ? { color: deployment.color } : {}}>
@@ -2586,25 +2586,25 @@ export default function WeeklyPlanner({ onLogout }) {
                                     {drill.tempo && (
                                       <>
                                         <span className="text-slate-300">•</span>
-                                        <span className="text-amber-650 dark:text-amber-450">T: {drill.tempo}</span>
+                                        <span className="text-amber-600 dark:text-amber-450">T: {drill.tempo}</span>
                                       </>
                                     )}
                                     {drill.focus && (
                                        <>
                                          <span className="text-slate-300">•</span>
-                                         <span className="text-rose-600 dark:text-rose-400">{drill.focus}</span>
+                                         <span className="text-red-600 dark:text-red-400">{drill.focus}</span>
                                        </>
                                      )}
                                      {(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) && (
                                        <>
                                          <span className="text-slate-300">•</span>
-                                         <span className="text-cyan-600 dark:text-cyan-400 font-black">MV: {drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity}m/s</span>
+                                         <span className="text-blue-600 dark:text-blue-400 font-black">MV: {drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity}m/s</span>
                                        </>
                                      )}
                                      {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
                                        <>
                                          <span className="text-slate-300">•</span>
-                                         <span className="text-purple-600 dark:text-purple-400 font-black">PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe}m/s</span>
+                                         <span className="text-blue-600 dark:text-blue-400 font-black">PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe}m/s</span>
                                        </>
                                      )}
                                   </div>
@@ -2770,7 +2770,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       </div>
                       <div className="flex items-center gap-1.5 mt-0.5">
                         <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Timeline Position:</span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-violet-50 dark:bg-violet-950/40 text-violet-600 dark:text-violet-400 border border-violet-100 dark:border-violet-900/20 shadow-sm shrink-0">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/20 shadow-sm shrink-0">
                           {weekLabel}
                         </span>
                       </div>
@@ -2856,7 +2856,7 @@ export default function WeeklyPlanner({ onLogout }) {
             </button>
             <button
               onClick={() => setShowPeriodizationPlanner(true)}
-              className="w-full py-2.5 bg-violet-650 hover:bg-violet-700 text-white rounded-xl text-xs font-black shadow-md shadow-violet-500/10 flex items-center justify-center gap-1.5 transition-all"
+              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black shadow-md shadow-blue-500/10 flex items-center justify-center gap-1.5 transition-all"
             >
               <Calendar className="w-4 h-4" /> Annual Season Planner
             </button>
@@ -3014,7 +3014,7 @@ export default function WeeklyPlanner({ onLogout }) {
             {deployments.length > 0 && (
               <div className="mb-5 p-4 bg-slate-50/80 dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-500 flex items-center justify-center">
                     <BarChart3 className="w-3.5 h-3.5 text-white" />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">Periodization Roadmap</span>
@@ -3177,7 +3177,7 @@ export default function WeeklyPlanner({ onLogout }) {
             {/* Header */}
             <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/20">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-950/40 rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400">
                   <Printer className="w-5 h-5" />
                 </div>
                 <div className="text-left">
@@ -3207,18 +3207,18 @@ export default function WeeklyPlanner({ onLogout }) {
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, orientation: 'landscape' }))}
                     className={`relative p-4 rounded-2xl border text-left transition-all flex flex-col justify-between h-24 ${
                       printStudioModal.orientation === 'landscape'
-                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-600/10'
+                        ? 'border-blue-600 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 ring-2 ring-blue-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:bg-slate-600 bg-white dark:bg-slate-900'
                     }`}
                   >
                     <div className="flex justify-between items-start w-full">
-                      <Layout className={`w-6 h-6 ${printStudioModal.orientation === 'landscape' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
+                      <Layout className={`w-6 h-6 ${printStudioModal.orientation === 'landscape' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
                       {printStudioModal.orientation === 'landscape' && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400"></span>
                       )}
                     </div>
                     <div>
-                      <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'landscape' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>Landscape (1 Page)</h4>
+                      <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'landscape' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>Landscape (1 Page)</h4>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Horizontal - Single full-week sheet</p>
                     </div>
                   </button>
@@ -3229,18 +3229,18 @@ export default function WeeklyPlanner({ onLogout }) {
                     onClick={() => setPrintStudioModal(prev => ({ ...prev, orientation: 'portrait' }))}
                     className={`relative p-4 rounded-2xl border text-left transition-all flex flex-col justify-between h-24 ${
                       printStudioModal.orientation === 'portrait'
-                        ? 'border-indigo-600 dark:border-indigo-500 bg-indigo-50/30 dark:bg-indigo-950/20 ring-2 ring-indigo-600/10'
+                        ? 'border-blue-600 dark:border-blue-500 bg-blue-50/30 dark:bg-blue-950/20 ring-2 ring-blue-600/10'
                         : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:bg-slate-600 bg-white dark:bg-slate-900'
                     }`}
                   >
                     <div className="flex justify-between items-start w-full">
-                      <FileText className={`w-6 h-6 ${printStudioModal.orientation === 'portrait' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'}`} />
+                      <FileText className={`w-6 h-6 ${printStudioModal.orientation === 'portrait' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
                       {printStudioModal.orientation === 'portrait' && (
-                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 dark:bg-indigo-400"></span>
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 dark:bg-blue-400"></span>
                       )}
                     </div>
                     <div>
-                      <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'portrait' ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>Portrait (Vertical)</h4>
+                      <h4 className={`text-sm font-bold ${printStudioModal.orientation === 'portrait' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-800 dark:text-slate-200'}`}>Portrait (Vertical)</h4>
                       <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">Vertical - Stacked day list</p>
                     </div>
                   </button>
@@ -3386,7 +3386,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 </button>
                 <button 
                   onClick={handlePrintStudioSubmit} 
-                  className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
+                  className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-600 hover:from-blue-700 hover:to-blue-700 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2"
                 >
                   <FileText className="w-4 h-4" />
                   Download PDF
@@ -3501,7 +3501,7 @@ export default function WeeklyPlanner({ onLogout }) {
               </button>
               <button 
                 onClick={() => handlePrintWelcomePack(welcomePackModal.langMode)} 
-                className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-650 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2 flex-1"
+                className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-red-500 hover:from-orange-700 hover:to-red-600 text-white rounded-xl shadow-md hover:shadow-lg transition-all font-bold text-sm flex items-center justify-center gap-2 flex-1"
               >
                 <Sparkles className="w-4 h-4" />
                 Generate
@@ -3572,7 +3572,7 @@ export default function WeeklyPlanner({ onLogout }) {
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6">
             <h3 className="text-lg font-bold mb-4 text-slate-800 dark:text-white flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-indigo-500" /> Create Seasonal Macro-Cycle
+              <Calendar className="w-5 h-5 text-blue-500" /> Create Seasonal Macro-Cycle
             </h3>
             <div className="space-y-4">
               <div>
@@ -3582,7 +3582,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   value={createMacroModal.name} 
                   onChange={(e) => setCreateMacroModal({...createMacroModal, name: e.target.value})} 
                   placeholder="e.g. Annual Championship Prep" 
-                  className="w-full px-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
+                  className="w-full px-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
                 />
               </div>
               <div>
@@ -3592,7 +3592,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   value={createMacroModal.tags || ''} 
                   onChange={(e) => setCreateMacroModal({...createMacroModal, tags: e.target.value})} 
                   placeholder="e.g. Power, OlympicPrep" 
-                  className="w-full px-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
+                  className="w-full px-4 py-2 border rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white" 
                 />
               </div>
 
@@ -3620,7 +3620,7 @@ export default function WeeklyPlanner({ onLogout }) {
                             };
                             setCreateMacroModal({...createMacroModal, blocksChain: updated});
                           }} 
-                          className="flex-1 text-sm bg-slate-50 dark:bg-slate-900 border p-2 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500 dark:text-white dark:border-slate-700"
+                          className="flex-1 text-sm bg-slate-50 dark:bg-slate-900 border p-2 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:text-white dark:border-slate-700"
                         >
                           <option value="">-- Choose Meso-Cycle --</option>
                           {programs.filter(p => !p.weeks?.[0]?.isMacro).map(p => (
@@ -3644,7 +3644,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 {programs.filter(p => !p.weeks?.[0]?.isMacro).length > 0 && (
                   <button 
                     onClick={() => setCreateMacroModal({...createMacroModal, blocksChain: [...createMacroModal.blocksChain, { blockId: '', blockName: '', weeksCount: 0 }]})} 
-                    className="text-xs font-bold text-indigo-500 hover:text-indigo-650 mt-1"
+                    className="text-xs font-bold text-blue-500 hover:text-blue-600 mt-1"
                   >
                     + Add Training Phase
                   </button>
@@ -3661,7 +3661,7 @@ export default function WeeklyPlanner({ onLogout }) {
               </button>
               <button 
                 onClick={handleSaveMacroCycle} 
-                className="px-5 py-2 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-colors"
+                className="px-5 py-2 text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-md transition-colors"
               >
                 Save Macro-Cycle
               </button>
@@ -3674,8 +3674,8 @@ export default function WeeklyPlanner({ onLogout }) {
       {macroConfirmModal.isOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-100 dark:border-slate-700/50">
-            <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-950/40 rounded-full flex items-center justify-center mb-4">
-              <Calendar className="w-6 h-6 text-indigo-600" />
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-950/40 rounded-full flex items-center justify-center mb-4">
+              <Calendar className="w-6 h-6 text-blue-600" />
             </div>
             <h3 className="text-lg font-bold mb-2 text-slate-800 dark:text-slate-100">Confirm Macro-Cycle Application</h3>
             <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 leading-relaxed">
@@ -3689,7 +3689,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   type="date" 
                   value={macroConfirmModal.startDate} 
                   onChange={(e) => setMacroConfirmModal({...macroConfirmModal, startDate: e.target.value})} 
-                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-indigo-500" 
+                  className="w-full px-4 py-2 border rounded-xl dark:bg-slate-900 dark:border-slate-700 dark:text-white text-sm outline-none focus:ring-2 focus:ring-blue-500" 
                 />
               </div>
             </div>
@@ -3697,7 +3697,7 @@ export default function WeeklyPlanner({ onLogout }) {
               <button onClick={() => setMacroConfirmModal({ isOpen: false, macro: null, startDate: '' })} className="flex-1 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-650 rounded-xl font-bold text-sm transition-all">
                 Cancel
               </button>
-              <button onClick={executeApplyMacroCycle} className="flex-1 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md transition-all">
+              <button onClick={executeApplyMacroCycle} className="flex-1 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all">
                 Confirm & Deploy
               </button>
             </div>
@@ -3751,7 +3751,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-bold text-slate-500">Target Weight</label>
                     {getCalculatedIntensityFromWeightInModal(addExerciseModal) && (
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded-md">
+                      <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-1.5 py-0.2 rounded-md">
                         ~{getCalculatedIntensityFromWeightInModal(addExerciseModal)}% 1RM
                       </span>
                     )}
@@ -3870,9 +3870,9 @@ export default function WeeklyPlanner({ onLogout }) {
               <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Zap className="w-3.5 h-3.5 text-cyan-500" /> Velocity Based Training (VBT)
+                    <Zap className="w-3.5 h-3.5 text-blue-500" /> Velocity Based Training (VBT)
                   </span>
-                  <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md border border-blue-200/50 dark:border-blue-800/40">
                     m/s Speed Metrics
                   </span>
                 </div>
@@ -3884,7 +3884,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       placeholder="e.g. 0.85 or 0.75-0.85" 
                       value={addExerciseModal.meanVelocity || ''} 
                       onChange={(e) => setAddExerciseModal({...addExerciseModal, meanVelocity: e.target.value})} 
-                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
                     />
                   </div>
                   <div>
@@ -3894,7 +3894,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       placeholder="e.g. 1.20 or >1.10" 
                       value={addExerciseModal.peakVelocity || ''} 
                       onChange={(e) => setAddExerciseModal({...addExerciseModal, peakVelocity: e.target.value})} 
-                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
                     />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
@@ -3904,7 +3904,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       placeholder="e.g. 20%" 
                       value={addExerciseModal.velocityLoss || ''} 
                       onChange={(e) => setAddExerciseModal({...addExerciseModal, velocityLoss: e.target.value})} 
-                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-pink-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
                     />
                   </div>
                 </div>
@@ -3987,7 +3987,7 @@ export default function WeeklyPlanner({ onLogout }) {
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-xs font-bold text-slate-500">Target Weight</label>
                     {getCalculatedIntensityFromWeightInModal(dayDrillModal.drill) && (
-                      <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded-md">
+                      <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/40 px-1.5 py-0.2 rounded-md">
                         ~{getCalculatedIntensityFromWeightInModal(dayDrillModal.drill)}% 1RM
                       </span>
                     )}
@@ -4072,9 +4072,9 @@ export default function WeeklyPlanner({ onLogout }) {
               <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-2xl border border-slate-200/80 dark:border-slate-800 space-y-2.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-black text-slate-700 dark:text-slate-200 flex items-center gap-1.5 uppercase tracking-wider">
-                    <Zap className="w-3.5 h-3.5 text-cyan-500" /> Velocity Based Training (VBT)
+                    <Zap className="w-3.5 h-3.5 text-blue-500" /> Velocity Based Training (VBT)
                   </span>
-                  <span className="text-[10px] font-bold text-cyan-600 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-950/40 px-2 py-0.5 rounded-md border border-cyan-200/50 dark:border-cyan-800/40">
+                  <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded-md border border-blue-200/50 dark:border-blue-800/40">
                     m/s Speed Metrics
                   </span>
                 </div>
@@ -4086,7 +4086,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       placeholder="e.g. 0.85 or 0.75-0.85" 
                       value={dayDrillModal.drill.meanVelocity || dayDrillModal.drill.targetVelocity || ''} 
                       onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, meanVelocity: e.target.value, targetVelocity: e.target.value}})} 
-                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
                     />
                   </div>
                   <div>
@@ -4096,7 +4096,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       placeholder="e.g. 1.20 or >1.10" 
                       value={dayDrillModal.drill.peakVelocity || ''} 
                       onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, peakVelocity: e.target.value}})} 
-                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
                     />
                   </div>
                   <div className="col-span-2 sm:col-span-1">
@@ -4106,7 +4106,7 @@ export default function WeeklyPlanner({ onLogout }) {
                       placeholder="e.g. 20%" 
                       value={dayDrillModal.drill.velocityLoss || ''} 
                       onChange={(e) => setDayDrillModal({...dayDrillModal, drill: {...dayDrillModal.drill, velocityLoss: e.target.value}})} 
-                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-pink-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
+                      className="w-full text-sm px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-blue-500 dark:bg-slate-900 dark:border-slate-700 dark:text-white font-bold" 
                     />
                   </div>
                 </div>
@@ -4171,7 +4171,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">CNS Split</p>
-                  <p className="text-xl font-black text-yellow-500">{weeklyStats.cnsPercentage}%</p>
+                  <p className="text-xl font-black text-amber-500">{weeklyStats.cnsPercentage}%</p>
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Structural</p>
@@ -4179,7 +4179,7 @@ export default function WeeklyPlanner({ onLogout }) {
                 </div>
                 <div className="p-3 bg-slate-50 dark:bg-slate-900 border dark:border-slate-700/50 rounded-xl text-center">
                   <p className="text-[10px] font-bold uppercase text-slate-400">Total Run</p>
-                  <p className="text-lg sm:text-xl font-black text-indigo-600 dark:text-indigo-400">{weeklyStats.totalMeters}m</p>
+                  <p className="text-lg sm:text-xl font-black text-blue-600 dark:text-blue-400">{weeklyStats.totalMeters}m</p>
                 </div>
               </div>
               
@@ -4319,7 +4319,7 @@ export default function WeeklyPlanner({ onLogout }) {
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[150] flex items-center justify-center p-4">
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-md p-6 border border-slate-200 dark:border-slate-700 font-sans">
             <h3 className="text-base font-black text-slate-800 dark:text-white mb-4 flex items-center gap-2">
-              <Play className="w-5 h-5 text-violet-500 animate-pulse" /> Deploy Block Template to Athlete
+              <Play className="w-5 h-5 text-blue-500 animate-pulse" /> Deploy Block Template to Athlete
             </h3>
             <div className="space-y-4 text-left">
               <div>
@@ -4598,7 +4598,7 @@ export default function WeeklyPlanner({ onLogout }) {
                         {dayStats.totalMeters > 0 && (
                           <>
                             <div className="w-px h-5 bg-slate-200"></div>
-                            <div className="flex flex-col items-center text-indigo-600"><span className="text-indigo-400 text-[10px] uppercase">Run</span><span>{dayStats.totalMeters}m</span></div>
+                            <div className="flex flex-col items-center text-blue-600"><span className="text-blue-400 text-[10px] uppercase">Run</span><span>{dayStats.totalMeters}m</span></div>
                           </>
                         )}
                       </div>
@@ -4850,8 +4850,8 @@ export default function WeeklyPlanner({ onLogout }) {
                         )}
                         {dayStats.totalMeters > 0 && (
                           <div className="bg-white dark:bg-slate-800 p-2 rounded-xl border border-slate-100 dark:border-slate-700/30 flex flex-col items-center">
-                            <span className="text-[10px] uppercase font-black text-indigo-400">Run</span>
-                            <span className="text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">{dayStats.totalMeters}m</span>
+                            <span className="text-[10px] uppercase font-black text-blue-400">Run</span>
+                            <span className="text-base font-black text-blue-600 dark:text-blue-400 mt-0.5">{dayStats.totalMeters}m</span>
                           </div>
                         )}
                       </div>
