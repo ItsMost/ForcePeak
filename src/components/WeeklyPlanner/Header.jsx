@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   ChevronDown, ChevronUp, UserPlus, User, Smartphone, Monitor, Moon, Sun, Library, BookmarkPlus, Search, Activity,
-  Layers, TrendingUp, LayoutDashboard, X, Edit2, Trash2
+  Layers, TrendingUp, LayoutDashboard, X, Edit2, Trash2, LogOut
 } from 'lucide-react';
 
 export default function Header({
@@ -30,7 +30,8 @@ export default function Header({
   macroData,
   macroWeeks,
   onExitMeso,
-  onExitMacro
+  onExitMacro,
+  onLogout
 }) {
   
   const isTemplateEditing = isEditingBlock || isEditingMeso || isEditingMacro;
@@ -199,6 +200,16 @@ export default function Header({
           >
             {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}
           </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title="تسجيل الخروج / Log out"
+              aria-label="Log out"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-500 bg-slate-100 dark:bg-slate-800 rounded-xl transition-all shadow-sm active:scale-95"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -829,6 +840,11 @@ export default function Header({
           <button onClick={() => setIsDarkMode(!isDarkMode)} className="p-2 text-slate-400 dark:text-slate-500 hover:text-orange-500 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors shrink-0 shadow-sm">
             {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
           </button>
+          {onLogout && (
+            <button onClick={onLogout} title="تسجيل الخروج / Log out" aria-label="Log out" className="p-2 text-slate-400 dark:text-slate-500 hover:text-red-500 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl transition-colors shrink-0 shadow-sm">
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
 
         </div>
 
