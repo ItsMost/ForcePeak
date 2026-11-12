@@ -31,7 +31,7 @@ STABLE
 SET search_path = ''
 AS $$
   SELECT auth.uid() IN (
-    '__COACH_USER_ID__'::uuid
+    'b09f7b93-2c27-4a10-b2e9-54be95004471'::uuid  -- coach@peakforce.app
   );
 $$;
 
