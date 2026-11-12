@@ -16,34 +16,7 @@ import { generateWelcomePackHTML } from './welcomePackPrinter.js';
 
 import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY, getUnifiedCategory } from '../../data/constants.js';
 
-const PHASE_COLORS = [
-  { bg: 'bg-blue-500/15', border: 'border-blue-400', text: 'text-blue-600 dark:text-blue-400', hex: '#3b82f6', label: 'blue' },
-  { bg: 'bg-violet-500/15', border: 'border-violet-400', text: 'text-violet-600 dark:text-violet-400', hex: '#8b5cf6', label: 'violet' },
-  { bg: 'bg-emerald-500/15', border: 'border-emerald-400', text: 'text-emerald-600 dark:text-emerald-400', hex: '#10b981', label: 'emerald' },
-  { bg: 'bg-amber-500/15', border: 'border-amber-400', text: 'text-amber-600 dark:text-amber-400', hex: '#f59e0b', label: 'amber' },
-  { bg: 'bg-rose-500/15', border: 'border-rose-400', text: 'text-rose-600 dark:text-rose-400', hex: '#f43f5e', label: 'rose' },
-  { bg: 'bg-cyan-500/15', border: 'border-cyan-400', text: 'text-cyan-600 dark:text-cyan-400', hex: '#06b6d4', label: 'cyan' },
-];
-const EXERCISE_TYPE_DOTS = {
-  max_strength_lower: { color: 'bg-blue-600', label: 'Strength Lower' },
-  max_strength_upper: { color: 'bg-indigo-600', label: 'Strength Upper' },
-  rofd_ballistics: { color: 'bg-orange-500', label: 'RFD & Power' },
-  elasticity_plyo: { color: 'bg-violet-500', label: 'Elastic Plyo' },
-  isometric_tendon: { color: 'bg-amber-500', label: 'Isometrics' },
-  sprint_speed: { color: 'bg-emerald-500', label: 'Sprint & Speed' },
-  trunk_rotation: { color: 'bg-purple-500', label: 'Trunk & Core' },
-  prehab_mobility: { color: 'bg-rose-500', label: 'Prehab & Mobility' },
-  // Legacy aliases
-  power: { color: 'bg-orange-500', label: 'Power' },
-  plyometric: { color: 'bg-indigo-500', label: 'Plyometric' },
-  strength: { color: 'bg-blue-500', label: 'Strength' },
-  core: { color: 'bg-emerald-500', label: 'Core' },
-  speed: { color: 'bg-yellow-500', label: 'Speed' },
-  mobility: { color: 'bg-purple-400', label: 'Mobility' },
-  isometric: { color: 'bg-cyan-500', label: 'Isometric' },
-  endurance: { color: 'bg-pink-500', label: 'Endurance' },
-  physical: { color: 'bg-slate-400', label: 'Physical' },
-};
+import { PHASE_COLORS, EXERCISE_TYPE_DOTS } from '../../data/categoryColors.js';
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
