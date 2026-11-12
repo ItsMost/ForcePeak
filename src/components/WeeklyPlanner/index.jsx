@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, Play, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search, Printer, FileText, Layout, Layers, Zap } from 'lucide-react';
 
 import Header from './Header.jsx';
@@ -8,6 +8,7 @@ import ExerciseLibrary from './ExerciseLibrary.jsx';
 import AthleteProfileModal from './AthleteProfileModal.jsx';
 import PeriodizationPlanner from './PeriodizationPlanner.jsx';
 import MobileBottomNav from './MobileBottomNav.jsx';
+import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 import { supabase } from '../../supabaseClient';
 import { generateWeeklyPDF } from '../../utils/pdfGenerator';
 import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
@@ -178,6 +179,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [historyIndex, setHistoryIndex] = useState(-1); 
 
   const [toastMessage, setToastMessage] = useState(null);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false });
   const [showAddAthleteModal, setShowAddAthleteModal] = useState(false);
   const [showMonthCalendar, setShowMonthCalendar] = useState(false);
   const [showPeriodizationPlanner, setShowPeriodizationPlanner] = useState(false);
@@ -1540,7 +1542,8 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handleDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('Program cleared'); } };
+  const handleDeleteProgramBlock = (id) => requestDeleteProgram(id, performDeleteProgramBlock);
+  const performDeleteProgramBlock = async (id) => { const { error } = await supabase.from('agilitylap_programs').delete().eq('id', id); if (!error) { setPrograms(prev => prev.filter(p => p.id !== id)); handleToast('تم حذف البرنامج / Program deleted'); } else { handleToast('فشل الحذف / Delete failed: ' + error.message); } };
   const handleRenameProgramBlock = async (id, newName) => {
     if (!newName || !newName.trim()) return;
     const { error } = await supabase.from('agilitylap_programs').update({ program_name: newName.trim() }).eq('id', id);
@@ -2225,8 +2228,23 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handleDeleteAthlete = async (athleteId) => {
+  // ---- Destructive actions: every delete goes through one confirmation modal ----
+  const requestDelete = (opts) => setDeleteDialog({ open: true, ...opts });
+  const closeDeleteDialog = useCallback(() => setDeleteDialog({ open: false }), []);
+
+  const handleDeleteAthlete = (athleteId) => {
     if (!athleteId) return;
+    const athlete = athletes.find(a => a.id === athleteId);
+    requestDelete({
+      title: 'حذف لاعب / Delete athlete',
+      message: 'هيتمسح ملف اللاعب ده نهائياً من قاعدة البيانات:',
+      itemName: athlete?.name || '',
+      requireName: !!athlete?.name,
+      onConfirm: () => performDeleteAthlete(athleteId),
+    });
+  };
+
+  const performDeleteAthlete = async (athleteId) => {
     const { error } = await supabase.from('agilitylap_athletes').delete().eq('id', athleteId);
     if (!error) {
       const remainingAthletes = athletes.filter(a => a.id !== athleteId);
@@ -2245,8 +2263,22 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handleDeleteBlockTemplate = async (blockId) => {
-    if (!blockId) return;
+  const requestDeleteProgram = (programId, performFn) => {
+    if (!programId) return;
+    const prog = programs.find(p => p.id === programId);
+    const name = prog?.program_name || prog?.name || '';
+    requestDelete({
+      title: 'حذف برنامج / Delete program',
+      message: 'هيتمسح البرنامج ده نهائياً:',
+      itemName: name,
+      requireName: !!name,
+      onConfirm: () => performFn(programId),
+    });
+  };
+
+  const handleDeleteBlockTemplate = (blockId) => requestDeleteProgram(blockId, performDeleteBlockTemplate);
+
+  const performDeleteBlockTemplate = async (blockId) => {
     try {
       const { error } = await supabase.from('agilitylap_programs').delete().eq('id', blockId);
       if (!error) {
@@ -2260,9 +2292,33 @@ export default function WeeklyPlanner({ onLogout }) {
       console.error(err);
     }
   };
-  const handleDeleteLibraryDrill = async (id) => { const { error } = await supabase.from('library_drills').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); } };
+  const handleDeleteLibraryDrill = (id) => {
+    const drill = library.drills?.find(d => d.id === id);
+    requestDelete({
+      title: 'حذف تمرين من المكتبة / Delete exercise',
+      message: 'هيتمسح التمرين ده من المكتبة:',
+      itemName: drill?.title || '',
+      onConfirm: async () => {
+        const { error } = await supabase.from('library_drills').delete().eq('id', id);
+        if (!error) { setLibrary(prev => ({ ...prev, drills: prev.drills.filter(d => d.id !== id) })); handleToast('تم حذف التمرين / Exercise deleted'); }
+        else handleToast('فشل الحذف / Delete failed: ' + error.message);
+      },
+    });
+  };
   const handleEditLibraryDrill = (drill) => { setAddExerciseModal({ isOpen: true, id: drill.id, title: drill.title || '', details: drill.details || '', type: drill.type || 'strength', subcategory: drill.subcategory || '', percentage: drill.percentage || '', bwRatio: drill.bwRatio || '', weight: drill.weight !== undefined && drill.weight !== null ? drill.weight : '', weightUnit: drill.weightUnit || drill.weight_unit || 'kg', sets: drill.sets || '', reps: drill.reps || '', rest: drill.rest || '', unit: drill.unit || 'reps', distance: drill.distance || '', video_url: drill.video_url || '', tempo: drill.tempo || '', focus: drill.focus || '', meanVelocity: drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity || '', peakVelocity: drill.peakVelocity || drill.peak_velocity || drill.rpe || '', velocityLoss: drill.velocityLoss || drill.velocity_loss || '' }); };
-  const handleDeleteLibraryTemplate = async (id) => { const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id); if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); } };
+  const handleDeleteLibraryTemplate = (id) => {
+    const tpl = library.templates?.find(t => t.id === id);
+    requestDelete({
+      title: 'حذف قالب / Delete template',
+      message: 'هيتمسح القالب ده:',
+      itemName: tpl?.title || tpl?.name || '',
+      onConfirm: async () => {
+        const { error } = await supabase.from('agilitylap_templates').delete().eq('id', id);
+        if (!error) { setLibrary(prev => ({ ...prev, templates: prev.templates.filter(t => t.id !== id) })); handleToast('تم حذف القالب / Template deleted'); }
+        else handleToast('فشل الحذف / Delete failed: ' + error.message);
+      },
+    });
+  };
   const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
   
   const handleSaveLibraryExercise = async () => { 
@@ -2667,7 +2723,7 @@ export default function WeeklyPlanner({ onLogout }) {
           </div>
 
           {/* Search & Groups Filter Bar */}
-          <div className="bg-white dark:bg-slate-855 p-4 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
+          <div className="bg-white dark:bg-slate-850 p-4 border border-slate-150 dark:border-slate-800/80 rounded-2xl flex flex-col md:flex-row gap-4 justify-between items-center shadow-sm">
             {/* Search Input */}
             <div className="relative w-full md:w-80">
               <Search className="absolute right-3 top-3 w-4 h-4 text-slate-400" />
@@ -2848,7 +2904,7 @@ export default function WeeklyPlanner({ onLogout }) {
                     <div>
                       <h5 className="text-xs font-black text-slate-800 dark:text-white">{prog.program_name}</h5>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-855 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
+                        <span className="px-1.5 py-0.5 rounded bg-slate-200/60 dark:bg-slate-850 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
                           {prog.weeks ? prog.weeks.length : 0} Weeks
                         </span>
                         {prog.weeks?.[0]?.blockTags && (
@@ -2896,6 +2952,15 @@ export default function WeeklyPlanner({ onLogout }) {
   return (
     <div className={`min-h-screen w-screen max-w-full overflow-x-hidden font-sans selection:bg-orange-500/30 transition-colors duration-200 ${isDarkMode ? 'dark bg-slate-900 text-slate-100' : 'bg-[#F4F5F7] text-slate-800'} print:bg-white print:text-black pb-16 md:pb-0 ${printMode === 'landscape' ? 'print-mode-landscape' : 'print-mode-portrait'}`}>
       
+      <ConfirmDeleteModal
+        open={!!deleteDialog.open}
+        title={deleteDialog.title}
+        message={deleteDialog.message}
+        itemName={deleteDialog.itemName}
+        requireName={deleteDialog.requireName}
+        onConfirm={deleteDialog.onConfirm || (async () => {})}
+        onClose={closeDeleteDialog}
+      />
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
       {showPeriodizationPlanner && (
@@ -3069,7 +3134,7 @@ export default function WeeklyPlanner({ onLogout }) {
               {bulkSaveModal.saveType === 'macro_block' && (
                 <>
                   <div>
-                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">Deficit Protocol</label>
+                    <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">Deficit Protocol</label>
                     <select 
                       value={bulkSaveModal.deficitProtocol || 'FDP'} 
                       onChange={(e) => setBulkSaveModal({...bulkSaveModal, deficitProtocol: e.target.value})} 
@@ -3082,7 +3147,7 @@ export default function WeeklyPlanner({ onLogout }) {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-555 dark:text-slate-400 mb-1">Athlete Level</label>
+                    <label className="block text-xs font-bold text-slate-550 dark:text-slate-400 mb-1">Athlete Level</label>
                     <select
                       value={bulkSaveModal.level || 'Beginner'} 
                       onChange={(e) => setBulkSaveModal({...bulkSaveModal, level: e.target.value})} 

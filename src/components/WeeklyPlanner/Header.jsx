@@ -361,9 +361,7 @@ export default function Header({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`هل أنت متأكد من حذف ملف الرياضي "${athlete.name}"؟`)) {
-                                  onDelete(athlete.id);
-                                }
+                                onDelete(athlete.id); // confirmation (type the name) is handled centrally
                               }}
                               className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xs active:scale-90 transition-all"
                               title="حذف الرياضي"
@@ -444,9 +442,7 @@ export default function Header({
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (window.confirm(`هل أنت متأكد من حذف القالب "${block.program_name}"؟`)) {
-                                  onDeleteBlock(block.id);
-                                }
+                                onDeleteBlock(block.id); // confirmation (type the name) is handled centrally
                               }}
                               className="p-2 text-slate-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700/80 rounded-xl shadow-xs active:scale-90 transition-all"
                               title="حذف القالب"

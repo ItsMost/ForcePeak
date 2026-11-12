@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   X, Layers, Calendar, Plus, Trash2, Edit2, Check, HelpCircle, 
   Sparkles, Dumbbell, Play, AlertTriangle, Save
 } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 
 
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -124,6 +125,8 @@ export default function PeriodizationPlanner({
   // Seasons / Periodization Planner additions
   const [activeTab, setActiveTab] = useState('block_designer');
   const [seasonPlans, setSeasonPlans] = useState([]);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const closePendingDelete = useCallback(() => setPendingDelete(null), []);
   const [selectedSeasonId, setSelectedSeasonId] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [stagedDeployments, setStagedDeployments] = useState([]);
@@ -246,8 +249,14 @@ export default function PeriodizationPlanner({
     }
   };
 
-  const handleDeleteSeasonPlan = async () => {
-    if (!selectedSeasonId || !confirm('Are you sure you want to delete the current season plan?')) return;
+  const handleDeleteSeasonPlan = async (confirmed) => {
+    if (!selectedSeasonId) return;
+    if (confirmed !== true) {
+      const plan = seasonPlans.find(sp => sp.id === selectedSeasonId);
+      const name = plan?.program_name || '';
+      setPendingDelete({ title: 'حذف خطة الموسم / Delete season plan', message: 'هتتمسح خطة الموسم دي نهائياً:', itemName: name, requireName: !!name, onConfirm: () => handleDeleteSeasonPlan(true) });
+      return;
+    }
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -553,13 +562,13 @@ export default function PeriodizationPlanner({
                       weeksCount: prog.weeks ? prog.weeks.length : 0
                     }));
                   }}
-                  className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-205 dark:border-slate-800 rounded-2xl cursor-grab active:cursor-grabbing hover:border-orange-500 dark:hover:border-orange-500/50 transition-all select-none group"
+                  className="p-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl cursor-grab active:cursor-grabbing hover:border-orange-500 dark:hover:border-orange-500/50 transition-all select-none group"
                 >
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-lg bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-orange-500 shrink-0">
                       <Dumbbell className="w-3.5 h-3.5" />
                     </div>
-                    <span className="text-xs font-black text-slate-700 dark:text-slate-205 truncate group-hover:text-orange-500 transition-colors">
+                    <span className="text-xs font-black text-slate-700 dark:text-slate-200 truncate group-hover:text-orange-500 transition-colors">
                       {prog.program_name}
                     </span>
                   </div>
@@ -589,7 +598,7 @@ export default function PeriodizationPlanner({
                 <select
                   value={selectedSeasonId || ''}
                   onChange={(e) => setSelectedSeasonId(e.target.value)}
-                  className="text-xs font-black bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-755 p-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-500 dark:text-white"
+                  className="text-xs font-black bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-750 p-2 rounded-xl outline-none focus:ring-1 focus:ring-orange-500 dark:text-white"
                 >
                   {seasonPlans.length === 0 ? (
                     <option value="">-- No Season Plans --</option>
@@ -653,7 +662,7 @@ export default function PeriodizationPlanner({
                             }`}
                           >
                             <span className={`text-[10px] font-black px-2 py-0.5 rounded-md ${
-                              isSelected ? 'bg-orange-500 text-white' : 'text-slate-700 dark:text-slate-255 bg-slate-100 dark:bg-slate-800'
+                              isSelected ? 'bg-orange-500 text-white' : 'text-slate-700 dark:text-slate-250 bg-slate-100 dark:bg-slate-800'
                             }`}>W{wk.index}</span>
                             <span className="text-[10px] text-slate-400 font-bold mt-1 tracking-tight">{wk.rangeLabel}</span>
                           </div>
@@ -662,7 +671,7 @@ export default function PeriodizationPlanner({
                     </div>
 
                     {/* Row 2: Microcycle / Game tag input row */}
-                    <div className="flex border-b border-slate-150 dark:border-slate-855 py-2 relative z-10 bg-slate-50/50 dark:bg-slate-950/20">
+                    <div className="flex border-b border-slate-150 dark:border-slate-850 py-2 relative z-10 bg-slate-50/50 dark:bg-slate-950/20">
                       {weeksList.map((wk, idx) => (
                         <div key={idx} className="w-[140px] px-1.5 flex items-center justify-center shrink-0">
                           <input
@@ -870,8 +879,11 @@ export default function PeriodizationPlanner({
   };
 
   // Deleting block template
-  const handleDeleteBlockClick = async (blockId, name) => {
-    if (!window.confirm(`Are you sure you want to delete block template "${name}" permanently?`)) return;
+  const handleDeleteBlockClick = async (blockId, name, confirmed) => {
+    if (confirmed !== true) {
+      setPendingDelete({ title: 'حذف برنامج / Delete program', message: 'هيتمسح البرنامج ده نهائياً:', itemName: name || '', requireName: !!name, onConfirm: () => handleDeleteBlockClick(blockId, name, true) });
+      return;
+    }
     setIsLoading(true);
     try {
       const { error } = await supabase
@@ -1077,6 +1089,15 @@ export default function PeriodizationPlanner({
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-[120] flex items-center justify-center p-1 print:hidden" dir="rtl">
+      <ConfirmDeleteModal
+        open={!!pendingDelete}
+        title={pendingDelete?.title}
+        message={pendingDelete?.message}
+        itemName={pendingDelete?.itemName}
+        requireName={pendingDelete?.requireName}
+        onConfirm={pendingDelete?.onConfirm || (async () => {})}
+        onClose={closePendingDelete}
+      />
       <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-2xl w-full max-w-[98vw] h-[98vh] overflow-hidden border border-slate-200 dark:border-slate-700 flex flex-col font-sans">
         
         {/* Main Header */}
@@ -1407,7 +1428,7 @@ export default function PeriodizationPlanner({
               {/* List scroll container */}
               <div className="flex-1 overflow-y-auto space-y-2.5 pr-0.5">
                 {blockTemplates.length === 0 ? (
-                  <div className="text-center py-8 text-xs text-slate-455">No templates saved yet</div>
+                  <div className="text-center py-8 text-xs text-slate-450">No templates saved yet</div>
                 ) : (
                   blockTemplates.map(template => {
                     const isSelected = selectedBlockId === template.id;

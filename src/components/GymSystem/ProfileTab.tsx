@@ -429,7 +429,7 @@ export default function ProfileTab() {
             </button>
 
             {/* Import JSON Backup */}
-            <label className="flex items-center justify-center gap-2 p-3 bg-slate-950 border border-slate-855 hover:border-orange-500/40 rounded-xl text-slate-350 hover:text-orange-400 text-xs font-black transition-all cursor-pointer text-center">
+            <label className="flex items-center justify-center gap-2 p-3 bg-slate-950 border border-slate-850 hover:border-orange-500/40 rounded-xl text-slate-350 hover:text-orange-400 text-xs font-black transition-all cursor-pointer text-center">
               <Upload className="h-4 w-4" /> استيراد نسخة JSON
               <input
                 type="file"
