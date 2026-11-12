@@ -13,7 +13,10 @@
 - [ ] اعمل merge للـ PR واستنى لما الـ deploy يخلص.
 
 ## 3. حساب الكوتش
-- [ ] من Supabase → Authentication → Users، استخدم حسابك (أو اعمل حساب جديد بـ Add user → Create new user، مع **Auto Confirm**).
+- [ ] من Supabase → Authentication → Users، اعمل **Add user → Create new user**:
+  - Email: `coach@peakforce.app`. ده حساب داخلي ومش هتكتبه خالص، الموقع بيستخدمه لوحده من ورا.
+  - Password: **رمز الدخول** اللي هتكتبه في الموقع.
+  - علّم على **Auto Confirm User**.
 - [ ] انسخ الـ **User UID** بتاعه.
 - [ ] من Supabase → Authentication → Sign In / Providers، اقفل **"Allow new users to sign up"**. بس اتأكد الأول إن تطبيقاتك التانية (زي Track Lab) مش محتاجة تسجيل حسابات جديدة.
 

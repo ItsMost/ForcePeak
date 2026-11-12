@@ -10,12 +10,16 @@ import { supabase } from './supabaseClient';
 // Read once at module load: the welcome-pack viewer is public (athletes open these links without logging in).
 const packFile = new URLSearchParams(window.location.search).get('view-pack');
 
+// Single-coach login: the coach only types a passcode. Behind the scenes it is a normal
+// Supabase Auth account (fixed email + passcode as its password), so the database can be
+// locked with RLS and the session stays signed in on every device.
+const COACH_LOGIN_EMAIL = (import.meta.env.VITE_COACH_LOGIN_EMAIL as string | undefined) || 'coach@peakforce.app';
+
 function App() {
   // ---- All hooks first (never after an early return) ----
   const [session, setSession] = useState<Session | null>(null);
   const [authChecked, setAuthChecked] = useState<boolean>(false);
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
+  const [passcode, setPasscode] = useState<string>('');
   const [loggingIn, setLoggingIn] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
 
@@ -68,25 +72,25 @@ function App() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) {
-      setErrorMsg('اكتب الإيميل والباسورد / Enter email and password');
+    if (!passcode.trim()) {
+      setErrorMsg('اكتب رمز الدخول / Enter your access code');
       return;
     }
     setLoggingIn(true);
     setErrorMsg('');
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email: COACH_LOGIN_EMAIL, password: passcode.trim() });
     setLoggingIn(false);
     if (error) {
-      setErrorMsg('الإيميل أو الباسورد غير صحيح! / Invalid email or password!');
+      setErrorMsg('رمز الدخول غير صحيح! / Invalid Access Code!');
     } else {
-      setPassword('');
+      setPasscode('');
     }
   };
 
   const handleLogout = async () => {
     if (!window.confirm('تسجيل الخروج؟ / Log out?')) return;
     await supabase.auth.signOut();
-    setPassword('');
+    setPasscode('');
   };
 
   const handlePrintPack = () => {
@@ -190,31 +194,20 @@ function App() {
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="login-email" className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block text-right mb-2" dir="rtl">
-                دخول الكابتن محمود علي
+              <label htmlFor="login-passcode" className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block text-right mb-2" dir="rtl">
+                رمز الدخول الخاص بالكابتن محمود علي
               </label>
+              {/* Hidden username so password managers save the code for this site */}
+              <input type="text" name="username" autoComplete="username" value={COACH_LOGIN_EMAIL} readOnly hidden />
               <input
-                id="login-email"
-                type="email"
-                inputMode="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@example.com"
-                dir="ltr"
-                className="w-full bg-[#121212] border border-zinc-800 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-white rounded-2xl p-4 text-center text-base font-bold placeholder-zinc-600 outline-none transition-all"
-                autoFocus
-              />
-            </div>
-            <div>
-              <input
+                id="login-passcode"
                 type="password"
                 autoComplete="current-password"
-                aria-label="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="•••••••••••••"
+                value={passcode}
+                onChange={(e) => setPasscode(e.target.value)}
+                placeholder="•••••••••••••••••"
                 className="w-full bg-[#121212] border border-zinc-800 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-white rounded-2xl p-4 text-center text-lg font-bold placeholder-zinc-700 outline-none transition-all tracking-widest"
+                autoFocus
               />
             </div>
 
