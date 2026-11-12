@@ -2,6 +2,37 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================
+   PEAK FORCE design tokens (RGB channels, used by tailwind.config.js → bg-pf-*, text-pf-*, …)
+   Single source of truth for theme colors. App.css's --pf-* variables read from these.
+   ========================================================== */
+:root {
+  --pf-c-bg: 244 245 247;            /* #F4F5F7 page */
+  --pf-c-surface: 255 255 255;       /* header / sidebar */
+  --pf-c-card: 255 255 255;
+  --pf-c-elevated: 248 250 252;      /* slate-50 */
+  --pf-c-border: 226 232 240;        /* slate-200 */
+  --pf-c-text-primary: 15 23 42;     /* slate-900 */
+  --pf-c-text-secondary: 51 65 85;   /* slate-700 */
+  --pf-c-text-muted: 100 116 139;    /* slate-500 (AA on white) */
+  --pf-c-accent: 249 115 22;         /* brand orange #f97316 */
+  --pf-c-success: 34 197 94;         /* green-500 */
+  --pf-c-warning: 245 158 11;        /* amber-500 */
+  --pf-c-danger: 239 68 68;          /* red-500 */
+  --pf-c-info: 59 130 246;           /* blue-500 */
+}
+
+.dark {
+  --pf-c-bg: 6 9 19;                 /* #060913 deep navy */
+  --pf-c-surface: 11 15 26;          /* #0b0f1a */
+  --pf-c-card: 17 23 38;             /* #111726 */
+  --pf-c-elevated: 28 36 54;         /* #1c2436 */
+  --pf-c-border: 25 34 51;           /* #192233 */
+  --pf-c-text-primary: 255 255 255;
+  --pf-c-text-secondary: 226 232 240;
+  --pf-c-text-muted: 100 116 139;
+}
+
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
