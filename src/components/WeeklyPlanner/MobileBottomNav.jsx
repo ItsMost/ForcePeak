@@ -288,7 +288,7 @@ export default function MobileBottomNav({
                 onClick={() => { onBulkSave(); setShowActionsSheet(false); }}
                 className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 font-bold text-xs transition-all active:scale-95"
               >
-                <div className="w-8 h-8 rounded-xl bg-violet-500/10 text-violet-500 flex items-center justify-center shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center shrink-0">
                   <CalendarPlus className="w-4 h-4" />
                 </div>
                 <div className="text-right">
@@ -301,14 +301,14 @@ export default function MobileBottomNav({
               {isEditingBlock && (
                 <button
                   onClick={() => { onDeployBlock(); setShowActionsSheet(false); }}
-                  className="flex items-center gap-2.5 p-3 rounded-2xl bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800 text-violet-600 dark:text-violet-400 font-bold text-xs transition-all active:scale-95"
+                  className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 font-bold text-xs transition-all active:scale-95"
                 >
-                  <div className="w-8 h-8 rounded-xl bg-violet-500 text-white flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500 text-white flex items-center justify-center shrink-0">
                     <Play className="w-4 h-4" />
                   </div>
                   <div className="text-right">
                     <span className="block leading-tight font-bold text-xs">نشر البرنامج</span>
-                    <span className="text-[10px] text-violet-400 font-normal">Deploy to Athlete</span>
+                    <span className="text-[10px] text-blue-400 font-normal">Deploy to Athlete</span>
                   </div>
                 </button>
               )}

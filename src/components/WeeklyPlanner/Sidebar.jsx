@@ -30,7 +30,7 @@ export default function Sidebar({
 
         <div className="w-px h-6 md:w-8 md:h-px bg-slate-200 dark:bg-slate-700 mx-1 md:my-1"></div>
 
-        <button onClick={onShowStats} className="p-2 md:p-3 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 rounded-xl transition-all" title="Analytics Dashboard">
+        <button onClick={onShowStats} className="p-2 md:p-3 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all" title="Analytics Dashboard">
           <BarChart3 className="w-5 h-5" />
         </button>
 
@@ -47,7 +47,7 @@ export default function Sidebar({
         </button>
 
         {isEditingBlock && (
-          <button onClick={onDeployBlock} className="p-2 md:p-3 text-violet-500 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/20 rounded-xl transition-all" title="Deploy Block to Athlete">
+          <button onClick={onDeployBlock} className="p-2 md:p-3 text-blue-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/20 rounded-xl transition-all" title="Deploy Block to Athlete">
             <Play className="w-5 h-5" />
           </button>
         )}

@@ -1,57 +1,16 @@
 import React, { useState } from 'react';
 import { GripVertical, Edit2, Trash2, Dumbbell, Zap, Shield, Target, Copy, ArrowUp, ArrowDown, ChevronUp, ChevronDown, Timer, Activity, ClipboardList, Video } from 'lucide-react';
 import { getUnifiedCategory } from '../../data/constants.js';
+import { CATEGORY_STYLES as CATEGORY_COLORS, SUPERSET_STYLES } from '../../data/categoryColors.js';
 
-const CATEGORY_STYLES = {
-  max_strength_lower: { label: 'MAX STRENGTH (LOWER)', color: 'text-blue-600 border-blue-500', bg: 'border-blue-100 bg-blue-50/50 dark:bg-blue-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> },
-  max_strength_upper: { label: 'MAX STRENGTH (UPPER)', color: 'text-indigo-600 border-indigo-500', bg: 'border-indigo-100 bg-indigo-50/50 dark:bg-indigo-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> },
-  rofd_ballistics: { label: 'RFD & BALLISTICS', color: 'text-orange-500 border-orange-500', bg: 'border-orange-100 bg-orange-50/50 dark:bg-orange-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
-  elasticity_plyo: { label: 'ELASTIC PLYOS', color: 'text-violet-500 border-violet-500', bg: 'border-violet-100 bg-violet-50/50 dark:bg-violet-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
-  isometric_tendon: { label: 'ISOMETRICS & TENDON', color: 'text-amber-500 border-amber-500', bg: 'border-amber-100 bg-amber-50/50 dark:bg-amber-950/20', icon: <Target className="w-3.5 h-3.5" /> },
-  sprint_speed: { label: 'SPRINT & SPEED', color: 'text-emerald-500 border-emerald-500', bg: 'border-emerald-100 bg-emerald-50/50 dark:bg-emerald-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
-  trunk_rotation: { label: 'TRUNK & ROTATION', color: 'text-purple-500 border-purple-500', bg: 'border-purple-100 bg-purple-50/50 dark:bg-purple-950/20', icon: <Shield className="w-3.5 h-3.5" /> },
-  prehab_mobility: { label: 'PREHAB & MOBILITY', color: 'text-rose-500 border-rose-500', bg: 'border-rose-100 bg-rose-50/50 dark:bg-rose-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
-  mobility: { label: 'MOBILITY', color: 'text-rose-500 border-rose-500', bg: 'border-rose-100 bg-rose-50/50 dark:bg-rose-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
-  core: { label: 'CORE', color: 'text-purple-500 border-purple-500', bg: 'border-purple-100 bg-purple-50/50 dark:bg-purple-950/20', icon: <Shield className="w-3.5 h-3.5" /> },
-  isometric: { label: 'ISOMETRIC', color: 'text-amber-500 border-amber-500', bg: 'border-amber-100 bg-amber-50/50 dark:bg-amber-950/20', icon: <Target className="w-3.5 h-3.5" /> },
-  power: { label: 'POWER', color: 'text-orange-500 border-orange-500', bg: 'border-orange-100 bg-orange-50/50 dark:bg-orange-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
-  plyometric: { label: 'PLYOMETRIC', color: 'text-indigo-500 border-indigo-500', bg: 'border-indigo-100 bg-indigo-50/50 dark:bg-indigo-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
-  strength: { label: 'STRENGTH', color: 'text-blue-500 border-blue-500', bg: 'border-blue-100 bg-blue-50/50 dark:bg-blue-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> },
-  speed: { label: 'SPEED', color: 'text-emerald-500 border-emerald-500', bg: 'border-emerald-100 bg-emerald-50/50 dark:bg-emerald-950/20', icon: <Zap className="w-3.5 h-3.5" /> },
-  endurance: { label: 'ENDURANCE', color: 'text-teal-500 border-teal-500', bg: 'border-teal-100 bg-teal-50/50 dark:bg-teal-950/20', icon: <Activity className="w-3.5 h-3.5" /> },
-  physical: { label: 'PHYSICAL', color: 'text-slate-500 border-slate-500', bg: 'border-slate-100 bg-slate-50/50 dark:bg-slate-950/20', icon: <Dumbbell className="w-3.5 h-3.5" /> }
-};
-
-const SUPERSET_STYLES = {
-  A: { 
-    border: 'border-orange-200 dark:border-orange-500/20', 
-    bg: 'bg-orange-500/[0.04] dark:bg-orange-500/[0.03]', 
-    badge: 'bg-orange-500 text-white', 
-    text: 'text-orange-600 dark:text-orange-400', 
-    line: 'bg-orange-500' 
-  },
-  B: { 
-    border: 'border-purple-200 dark:border-purple-500/20', 
-    bg: 'bg-purple-500/[0.04] dark:bg-purple-500/[0.03]', 
-    badge: 'bg-purple-500 text-white', 
-    text: 'text-purple-600 dark:text-purple-400', 
-    line: 'bg-purple-500' 
-  },
-  C: { 
-    border: 'border-teal-200 dark:border-teal-500/20', 
-    bg: 'bg-teal-500/[0.04] dark:bg-teal-500/[0.03]', 
-    badge: 'bg-teal-500 text-white', 
-    text: 'text-teal-600 dark:text-teal-400', 
-    line: 'bg-teal-500' 
-  },
-  D: { 
-    border: 'border-pink-200 dark:border-pink-500/20', 
-    bg: 'bg-pink-500/[0.04] dark:bg-pink-500/[0.03]', 
-    badge: 'bg-pink-500 text-white', 
-    text: 'text-pink-600 dark:text-pink-400', 
-    line: 'bg-pink-500' 
-  }
-};
+// Category & superset colors live in src/data/categoryColors.js (defined once).
+const CATEGORY_ICONS = { dumbbell: Dumbbell, zap: Zap, target: Target, shield: Shield, activity: Activity };
+const CATEGORY_STYLES = Object.fromEntries(
+  Object.entries(CATEGORY_COLORS).map(([key, v]) => {
+    const Icon = CATEGORY_ICONS[v.icon] || Dumbbell;
+    return [key, { ...v, icon: <Icon className="w-3.5 h-3.5" /> }];
+  })
+);
 
 export default function TimelineCard({ 
   drill, day, index, isLast, isPreviewMode, athlete, 
@@ -221,7 +180,7 @@ export default function TimelineCard({
             ) : null}
 
             {drill.bwRatio && (
-              <span className="px-2 py-0.5 text-[10px] font-black bg-teal-50 text-teal-600 dark:bg-teal-950/40 dark:text-teal-400 rounded-lg border border-teal-200/50 dark:border-teal-800/40 shadow-xs">
+              <span className="px-2 py-0.5 text-[10px] font-black bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 rounded-lg border border-blue-200/50 dark:border-blue-800/40 shadow-xs">
                 {drill.bwRatio}x BW {calculatedBwWeight ? `(${calculatedBwWeight} KG)` : ''}
               </span>
             )}
@@ -255,19 +214,19 @@ export default function TimelineCard({
             )}
 
             {(drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity) && (
-              <span className="px-2 py-0.5 bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600 dark:text-cyan-400 rounded-md font-black text-[10px] tracking-wider uppercase flex items-center gap-1 border border-cyan-200/50 dark:border-cyan-800/40">
-                <Zap className="w-3 h-3 text-cyan-500" /> MV: {drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity} m/s
+              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-md font-black text-[10px] tracking-wider uppercase flex items-center gap-1 border border-blue-200/50 dark:border-blue-800/40">
+                <Zap className="w-3 h-3 text-blue-500" /> MV: {drill.meanVelocity || drill.mean_velocity || drill.velocity_target_m_s || drill.targetVelocity} m/s
               </span>
             )}
 
             {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
-              <span className="px-2 py-0.5 bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400 rounded-md font-black text-[10px] tracking-wider uppercase flex items-center gap-1 border border-purple-200/50 dark:border-purple-800/40">
-                <Zap className="w-3 h-3 text-purple-500" /> PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s
+              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-md font-black text-[10px] tracking-wider uppercase flex items-center gap-1 border border-blue-200/50 dark:border-blue-800/40">
+                <Zap className="w-3 h-3 text-blue-500" /> PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s
               </span>
             )}
 
             {drill.velocityLoss && (
-              <span className="px-2 py-0.5 bg-pink-50 dark:bg-pink-950/30 text-pink-600 dark:text-pink-400 rounded-md font-black text-[10px] tracking-wider uppercase border border-pink-200/50 dark:border-pink-800/40">
+              <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 rounded-md font-black text-[10px] tracking-wider uppercase border border-blue-200/50 dark:border-blue-800/40">
                 V Loss: {drill.velocityLoss}
               </span>
             )}
@@ -279,7 +238,7 @@ export default function TimelineCard({
             )}
 
             {drill.focus && (
-              <span className="px-2 py-0.5 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 rounded-md font-black text-[10px] tracking-wider uppercase border border-rose-200/50 dark:border-rose-800/40">
+              <span className="px-2 py-0.5 bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400 rounded-md font-black text-[10px] tracking-wider uppercase border border-red-200/50 dark:border-red-800/40">
                 {drill.focus}
               </span>
             )}

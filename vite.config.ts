@@ -9,9 +9,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'favicon.svg'],
       manifest: {
-        name: 'Peak Force',
-        short_name: 'Peak Force',
-        description: 'Peak Force Weekly Workout Planner',
+        name: 'PEAK FORCE',
+        short_name: 'PEAK FORCE',
+        description: 'PEAK FORCE Performance Lab — training planner',
         theme_color: '#f97316', // اللون البرتقالي للتطبيق
         background_color: '#0f172a', // لون الخلفية (الوضع الليلي)
         display: 'standalone', // **هذا السطر هو ما يخفي شريط المتصفح (Chrome/Safari)**

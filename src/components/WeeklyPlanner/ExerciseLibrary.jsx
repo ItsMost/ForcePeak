@@ -134,7 +134,7 @@ export default function ExerciseLibrary({
             </div>
             <div>
               <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider">Exercise Library</h3>
-              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">Peak Force Athletic Database</p>
+              <p className="text-[10px] text-blue-600 dark:text-blue-400 font-bold uppercase tracking-wider">PEAK FORCE Athletic Database</p>
             </div>
           </div>
           <button 
@@ -331,12 +331,12 @@ export default function ExerciseLibrary({
 
                           {/* Velocity VBT Metrics */}
                           {(drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity) && (
-                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-cyan-50 dark:bg-cyan-950/40 text-cyan-600 dark:text-cyan-400 rounded border border-cyan-200/50 dark:border-cyan-800/40">
+                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/50 dark:border-blue-800/40">
                               MV: {drill.meanVelocity || drill.velocity_target_m_s || drill.mean_velocity} m/s
                             </span>
                           )}
                           {(drill.peakVelocity || drill.peak_velocity || drill.rpe) && (
-                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 rounded border border-purple-200/50 dark:border-purple-800/40">
+                            <span className="text-[10px] px-1.5 py-0.2 font-black uppercase bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/50 dark:border-blue-800/40">
                               PV: {drill.peakVelocity || drill.peak_velocity || drill.rpe} m/s
                             </span>
                           )}
@@ -574,13 +574,13 @@ export default function ExerciseLibrary({
                 <Plus className="w-4 h-4" /> Create Macro-Cycle
               </button>
 
-              <div className="bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-800/40 rounded-xl p-3.5 mb-4 text-slate-700 dark:text-slate-200 text-xs shadow-xs flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-300 font-bold">
-                  <Calendar className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <div className="bg-blue-50/50 dark:bg-blue-950/30 border border-blue-200/60 dark:border-blue-800/40 rounded-xl p-3.5 mb-4 text-slate-700 dark:text-slate-200 text-xs shadow-xs flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-bold">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                   <span className="text-[10px] uppercase tracking-wider font-bold">Macro-Cycles Guide</span>
                 </div>
                 <div className="text-[11px] leading-relaxed text-slate-600 dark:text-slate-300 font-medium">
-                  <span className="block font-bold text-indigo-800 dark:text-indigo-300 mb-1">
+                  <span className="block font-bold text-blue-800 dark:text-blue-300 mb-1">
                     💡 What are Macro-Cycles?
                   </span>
                   Macro-Cycles are long-term annual or seasonal plans (e.g. 12 weeks) consisting of multiple Meso-Cycles chained together in sequence. Applying a Macro-Cycle automatically maps out your seasonal block sequentially.
@@ -595,7 +595,7 @@ export default function ExerciseLibrary({
                   const tagBadges = (macro.tags || '').split(',').map(t => t.trim()).filter(Boolean);
 
                   return (
-                    <div key={macro.id} className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-200/90 dark:border-slate-750 group flex flex-col gap-2 transition-all hover:border-indigo-500/40 shadow-xs hover:shadow-md">
+                    <div key={macro.id} className="p-3 bg-white dark:bg-slate-850 rounded-xl border border-slate-200/90 dark:border-slate-750 group flex flex-col gap-2 transition-all hover:border-blue-500/40 shadow-xs hover:shadow-md">
                       <div className="flex justify-between items-start gap-2">
                         <div className="min-w-0 flex-1">
                           {editingProgramId === macro.id ? (
@@ -651,7 +651,7 @@ export default function ExerciseLibrary({
                         <div className="flex flex-wrap gap-1 items-center pt-1 border-t border-slate-100 dark:border-slate-800">
                           <Tag className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                           {tagBadges.map((badge, bIdx) => (
-                            <span key={bIdx} className="text-[10px] font-bold px-1.5 py-0.2 bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 rounded border border-indigo-200/60 dark:border-indigo-800/40">
+                            <span key={bIdx} className="text-[10px] font-bold px-1.5 py-0.2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 rounded border border-blue-200/60 dark:border-blue-800/40">
                               #{badge}
                             </span>
                           ))}

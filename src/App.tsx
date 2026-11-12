@@ -101,10 +101,10 @@ function App() {
   if (packFile) {
     if (loadingPack) {
       return (
-        <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4 antialiased font-sans">
+        <div className="dark min-h-screen bg-pf-bg flex items-center justify-center p-4 antialiased font-sans">
           <div className="text-center space-y-4">
             <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="text-zinc-400 font-bold uppercase tracking-wider text-xs">جاري تحميل البرنامج التدريبي / Loading Training Blueprint...</p>
+            <p className="text-pf-text-muted font-bold uppercase tracking-wider text-xs">جاري تحميل البرنامج التدريبي / Loading Training Blueprint...</p>
           </div>
         </div>
       );
@@ -112,11 +112,11 @@ function App() {
 
     if (packError || !viewPackHtml) {
       return (
-        <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4 antialiased font-sans">
-          <div className="w-full max-w-md bg-[#1e1e1e] border border-zinc-800 rounded-3xl p-8 text-center space-y-6">
+        <div className="dark min-h-screen bg-pf-bg flex items-center justify-center p-4 antialiased font-sans">
+          <div className="w-full max-w-md bg-pf-card border border-pf-border rounded-3xl p-8 text-center space-y-6">
             <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full flex items-center justify-center mx-auto text-xl">⚠️</div>
             <p className="text-white font-bold leading-relaxed text-sm">{packError}</p>
-            <a href="/" className="inline-block bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl border border-zinc-700">
+            <a href="/" className="inline-block bg-pf-elevated hover:bg-pf-border text-pf-text-secondary font-bold text-xs uppercase tracking-widest px-6 py-3 rounded-xl border border-pf-border">
               الذهاب للرئيسية / Go Home
             </a>
           </div>
@@ -125,9 +125,9 @@ function App() {
     }
 
     return (
-      <div className="flex flex-col h-screen bg-[#121212] overflow-hidden select-none">
+      <div className="dark flex flex-col h-screen bg-pf-bg overflow-hidden select-none">
         {/* Floating Mobile Control Bar */}
-        <header className="bg-[#1e1e1e]/95 backdrop-blur-md border-b border-zinc-800 px-4 py-2.5 sm:px-6 flex items-center justify-between z-50 shrink-0 print:hidden">
+        <header className="bg-pf-surface/95 backdrop-blur-md border-b border-pf-border px-4 py-2.5 sm:px-6 flex items-center justify-between z-50 shrink-0 print:hidden">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center font-black text-white text-xs shadow-lg shadow-orange-500/20">
               PF
@@ -150,7 +150,7 @@ function App() {
         </header>
 
         {/* Full-bleed iframe viewer */}
-        <main className="flex-1 w-full h-full relative overflow-hidden bg-[#121212]">
+        <main className="flex-1 w-full h-full relative overflow-hidden bg-pf-bg">
           <iframe
             ref={iframeRef}
             srcDoc={viewPackHtml}
@@ -165,7 +165,7 @@ function App() {
   // ---- Waiting for the stored session ----
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center">
+      <div className="dark min-h-screen bg-pf-bg flex items-center justify-center">
         <div className="w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -174,12 +174,12 @@ function App() {
   // ---- Login ----
   if (!session) {
     return (
-      <div className="min-h-screen bg-[#121212] flex items-center justify-center p-4 antialiased font-sans select-none relative overflow-hidden">
+      <div className="dark min-h-screen bg-pf-bg flex items-center justify-center p-4 antialiased font-sans select-none relative overflow-hidden">
         {/* Background Decorative Gradients */}
         <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-orange-600/10 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-cyan-600/10 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-blue-600/10 blur-[120px] pointer-events-none" />
 
-        <div className="w-full max-w-md bg-[#1e1e1e] border border-zinc-800 rounded-3xl p-8 shadow-2xl relative z-10 text-center">
+        <div className="w-full max-w-md bg-pf-card border border-pf-border rounded-3xl p-8 shadow-2xl relative z-10 text-center">
           <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/20">
             <Lock className="w-8 h-8 text-white animate-pulse" />
           </div>
@@ -188,13 +188,13 @@ function App() {
             PEAK FORCE
           </h1>
           <p className="text-xs text-orange-500 font-black uppercase tracking-widest mt-1">
-            Athletic Performance System
+            Performance Lab
           </p>
-          <div className="h-px bg-zinc-800 my-6" />
+          <div className="h-px bg-pf-border my-6" />
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label htmlFor="login-passcode" className="text-[11px] font-black text-zinc-400 uppercase tracking-widest block text-right mb-2" dir="rtl">
+              <label htmlFor="login-passcode" className="text-[11px] font-black text-pf-text-muted uppercase tracking-widest block text-right mb-2" dir="rtl">
                 رمز الدخول الخاص بالكابتن محمود علي
               </label>
               {/* Hidden username so password managers save the code for this site */}
@@ -206,7 +206,7 @@ function App() {
                 value={passcode}
                 onChange={(e) => setPasscode(e.target.value)}
                 placeholder="•••••••••••••••••"
-                className="w-full bg-[#121212] border border-zinc-800 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-white rounded-2xl p-4 text-center text-lg font-bold placeholder-zinc-700 outline-none transition-all tracking-widest"
+                className="w-full bg-pf-bg border border-pf-border focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 text-white rounded-2xl p-4 text-center text-lg font-bold placeholder-slate-600 outline-none transition-all tracking-widest"
                 autoFocus
               />
             </div>
@@ -231,7 +231,7 @@ function App() {
             </button>
           </form>
 
-          <p className="text-[11px] text-zinc-500 font-medium mt-6 uppercase tracking-wider">
+          <p className="text-[11px] text-pf-text-muted font-medium mt-6 uppercase tracking-wider">
             Secured Area • Authorized Personnel Only
           </p>
         </div>
@@ -240,7 +240,7 @@ function App() {
   }
 
   return (
-    <div className="App selection:bg-orange-500/20 antialiased font-sans min-h-screen bg-[#121212]">
+    <div className="App selection:bg-orange-500/20 antialiased font-sans min-h-screen bg-pf-bg">
       <WeeklyPlanner onLogout={handleLogout} />
     </div>
   );

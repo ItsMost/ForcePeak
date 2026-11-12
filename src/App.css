@@ -11,17 +11,17 @@
 
 /* ---- 1. Root Background & Base Text ---- */
 .dark {
-  --pf-bg-base: #060913;        /* Deep obsidian-navy base background (darkened slightly for eye comfort) */
-  --pf-bg-surface: #0b0f1a;     /* Deep slate for header & sidebar */
-  --pf-bg-card: #111726;        /* Midnight slate for card backgrounds */
-  --pf-bg-elevated: #1c2436;    /* Muted slate for active/dropdown states */
+  --pf-bg-base: rgb(var(--pf-c-bg));        /* Deep obsidian-navy base background (darkened slightly for eye comfort) */
+  --pf-bg-surface: rgb(var(--pf-c-surface));     /* Deep slate for header & sidebar */
+  --pf-bg-card: rgb(var(--pf-c-card));        /* Midnight slate for card backgrounds */
+  --pf-bg-elevated: rgb(var(--pf-c-elevated));    /* Muted slate for active/dropdown states */
   --pf-bg-input: #0b0f1a;       /* Inset input backgrounds */
-  --pf-border: #192233;         /* Deep blue-gray border, very clean and blended */
+  --pf-border: rgb(var(--pf-c-border));         /* Deep blue-gray border, very clean and blended */
   --pf-border-subtle: #0f1522;  /* Subtle divider lines */
-  --pf-text-primary: #ffffff;   /* Pure white for ultimate legibility */
-  --pf-text-secondary: #e2e8f0; /* Slate-200, bright gray-blue */
-  --pf-text-muted: #64748b;     /* Slate-500, muted gray for labels */
-  --pf-accent: #f97316;         /* Orange brand color */
+  --pf-text-primary: rgb(var(--pf-c-text-primary));   /* Pure white for ultimate legibility */
+  --pf-text-secondary: rgb(var(--pf-c-text-secondary)); /* Slate-200, bright gray-blue */
+  --pf-text-muted: rgb(var(--pf-c-text-muted));     /* Slate-500, muted gray for labels */
+  --pf-accent: rgb(var(--pf-c-accent));         /* Orange brand color */
 }
 
 /* Global dark page background — softer deep navy instead of harsh slate-900 */

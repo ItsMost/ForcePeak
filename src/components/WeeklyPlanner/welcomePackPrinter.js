@@ -1,5 +1,5 @@
 /**
- * Welcome Pack HTML Print Engine for ForcePeak Weekly Planner.
+ * Welcome Pack HTML Print Engine for PEAK FORCE Weekly Planner.
  * Generates a premium multi-page athletic coaching welcome pack using a gritty, modern dark-mode style
  * with athletic orange accents, 100% clickable links, and perfect bilingual/multilingual font rendering.
  * Features:
@@ -68,7 +68,7 @@ export function generateWelcomePackHTML({
   // Translation Dictionaries
   const dict = {
     cover: {
-      tagline: { en: 'ATHLETIC PERFORMANCE LAB', ar: 'مختبر الأداء الرياضي والعضلي' },
+      tagline: { en: 'PERFORMANCE LAB', ar: 'مختبر الأداء الرياضي والعضلي' },
       title: { en: 'PEAK FORCE', ar: 'بييك فورس' },
       subtitle: { en: 'Elite Athletic Performance & Strength Guide', ar: 'دليل الأداء الرياضي والقوة البدنية للنخبة' },
       preparedFor: { en: 'Prepared For', ar: 'معد خصيصاً لـ' },
@@ -261,7 +261,7 @@ export function generateWelcomePackHTML({
       <section class="page">
         <header class="page-header ltr">
           <div class="header-left">
-            <div class="brand">Peak Force</div>
+            <div class="brand">PEAK FORCE</div>
             <div class="tag">Workout Blueprint</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
@@ -823,7 +823,7 @@ export function generateWelcomePackHTML({
       <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
         <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
-            <div class="brand">Peak Force</div>
+            <div class="brand">PEAK FORCE</div>
             <div class="tag">${langMode === 'english' ? 'Program Overview' : 'نظرة عامة على البرنامج'}</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
@@ -875,7 +875,7 @@ export function generateWelcomePackHTML({
       <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
         <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
-            <div class="brand">Peak Force</div>
+            <div class="brand">PEAK FORCE</div>
             <div class="tag">${langMode === 'english' ? 'Training Philosophy' : 'فلسفة التدريب الرياضي'}</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>
@@ -937,7 +937,7 @@ export function generateWelcomePackHTML({
       <section class="page ${langMode === 'english' ? 'ltr' : 'rtl'}">
         <header class="page-header ${langMode === 'english' ? 'ltr' : 'rtl'}">
           <div class="header-left">
-            <div class="brand">Peak Force</div>
+            <div class="brand">PEAK FORCE</div>
             <div class="tag">${langMode === 'english' ? 'Protocols' : 'البروتوكولات والمتابعة'}</div>
           </div>
           <div class="header-right">${athleteName} // V1.0</div>

@@ -301,7 +301,7 @@ export default function AthleteProfileModal({ athlete, onClose, onSave, onDelete
         <div className="p-4 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-between items-center shrink-0">
           <button 
             type="button" 
-            onClick={() => setShowConfirmDelete(true)} 
+            onClick={() => onDelete(formData.id)} 
             className="px-3 sm:px-4 py-2 sm:py-2.5 bg-white dark:bg-slate-900 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-700 border border-red-200 hover:border-red-300 dark:border-red-900/40 rounded-xl text-red-500 dark:text-red-400 font-black text-xs uppercase tracking-wider flex items-center gap-1.5 sm:gap-2 transition-all active:scale-95"
           >
             <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4"/> <span className="hidden sm:inline">Delete Profile</span><span className="sm:hidden">Delete</span>
