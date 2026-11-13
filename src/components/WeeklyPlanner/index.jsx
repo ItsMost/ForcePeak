@@ -1,18 +1,17 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, Play, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search, Printer, FileText, Layout, Layers, Zap } from 'lucide-react';
 
 import Header from './Header.jsx';
 import Sidebar from './Sidebar.jsx';
 import TimelineCard from './TimelineCard.jsx';
-import ExerciseLibrary from './ExerciseLibrary.jsx';
-import AthleteProfileModal from './AthleteProfileModal.jsx';
-import PeriodizationPlanner from './PeriodizationPlanner.jsx';
+// Heavy screens load on demand (smaller first load).
+const ExerciseLibrary = lazy(() => import('./ExerciseLibrary.jsx'));
+const AthleteProfileModal = lazy(() => import('./AthleteProfileModal.jsx'));
+const PeriodizationPlanner = lazy(() => import('./PeriodizationPlanner.jsx'));
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 import { supabase } from '../../supabaseClient';
-import { generateWeeklyPDF } from '../../utils/pdfGenerator';
-import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
-import { generateWelcomePackHTML } from './welcomePackPrinter.js';
+// PDF / print generators (jsPDF etc.) are imported only when used.
 
 import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY, getUnifiedCategory } from '../../data/constants.js';
 
@@ -263,6 +262,7 @@ export default function WeeklyPlanner({ onLogout }) {
     setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
     setIsLoading(true);
     try {
+      const { generateWeeklyPDF } = await import('../../utils/pdfGenerator');
       await generateWeeklyPDF({
         schedule,
         dayTitles,
@@ -282,9 +282,10 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handlePrintStudioHTML = () => {
+  const handlePrintStudioHTML = async () => {
     setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
     try {
+      const { generateWeeklyHTMLPrint } = await import('./htmlPrinter.js');
       const htmlContent = generateWeeklyHTMLPrint({
         schedule,
         dayTitles,
@@ -308,9 +309,10 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handlePrintWelcomePack = (lang = 'mix') => {
+  const handlePrintWelcomePack = async (lang = 'mix') => {
     setWelcomePackModal({ isOpen: false, langMode: 'mix' });
     try {
+      const { generateWelcomePackHTML } = await import('./welcomePackPrinter.js');
       const htmlContent = generateWelcomePackHTML({
         schedule,
         dayTitles,
@@ -2935,8 +2937,9 @@ export default function WeeklyPlanner({ onLogout }) {
         onClose={closeDeleteDialog}
       />
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
-      {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
+      {showProfileModal && selectedAthlete && ( <Suspense fallback={null}><AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /></Suspense> )}
       {showPeriodizationPlanner && (
+        <Suspense fallback={null}>
         <PeriodizationPlanner
           athlete={selectedAthlete}
           onClose={() => setShowPeriodizationPlanner(false)}
@@ -2958,6 +2961,7 @@ export default function WeeklyPlanner({ onLogout }) {
           setBlockData={setBlockData}
           athletes={athletes}
         />
+        </Suspense>
       )}
 
       {showMonthCalendar && (
@@ -4891,7 +4895,7 @@ export default function WeeklyPlanner({ onLogout }) {
 
         <div className={`fixed inset-0 pointer-events-none z-40 transition-all duration-300 ${showLibrary ? 'md:w-96' : 'w-0'}`}>
            <div className="h-full w-full relative" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
-             <ExerciseLibrary 
+             <Suspense fallback={null}><ExerciseLibrary 
                showLibrary={showLibrary} 
                setShowLibrary={setShowLibrary} 
                library={library} 
@@ -4921,7 +4925,7 @@ export default function WeeklyPlanner({ onLogout }) {
                  handleToast(`Editing Macro-Cycle: ${macro.program_name}`);
                }}
                onApplyExercise={handleApplyLibraryExercise}
-             />
+             /></Suspense>
            </div>
         </div>
       </div>
