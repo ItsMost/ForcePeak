@@ -35,3 +35,22 @@ export function acwrZone(ratio) {
   if (ratio < 0.8) return 'low';
   return 'ok';
 }
+
+/**
+ * Planned load from the program itself (no RPE needed): sets x how demanding the category is.
+ * Understands both the new categories and the legacy type names.
+ */
+const CATEGORY_WEIGHT = {
+  elasticity_plyo: 3, rofd_ballistics: 3, sprint_speed: 3,
+  max_strength_lower: 2.5, max_strength_upper: 2,
+  isometric_tendon: 1.5, trunk_rotation: 1, prehab_mobility: 0.5,
+  // legacy
+  plyometric: 3, power: 3, speed: 3, strength: 2.5, isometric: 1.5, core: 1, mobility: 0.5, endurance: 1, physical: 1,
+};
+export function plannedLoad(drills) {
+  return (drills || []).reduce((sum, d) => {
+    const sets = parseFloat(String(d.sets ?? '').replace(/[^\d.]/g, '')) || 1;
+    const w = CATEGORY_WEIGHT[(d.type || '').toLowerCase()] ?? 1;
+    return sum + sets * w;
+  }, 0);
+}

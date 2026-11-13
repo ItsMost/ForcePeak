@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AlertTriangle, Activity, CalendarClock, CopyPlus, Gauge, MessageCircle, Stethoscope, Sun, Wrench } from 'lucide-react';
 import { parseDayType, weekDayTypeWarnings } from './dayType';
-import { acwrZone } from './load';
+import { acwrZone, plannedLoad } from './load';
 
 const chip = 'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[12px] font-bold whitespace-nowrap';
 const tone = {
@@ -20,7 +20,7 @@ const fmtDate = (s) => new Date(`${s}T00:00:00`).toLocaleDateString('en-GB', { d
  * Week summary above the planner: High/Low/Rest rhythm, readiness, load/ACWR, injuries,
  * matches, plus the entry points to the coach tools.
  */
-export default function CoachBar({ coach, days, schedule, dayTitles, calculateDayVolume, onOpenTools, onOpenProgression, onOpenToday, onWhatsApp }) {
+export default function CoachBar({ coach, days, schedule, dayTitles, onOpenTools, onOpenProgression, onOpenToday, onWhatsApp }) {
   const types = useMemo(() => Object.fromEntries(days.map(d => [d, parseDayType(dayTitles[d]) || ((schedule[d] || []).length ? null : 'EMPTY')])), [days, dayTitles, schedule]);
   const counts = useMemo(() => {
     const c = { HIGH: 0, LOW: 0, REST: 0 };
@@ -28,10 +28,7 @@ export default function CoachBar({ coach, days, schedule, dayTitles, calculateDa
     return c;
   }, [days, types]);
   const warnings = useMemo(() => weekDayTypeWarnings(days, types), [days, types]);
-  const planned = useMemo(() => days.reduce((s, d) => {
-    const v = calculateDayVolume(schedule[d] || []);
-    return s + (v.cnsLoad || 0) + (v.structuralLoad || 0);
-  }, 0), [days, schedule, calculateDayVolume]);
+  const planned = useMemo(() => days.reduce((s, d) => s + plannedLoad(schedule[d]), 0), [days, schedule]);
 
   if (!coach.enabled) return null;
 
@@ -62,7 +59,7 @@ export default function CoachBar({ coach, days, schedule, dayTitles, calculateDa
         )}
 
         {/* Load */}
-        <span className={`${chip} ${tone.neutral}`} title="الحِمل المتوقع من البرنامج (CNS + Structural)">
+        <span className={`${chip} ${tone.neutral}`} title="الحِمل المتوقع من البرنامج: عدد الستات × صعوبة نوع التمرين">
           <Gauge className="w-3.5 h-3.5" /> Planned {Math.round(planned)}
         </span>
         {coach.weekActual > 0 && (

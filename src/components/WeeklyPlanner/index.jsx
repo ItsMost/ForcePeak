@@ -4376,7 +4376,6 @@ export default function WeeklyPlanner({ onLogout }) {
               days={DAYS_OF_WEEK}
               schedule={schedule}
               dayTitles={dayTitles}
-              calculateDayVolume={calculateDayVolume}
               onOpenTools={() => setShowCoachTools(true)}
               onOpenProgression={() => setShowProgression(true)}
               onOpenToday={() => setShowToday(true)}
