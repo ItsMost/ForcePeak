@@ -17,16 +17,12 @@ import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_
 
 import { PHASE_COLORS, EXERCISE_TYPE_DOTS } from '../../data/categoryColors.js';
 import { DAYS_OF_WEEK, JS_DAYS, getSupersetProps, getBezierPath, distributeWeeksToPhases } from './plannerUtils.js';
+import { useToast } from './hooks/useToast.js';
+import { useDarkMode } from './hooks/useDarkMode.js';
+import { useOfflineSync } from './hooks/useOfflineSync.js';
 
 export default function WeeklyPlanner({ onLogout }) {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('forcepeak_theme');
-    if (savedTheme !== null) return savedTheme === 'dark';
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      return true;
-    }
-    return false;
-  });
+  const [isDarkMode, setIsDarkMode] = useDarkMode();
   const [isMobileView, setIsMobileView] = useState(false);
   const [currentView, setCurrentView] = useState('planner');
   const [dashboardSearch, setDashboardSearch] = useState('');
@@ -60,7 +56,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [history, setHistory] = useState([]); 
   const [historyIndex, setHistoryIndex] = useState(-1); 
 
-  const [toastMessage, setToastMessage] = useState(null);
+  const { toastMessage, handleToast } = useToast();
   const [deleteDialog, setDeleteDialog] = useState({ open: false });
   const [showAddAthleteModal, setShowAddAthleteModal] = useState(false);
   const [showMonthCalendar, setShowMonthCalendar] = useState(false);
@@ -107,8 +103,6 @@ export default function WeeklyPlanner({ onLogout }) {
   const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' });
   const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
   const [macroConfirmModal, setMacroConfirmModal] = useState({ isOpen: false, macro: null, startDate: '' });
-  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [syncStatus, setSyncStatus] = useState('synced');
   const [activeMobileDay, setActiveMobileDay] = useState(() => {
     const todayName = JS_DAYS[new Date().getDay()];
     return DAYS_OF_WEEK.includes(todayName) ? todayName : 'Saturday';
@@ -116,51 +110,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [fourWeekData, setFourWeekData] = useState([]);
   const [deployments, setDeployments] = useState([]);
 
-  const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
-
-  const syncOfflineQueue = async () => {
-    const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
-    if (queue.length === 0) {
-      setSyncStatus('synced');
-      return;
-    }
-    setSyncStatus('syncing');
-    let hasError = false;
-    for (const item of queue) {
-      try {
-        const { error } = await supabase.from('agilitylap_workouts').upsert({
-          athlete_id: item.athlete_id,
-          workout_date: item.workout_date,
-          workout_title: item.workout_title,
-          drills: item.drills,
-          is_completed: item.is_completed || false
-        }, { onConflict: 'athlete_id,workout_date' });
-        if (error) hasError = true;
-      } catch (err) {
-        hasError = true;
-      }
-    }
-    if (!hasError) {
-      localStorage.setItem('agilitylap_offline_queue', '[]');
-      setSyncStatus('synced');
-      handleToast('Offline changes synced successfully!');
-    } else {
-      setSyncStatus('offline');
-    }
-  };
-
-  useEffect(() => {
-    const handleOnline = () => { setIsOnline(true); syncOfflineQueue(); };
-    const handleOffline = () => { setIsOnline(false); setSyncStatus('offline'); };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    if (navigator.onLine) syncOfflineQueue();
-    else setSyncStatus('offline');
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const { isOnline, syncStatus, setSyncStatus } = useOfflineSync(handleToast);
 
   const handleExportPDF = () => {
     setPrintStudioModal({
@@ -250,11 +200,6 @@ export default function WeeklyPlanner({ onLogout }) {
   };
 
 
-  useEffect(() => {
-    if (isDarkMode) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-    localStorage.setItem('forcepeak_theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
 
   const getDbDateStr = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const getStartOfWeek = (date) => { const d = new Date(date); const dayOffset = (d.getDay() + 1) % 7; d.setDate(d.getDate() - dayOffset); return d; };
