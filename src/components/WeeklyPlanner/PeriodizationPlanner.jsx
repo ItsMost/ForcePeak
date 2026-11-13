@@ -7,8 +7,7 @@ import { supabase } from '../../supabaseClient';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 
 
-const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+import { DAYS_OF_WEEK } from './plannerUtils.js';
 
 const PHASE_COLORS = [
   { hex: '#3b82f6', border: 'border-blue-500', bg: 'bg-blue-50/10 dark:bg-blue-500/10', text: 'text-blue-500', label: 'Blue (Base)' },
