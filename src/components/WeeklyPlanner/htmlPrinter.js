@@ -549,8 +549,8 @@ export function generateWeeklyHTMLPrint({
     <body>
       <header class="brand-header">
         <div class="brand-title-area">
-          <h1 class="brand-title">PEAK FORCE LAB</h1>
-          <div class="brand-subtitle">ATHLETE PASS // WEEKLY BLUEPRINT</div>
+          <h1 class="brand-title">PEAK FORCE</h1>
+          <div class="brand-subtitle">PERFORMANCE LAB // WEEKLY BLUEPRINT</div>
         </div>
         <div class="athlete-info">
           <div class="athlete-name">${athleteName.toUpperCase()}</div>
