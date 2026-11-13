@@ -92,3 +92,17 @@ export const distributeWeeksToPhases = (numWeeks) => {
   }
   return [base, strength, power, peak];
 };
+
+/**
+ * Load calculator classes. The original calculator only knew 'power' (CNS) and 'strength'
+ * (structural), so plyometric / speed / isometric and all the new categories counted as 0.
+ * 'power' and 'strength' keep their exact original behavior.
+ */
+export const LOAD_CLASS = {
+  plyometric: 'power', speed: 'power',
+  elasticity_plyo: 'power', rofd_ballistics: 'power', sprint_speed: 'power',
+  isometric: 'strength',
+  max_strength_lower: 'strength', max_strength_upper: 'strength', isometric_tendon: 'strength',
+};
+/** For time-based work (holds, timed sets) count sets, not seconds/minutes. */
+export const TIME_UNITS = new Set(['sec', 'secs', 's', 'seconds', 'min', 'mins', 'minutes']);

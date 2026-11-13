@@ -16,7 +16,7 @@ import { supabase } from '../../supabaseClient';
 import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY } from '../../data/constants.js';
 
 import { PHASE_COLORS, EXERCISE_TYPE_DOTS } from '../../data/categoryColors.js';
-import { DAYS_OF_WEEK, JS_DAYS, getSupersetProps, getBezierPath, distributeWeeksToPhases } from './plannerUtils.js';
+import { DAYS_OF_WEEK, JS_DAYS, getSupersetProps, getBezierPath, distributeWeeksToPhases, LOAD_CLASS, TIME_UNITS } from './plannerUtils.js';
 import { useToast } from './hooks/useToast.js';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { useOfflineSync } from './hooks/useOfflineSync.js';
@@ -995,7 +995,9 @@ export default function WeeklyPlanner({ onLogout }) {
     let totalMeters = 0;
     
     dayDrills.forEach(drill => { 
-      const type = (drill.type || '').toLowerCase();
+      const rawType = (drill.type || '').toLowerCase();
+      const type = LOAD_CLASS[rawType] || rawType;
+      const isMappedType = rawType in LOAD_CLASS;
       const unit = (drill.unit || '').toLowerCase();
       const intensity = parseInt(drill.percentage) || 0; 
 
@@ -1025,6 +1027,7 @@ export default function WeeklyPlanner({ onLogout }) {
         let s = parseInt(String(drill.sets).replace(/\D/g,'')) || 0;
         let r = parseInt(String(drill.reps).replace(/\D/g,'')) || 0;
         if (s > 0 && r === 0) r = 1; if (r > 0 && s === 0) s = 1;
+        if (isMappedType && TIME_UNITS.has(unit)) r = 1;
         let repsMultiplier = s * r;
 
         if (type === 'power' && unit === 'jumps') jumpsVolume += repsMultiplier;
