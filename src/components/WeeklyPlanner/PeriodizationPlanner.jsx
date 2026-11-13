@@ -111,13 +111,13 @@ const PREDEFINED_PHASES = [
 export default function PeriodizationPlanner({
   athlete, onClose, handleToast, programs, refreshDeploymentsCallback,
   selectedBlockId, setSelectedBlockId,
-  isEditingBlock, setIsEditingBlock,
-  activeBlockPhaseIndex, setActiveBlockPhaseIndex,
-  activeBlockWeekIndex, setActiveBlockWeekIndex,
+  setIsEditingBlock,
+  setActiveBlockPhaseIndex,
+  setActiveBlockWeekIndex,
   blockData, setBlockData,
   athletes = []
 }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const [blockTemplates, setBlockTemplates] = useState([]);
   
   const [activeMesoPhaseIdx, setActiveMesoPhaseIdx] = useState(null);
@@ -1217,9 +1217,6 @@ export default function PeriodizationPlanner({
                           {(blockData.phases || []).map((phase, pIdx) => {
                             const themeColor = PHASE_COLORS[pIdx] || PHASE_COLORS[0];
                             const weeksCount = phase.durationWeeks || 0;
-                            const loadWeeks = (phase.weeks || []).filter(w => w.type === 'Load').length;
-                            const deloadWeeks = (phase.weeks || []).filter(w => w.type === 'Deload').length;
-                            const testWeeks = (phase.weeks || []).filter(w => w.type === 'Test').length;
 
                             return (
                               <div 
@@ -1291,7 +1288,6 @@ export default function PeriodizationPlanner({
                       <div className="space-y-4">
                         {(() => {
                           const phase = blockData.phases?.[activeMesoPhaseIdx];
-                          const themeColor = PHASE_COLORS[activeMesoPhaseIdx] || PHASE_COLORS[0];
                           return (
                             <>
                               <div className="flex justify-between items-center">

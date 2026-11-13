@@ -13,7 +13,7 @@ import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 import { supabase } from '../../supabaseClient';
 // PDF / print generators (jsPDF etc.) are imported only when used.
 
-import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY, getUnifiedCategory } from '../../data/constants.js';
+import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY } from '../../data/constants.js';
 
 import { PHASE_COLORS, EXERCISE_TYPE_DOTS } from '../../data/categoryColors.js';
 const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -120,9 +120,9 @@ export default function WeeklyPlanner({ onLogout }) {
   const [currentView, setCurrentView] = useState('planner');
   const [dashboardSearch, setDashboardSearch] = useState('');
   const [selectedDashboardGroup, setSelectedDashboardGroup] = useState('All');
-  const [allWorkouts, setAllWorkouts] = useState([]);
-  const [allDeployments, setAllDeployments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allWorkouts] = useState([]);
+  const [allDeployments] = useState([]);
+  const [, setIsLoading] = useState(true);
   
   const [athletes, setAthletes] = useState([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState(() => localStorage.getItem('lastSelectedAthlete') || null);
@@ -131,7 +131,6 @@ export default function WeeklyPlanner({ onLogout }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [newAthleteData, setNewAthleteData] = useState({ name: '', birthYear: '', weight: '' });
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
-  const [athleteSearch, setAthleteSearch] = useState('');
   
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -188,7 +187,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [printMode, setPrintMode] = useState('landscape');
+  const [printMode] = useState('landscape');
   const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
   const [welcomePackModal, setWelcomePackModal] = useState({ isOpen: false, langMode: 'mix' });
   const [htmlViewerModal, setHtmlViewerModal] = useState({ isOpen: false, htmlContent: '', title: '' });
@@ -205,6 +204,8 @@ export default function WeeklyPlanner({ onLogout }) {
   });
   const [fourWeekData, setFourWeekData] = useState([]);
   const [deployments, setDeployments] = useState([]);
+
+  const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
 
   const syncOfflineQueue = async () => {
     const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
@@ -337,7 +338,6 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
 
   useEffect(() => {
     if (isDarkMode) document.documentElement.classList.add('dark');
@@ -1086,7 +1086,7 @@ export default function WeeklyPlanner({ onLogout }) {
   
   const handlePasteIntoDay = (targetDay) => {
     if (!clipboard) { handleToast('Clipboard is empty'); return; }
-    let newDrills = [];
+    let newDrills;
     if (clipboard.type === 'exercise') newDrills = [{ ...clipboard.data, id: `w-${Date.now()}-${Math.random()}` }]; 
     else if (clipboard.type === 'day') newDrills = clipboard.data.map((d, i) => ({ ...d, id: `w-${Date.now()}-${i}` })); 
     else { handleToast('Use side menu interface to paste a whole week block'); return; }
@@ -1349,7 +1349,6 @@ export default function WeeklyPlanner({ onLogout }) {
       color: PHASE_COLORS[colorIndex].hex
     }]);
     fetchDeployments(selectedAthleteId);
-    fetchWorkoutsAndDeployments();
 
     handleToast(`Meso-Block "${program.program_name}" deployed successfully!`);
   };
@@ -2294,7 +2293,7 @@ export default function WeeklyPlanner({ onLogout }) {
       },
     });
   };
-  const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
+  const handleEditTemplate = () => { handleToast('Drag to timeline to alter.'); };
   
   const handleSaveLibraryExercise = async () => { 
     if(!addExerciseModal.title.trim()) return; 

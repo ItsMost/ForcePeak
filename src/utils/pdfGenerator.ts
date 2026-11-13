@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- schedule/drill/athlete objects are free-form JSON from Supabase */
 import { jsPDF } from 'jspdf';
 
 export interface WeeklyPDFOptions {
@@ -445,7 +446,7 @@ export async function generateWeeklyPDF({
           doc.text(safeTxt(drill.sets) || '-', margin + 104, dataY, { align: 'center' });
 
           // Reps / Distance formatting
-          let repVal = isMeters ? safeTxt(drill.distance) : safeTxt(drill.reps);
+          const repVal = isMeters ? safeTxt(drill.distance) : safeTxt(drill.reps);
           let unitStr = '';
           if (drill.unit) {
             const u = drill.unit.toLowerCase();

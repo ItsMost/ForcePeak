@@ -17,8 +17,6 @@ export default function TimelineCard({
   onEdit, onDelete, onCopy, onMoveUp, onMoveDown,
   onDragStart, onDragOver, onDrop,
   isSuperset = false,
-  isSupersetStart = false,
-  isSupersetMiddle = false,
   isSupersetEnd = false,
   supersetLabel = '',
   supersetGroup = ''
