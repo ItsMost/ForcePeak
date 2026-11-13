@@ -19,7 +19,8 @@ export default function TimelineCard({
   isSuperset = false,
   isSupersetEnd = false,
   supersetLabel = '',
-  supersetGroup = ''
+  supersetGroup = '',
+  restriction = null
 }) {
   const [showNotes, setShowNotes] = useState(false);
 
@@ -153,6 +154,15 @@ export default function TimelineCard({
         <div className="flex items-start justify-between gap-2 mb-1.5">
           <h4 className="text-[13.5px] md:text-[14px] font-bold text-slate-850 dark:text-slate-100 leading-snug">
             {drill.title || "Unnamed Exercise"}
+            {restriction && (
+              <span
+                className="mt-1 flex items-center gap-1 rounded-md bg-red-50 dark:bg-red-500/10 px-1.5 py-0.5 text-[10px] font-black text-red-600 dark:text-red-400 print:hidden"
+                title={restriction.note}
+                dir="auto"
+              >
+                ⚠ ممنوع: {restriction.note}
+              </span>
+            )}
           </h4>
 
           {/* Calculated / Prescribed Weight Capsule */}
