@@ -38,6 +38,13 @@ const TABLES = [
   'pf_attendance',
   'pf_payments',
   'pf_expenses',
+  // Coach tools (coach-only tables: need PF_COACH_PASSCODE in .env to be read)
+  'pf_test_results',
+  'pf_test_definitions',
+  'pf_session_logs',
+  'pf_events',
+  'pf_athlete_notes',
+  'pf_athlete_contacts',
 ];
 
 // ---------- env ----------
@@ -58,6 +65,14 @@ if (!url || !key) {
   process.exit(1);
 }
 const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+// Optional: log in as the coach so coach-only tables (pf_test_results, ...) are included.
+// Put PF_COACH_PASSCODE=<your passcode> in .env yourself (never commit it).
+if (process.env.PF_COACH_PASSCODE && !process.env.SUPABASE_BACKUP_KEY) {
+  const email = process.env.VITE_COACH_LOGIN_EMAIL || 'coach@peakforce.app';
+  const { error } = await supabase.auth.signInWithPassword({ email, password: process.env.PF_COACH_PASSCODE });
+  console.log(error ? `! coach login failed (${error.message}) — coach-only tables will be empty` : '✓ logged in as coach');
+}
 
 const args = process.argv.slice(2);
 const countsOnly = args.includes('--counts');

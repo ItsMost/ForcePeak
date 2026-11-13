@@ -20,6 +20,13 @@ import { DAYS_OF_WEEK, JS_DAYS, getSupersetProps, getBezierPath, distributeWeeks
 import { useToast } from './hooks/useToast.js';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { useOfflineSync } from './hooks/useOfflineSync.js';
+import { useCoachWeekData } from '../../features/coach/useCoachWeekData.js';
+import { restrictionFor as findRestriction, whatsappLink as whatsappLinkFor } from '../../features/coach/coachApi.js';
+import CoachBar from '../../features/coach/CoachBar.jsx';
+import DayCoachTools from '../../features/coach/DayCoachTools.jsx';
+const ProgressionModal = lazy(() => import('../../features/coach/ProgressionModal.jsx'));
+const AthleteToolsModal = lazy(() => import('../../features/coach/AthleteToolsModal.jsx'));
+const TodayPanel = lazy(() => import('../../features/coach/TodayPanel.jsx'));
 
 export default function WeeklyPlanner({ onLogout }) {
   const [isDarkMode, setIsDarkMode] = useDarkMode();
@@ -210,6 +217,29 @@ export default function WeeklyPlanner({ onLogout }) {
 
   const getDatesForWeek = () => { const dates = []; for (let i = 0; i < 7; i++) { const d = new Date(currentWeekStart); d.setDate(d.getDate() + i); dates.push(d); } return dates; };
   const weekDatesFull = getDatesForWeek();
+
+  // ---- Coach tools (new pf_* tables; read-only on existing data except explicit actions) ----
+  const coach = useCoachWeekData({ athlete: selectedAthlete, weekDatesFull, enabled: !isTemplateEditing && !!selectedAthleteId });
+  const [showCoachTools, setShowCoachTools] = useState(false);
+  const [showProgression, setShowProgression] = useState(false);
+  const [showToday, setShowToday] = useState(false);
+  const coachRestriction = (drill, dayIdx) => (!isTemplateEditing && coach.notes.length && weekDatesFull[dayIdx])
+    ? findRestriction(drill.title, coach.notes, getDbDateStr(weekDatesFull[dayIdx])) : null;
+  const PROFILE_CAMEL = { full_squat: 'fullSquat', front_squat: 'frontSquat', vertical_jump: 'verticalJump', squat_jump: 'squatJump', hang_clean: 'hangClean', power_clean: 'powerClean' };
+  const handleProfileFieldUpdated = (athleteId, field, value) => {
+    setAthletes(prev => prev.map(a => (a.id === athleteId ? { ...a, [field]: value, ...(PROFILE_CAMEL[field] ? { [PROFILE_CAMEL[field]]: value } : {}) } : a)));
+  };
+  const handleWhatsAppDay = () => {
+    if (!selectedAthlete) return;
+    const todayIdx = weekDatesFull.findIndex(d => d && getDbDateStr(d) === getDbDateStr(new Date()));
+    const idx = todayIdx >= 0 && (schedule[DAYS_OF_WEEK[todayIdx]] || []).length ? todayIdx : DAYS_OF_WEEK.findIndex(d => (schedule[d] || []).length);
+    if (idx < 0) { handleToast('مفيش تمرين في الأسبوع ده تبعته'); return; }
+    const day = DAYS_OF_WEEK[idx];
+    const dateLabel = weekDatesFull[idx].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+    const lines = (schedule[day] || []).map((d, i) => `${i + 1}) ${d.title}${d.sets ? ` — ${d.sets}×${d.reps || ''} ${d.unit || ''}`.trimEnd() : ''}${d.percentage ? ` @${d.percentage}%` : ''}${d.rest && d.rest !== '0' ? ` (rest ${d.rest})` : ''}`);
+    const text = [`PEAK FORCE · ${selectedAthlete.name}`, dateLabel, dayTitles[day] || '', '', ...lines].filter((x, i) => x || i === 3).join('\n');
+    window.open(whatsappLinkFor(coach.contact?.whatsapp, text), '_blank', 'noopener');
+  };
   const weekDates = weekDatesFull.map(d => d.getDate());
 
   const pushToHistory = (newSchedule, newTitles, newCompleted) => {
@@ -2791,6 +2821,13 @@ export default function WeeklyPlanner({ onLogout }) {
         onConfirm={deleteDialog.onConfirm || (async () => {})}
         onClose={closeDeleteDialog}
       />
+      {(showProgression || showCoachTools || showToday) && (
+        <Suspense fallback={null}>
+          <ProgressionModal open={showProgression} onClose={() => setShowProgression(false)} athlete={selectedAthlete} days={DAYS_OF_WEEK} schedule={schedule} dayTitles={dayTitles} weekDatesFull={weekDatesFull} onDone={handleToast} />
+          <AthleteToolsModal open={showCoachTools} onClose={() => setShowCoachTools(false)} athlete={selectedAthlete} coach={coach} onToast={handleToast} onProfileUpdated={handleProfileFieldUpdated} />
+          <TodayPanel open={showToday} onClose={() => setShowToday(false)} athletes={athletes} onSelectAthlete={(id) => { setSelectedAthleteId(id); localStorage.setItem('lastSelectedAthlete', id); }} />
+        </Suspense>
+      )}
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
       {showProfileModal && selectedAthlete && ( <Suspense fallback={null}><AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /></Suspense> )}
       {showPeriodizationPlanner && (
@@ -4333,6 +4370,18 @@ export default function WeeklyPlanner({ onLogout }) {
             )}
           </div>
 
+          {!isTemplateEditing && selectedAthlete && (
+            <CoachBar
+              coach={coach}
+              days={DAYS_OF_WEEK}
+              schedule={schedule}
+              dayTitles={dayTitles}
+              onOpenTools={() => setShowCoachTools(true)}
+              onOpenProgression={() => setShowProgression(true)}
+              onOpenToday={() => setShowToday(true)}
+              onWhatsApp={handleWhatsAppDay}
+            />
+          )}
           {/* Desktop/Print Grid Layout */}
           <div className={`${isMobileView ? 'hidden' : 'hidden md:grid print:grid'} p-2 md:p-4 gap-2 md:gap-4 print-grid-container grid-cols-7 w-full min-w-[1320px] print:min-w-0`}>
             {DAYS_OF_WEEK.map((day, index) => {
@@ -4399,6 +4448,9 @@ export default function WeeklyPlanner({ onLogout }) {
                       </div>
                     )}
                   </div>
+                  {!isTemplateEditing && weekDatesFull[index] && (
+                    <DayCoachTools coach={coach} dateStr={getDbDateStr(weekDatesFull[index])} title={dayTitles[day] || ''} onChangeTitle={(t) => handleDayTitleChange(day, t)} readOnly={isPreviewMode} compact />
+                  )}
                 </div>
 
                 <div className={`flex-1 px-1 md:px-2 pb-6 ${draggedItem && draggedItem.source !== 'library' && draggedItem.day !== day ? 'bg-slate-100/50 dark:bg-slate-800/30 border-dashed border border-slate-200 rounded-xl' : ''}`} onDragOver={handleDragOver} onDrop={(e) => handleDrop(e, day)}>
@@ -4413,6 +4465,7 @@ export default function WeeklyPlanner({ onLogout }) {
                         isLast={drillIndex === dayDrills.length - 1} 
                         isPreviewMode={isPreviewMode} 
                         athlete={selectedAthlete} 
+                        restriction={coachRestriction(drill, index)}
                         onEdit={handleEditExerciseBtn} 
                         onDelete={handleDeleteExercise} 
                         onCopy={handleCopyExercise} 
@@ -4632,6 +4685,9 @@ export default function WeeklyPlanner({ onLogout }) {
                         readOnly={isPreviewMode}
                       />
                     </div>
+                    {!isTemplateEditing && weekDatesFull[index] && (
+                      <DayCoachTools coach={coach} dateStr={getDbDateStr(weekDatesFull[index])} title={dayTitles[day] || ''} onChangeTitle={(t) => handleDayTitleChange(day, t)} readOnly={isPreviewMode} compact />
+                    )}
                   </div>
 
                   {/* Drills List */}
@@ -4654,6 +4710,7 @@ export default function WeeklyPlanner({ onLogout }) {
                             isLast={drillIndex === dayDrills.length - 1} 
                             isPreviewMode={isPreviewMode} 
                             athlete={selectedAthlete} 
+                            restriction={coachRestriction(drill, index)}
                             onEdit={handleEditExerciseBtn} 
                             onDelete={handleDeleteExercise} 
                             onCopy={handleCopyExercise} 

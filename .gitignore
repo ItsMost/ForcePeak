@@ -31,3 +31,4 @@ dist-ssr
 !.env.example
 backup/*
 !backup/export.mjs
+!backup/weekly-backup.ps1
