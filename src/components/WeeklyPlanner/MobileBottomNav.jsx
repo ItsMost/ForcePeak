@@ -16,7 +16,6 @@ export default function MobileBottomNav({
   isFourWeekView, onToggleFourWeekView,
   isPreviewMode, setIsPreviewMode,
   isEditingBlock, onDeployBlock,
-  selectedAthlete
 }) {
   const [showActionsSheet, setShowActionsSheet] = useState(false);
 

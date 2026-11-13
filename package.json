@@ -1,18 +1,18 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "peak-force",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backup": "node backup/export.mjs",
+    "backup:counts": "node backup/export.mjs --counts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.105.4",
-    "dexie": "^4.0.10",
-    "dexie-react-hooks": "^1.1.7",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.14.0",
     "react": "^19.2.6",

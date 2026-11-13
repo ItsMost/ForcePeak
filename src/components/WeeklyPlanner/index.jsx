@@ -1,129 +1,35 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback, lazy, Suspense } from 'react';
 import { Check, AlertTriangle, BookmarkPlus, Plus, Sparkles, Trash, Trash2, Percent, UserPlus, X, Calendar, Calendar as CalendarIcon, Loader2, Copy, ClipboardPaste, Undo2, Redo2, Save, Edit2, BarChart3, Activity, Play, ChevronLeft, ChevronRight, ChevronDown, User, Smartphone, Monitor, Moon, Sun, Library, Search, Printer, FileText, Layout, Layers, Zap } from 'lucide-react';
 
 import Header from './Header.jsx';
 import Sidebar from './Sidebar.jsx';
 import TimelineCard from './TimelineCard.jsx';
-import ExerciseLibrary from './ExerciseLibrary.jsx';
-import AthleteProfileModal from './AthleteProfileModal.jsx';
-import PeriodizationPlanner from './PeriodizationPlanner.jsx';
+// Heavy screens load on demand (smaller first load).
+const ExerciseLibrary = lazy(() => import('./ExerciseLibrary.jsx'));
+const AthleteProfileModal = lazy(() => import('./AthleteProfileModal.jsx'));
+const PeriodizationPlanner = lazy(() => import('./PeriodizationPlanner.jsx'));
 import MobileBottomNav from './MobileBottomNav.jsx';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 import { supabase } from '../../supabaseClient';
-import { generateWeeklyPDF } from '../../utils/pdfGenerator';
-import { generateWeeklyHTMLPrint } from './htmlPrinter.js';
-import { generateWelcomePackHTML } from './welcomePackPrinter.js';
+// PDF / print generators (jsPDF etc.) are imported only when used.
 
-import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY, getUnifiedCategory } from '../../data/constants.js';
+import { ELITE_EXERCISE_CATEGORIES, EXERCISE_CATEGORIES, SUBCATEGORIES, INITIAL_LIBRARY } from '../../data/constants.js';
 
 import { PHASE_COLORS, EXERCISE_TYPE_DOTS } from '../../data/categoryColors.js';
-const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-const getSupersetProps = (drills, index) => {
-  const drill = drills[index];
-  if (!drill || !drill.superset) {
-    return {
-      isSuperset: false,
-      isSupersetStart: false,
-      isSupersetMiddle: false,
-      isSupersetEnd: false,
-      supersetLabel: '',
-      supersetGroup: ''
-    };
-  }
-
-  const group = drill.superset; // "A", "B", "C", "D"
-  const prevDrill = drills[index - 1];
-  const isPrevSame = prevDrill && prevDrill.superset === group;
-  const nextDrill = drills[index + 1];
-  const isNextSame = nextDrill && nextDrill.superset === group;
-
-  let startIndex = index;
-  while (startIndex > 0 && drills[startIndex - 1].superset === group) {
-    startIndex--;
-  }
-  
-  const position = index - startIndex + 1;
-  const label = `${group}${position}`;
-  const hasAdjacentSame = isPrevSame || isNextSame;
-
-  return {
-    isSuperset: hasAdjacentSame,
-    isSupersetStart: hasAdjacentSame && !isPrevSame,
-    isSupersetMiddle: hasAdjacentSame && isPrevSame && isNextSame,
-    isSupersetEnd: hasAdjacentSame && isPrevSame && !isNextSame,
-    supersetLabel: label,
-    supersetGroup: group
-  };
-};
-
-const getBezierPath = (points) => {
-  if (points.length < 2) return '';
-  let path = `M ${points[0].x} ${points[0].y}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i];
-    const p1 = points[i + 1];
-    const cpX1 = p0.x + (p1.x - p0.x) / 2;
-    const cpY1 = p0.y;
-    const cpX2 = p0.x + (p1.x - p0.x) / 2;
-    const cpY2 = p1.y;
-    path += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${p1.x} ${p1.y}`;
-  }
-  return path;
-};
-
-const distributeWeeksToPhases = (numWeeks) => {
-  if (numWeeks <= 4) {
-    return [
-      Math.max(0, numWeeks >= 1 ? 1 : 0),
-      Math.max(0, numWeeks >= 2 ? 1 : 0),
-      Math.max(0, numWeeks >= 3 ? 1 : 0),
-      Math.max(0, numWeeks >= 4 ? 1 : 0)
-    ];
-  }
-  let base = Math.round(numWeeks * 0.40);
-  let strength = Math.round(numWeeks * 0.27);
-  let power = Math.round(numWeeks * 0.20);
-  let peak = numWeeks - (base + strength + power);
-  
-  if (base <= 0) base = 1;
-  if (strength <= 0) strength = 1;
-  if (power <= 0) power = 1;
-  if (peak <= 0) peak = 1;
-  
-  let currentSum = base + strength + power + peak;
-  while (currentSum !== numWeeks) {
-    if (currentSum < numWeeks) {
-      base++;
-      currentSum++;
-    } else {
-      if (base > 1) base--;
-      else if (strength > 1) strength--;
-      else if (power > 1) power--;
-      else if (peak > 1) peak--;
-      currentSum--;
-    }
-  }
-  return [base, strength, power, peak];
-};
+import { DAYS_OF_WEEK, JS_DAYS, getSupersetProps, getBezierPath, distributeWeeksToPhases } from './plannerUtils.js';
+import { useToast } from './hooks/useToast.js';
+import { useDarkMode } from './hooks/useDarkMode.js';
+import { useOfflineSync } from './hooks/useOfflineSync.js';
 
 export default function WeeklyPlanner({ onLogout }) {
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    const savedTheme = localStorage.getItem('forcepeak_theme');
-    if (savedTheme !== null) return savedTheme === 'dark';
-    if (typeof window !== 'undefined' && window.innerWidth < 768) {
-      return true;
-    }
-    return false;
-  });
+  const [isDarkMode, setIsDarkMode] = useDarkMode();
   const [isMobileView, setIsMobileView] = useState(false);
   const [currentView, setCurrentView] = useState('planner');
   const [dashboardSearch, setDashboardSearch] = useState('');
   const [selectedDashboardGroup, setSelectedDashboardGroup] = useState('All');
-  const [allWorkouts, setAllWorkouts] = useState([]);
-  const [allDeployments, setAllDeployments] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [allWorkouts] = useState([]);
+  const [allDeployments] = useState([]);
+  const [, setIsLoading] = useState(true);
   
   const [athletes, setAthletes] = useState([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState(() => localStorage.getItem('lastSelectedAthlete') || null);
@@ -132,7 +38,6 @@ export default function WeeklyPlanner({ onLogout }) {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [newAthleteData, setNewAthleteData] = useState({ name: '', birthYear: '', weight: '' });
   const [isAthleteDropdownOpen, setIsAthleteDropdownOpen] = useState(false);
-  const [athleteSearch, setAthleteSearch] = useState('');
   
   const [currentDate, setCurrentDate] = useState(new Date());
   
@@ -151,7 +56,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [history, setHistory] = useState([]); 
   const [historyIndex, setHistoryIndex] = useState(-1); 
 
-  const [toastMessage, setToastMessage] = useState(null);
+  const { toastMessage, handleToast } = useToast();
   const [deleteDialog, setDeleteDialog] = useState({ open: false });
   const [showAddAthleteModal, setShowAddAthleteModal] = useState(false);
   const [showMonthCalendar, setShowMonthCalendar] = useState(false);
@@ -189,7 +94,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [addExerciseModal, setAddExerciseModal] = useState({ isOpen: false, id: null, title: '', details: '', type: 'strength', subcategory: '', percentage: '', bwRatio: '', weight: '', weightUnit: 'kg', sets: '', reps: '', rest: '', unit: 'reps', distance: '', video_url: '', tempo: '', focus: '', meanVelocity: '', peakVelocity: '', velocityLoss: '' });
   const [dayDrillModal, setDayDrillModal] = useState({ isOpen: false, day: null, drill: null, isNew: false });
   const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [printMode, setPrintMode] = useState('landscape');
+  const [printMode] = useState('landscape');
   const [printStudioModal, setPrintStudioModal] = useState({ isOpen: false, orientation: 'landscape', theme: 'crimson' });
   const [welcomePackModal, setWelcomePackModal] = useState({ isOpen: false, langMode: 'mix' });
   const [htmlViewerModal, setHtmlViewerModal] = useState({ isOpen: false, htmlContent: '', title: '' });
@@ -198,8 +103,6 @@ export default function WeeklyPlanner({ onLogout }) {
   const [bulkSaveModal, setBulkSaveModal] = useState({ isOpen: false, startDate: '', endDate: '', programName: '', tags: '', saveType: 'meso', deficitProtocol: 'FDP', level: 'Beginner' });
   const [createMacroModal, setCreateMacroModal] = useState({ isOpen: false, name: '', tags: '', blocksChain: [{ blockId: '', blockName: '', weeksCount: 0 }] });
   const [macroConfirmModal, setMacroConfirmModal] = useState({ isOpen: false, macro: null, startDate: '' });
-  const [isOnline, setIsOnline] = useState(() => typeof navigator !== 'undefined' ? navigator.onLine : true);
-  const [syncStatus, setSyncStatus] = useState('synced');
   const [activeMobileDay, setActiveMobileDay] = useState(() => {
     const todayName = JS_DAYS[new Date().getDay()];
     return DAYS_OF_WEEK.includes(todayName) ? todayName : 'Saturday';
@@ -207,49 +110,7 @@ export default function WeeklyPlanner({ onLogout }) {
   const [fourWeekData, setFourWeekData] = useState([]);
   const [deployments, setDeployments] = useState([]);
 
-  const syncOfflineQueue = async () => {
-    const queue = JSON.parse(localStorage.getItem('agilitylap_offline_queue') || '[]');
-    if (queue.length === 0) {
-      setSyncStatus('synced');
-      return;
-    }
-    setSyncStatus('syncing');
-    let hasError = false;
-    for (const item of queue) {
-      try {
-        const { error } = await supabase.from('agilitylap_workouts').upsert({
-          athlete_id: item.athlete_id,
-          workout_date: item.workout_date,
-          workout_title: item.workout_title,
-          drills: item.drills,
-          is_completed: item.is_completed || false
-        }, { onConflict: 'athlete_id,workout_date' });
-        if (error) hasError = true;
-      } catch (err) {
-        hasError = true;
-      }
-    }
-    if (!hasError) {
-      localStorage.setItem('agilitylap_offline_queue', '[]');
-      setSyncStatus('synced');
-      handleToast('Offline changes synced successfully!');
-    } else {
-      setSyncStatus('offline');
-    }
-  };
-
-  useEffect(() => {
-    const handleOnline = () => { setIsOnline(true); syncOfflineQueue(); };
-    const handleOffline = () => { setIsOnline(false); setSyncStatus('offline'); };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    if (navigator.onLine) syncOfflineQueue();
-    else setSyncStatus('offline');
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
+  const { isOnline, syncStatus, setSyncStatus } = useOfflineSync(handleToast);
 
   const handleExportPDF = () => {
     setPrintStudioModal({
@@ -263,6 +124,7 @@ export default function WeeklyPlanner({ onLogout }) {
     setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
     setIsLoading(true);
     try {
+      const { generateWeeklyPDF } = await import('../../utils/pdfGenerator');
       await generateWeeklyPDF({
         schedule,
         dayTitles,
@@ -282,9 +144,10 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handlePrintStudioHTML = () => {
+  const handlePrintStudioHTML = async () => {
     setPrintStudioModal(prev => ({ ...prev, isOpen: false }));
     try {
+      const { generateWeeklyHTMLPrint } = await import('./htmlPrinter.js');
       const htmlContent = generateWeeklyHTMLPrint({
         schedule,
         dayTitles,
@@ -308,9 +171,10 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handlePrintWelcomePack = (lang = 'mix') => {
+  const handlePrintWelcomePack = async (lang = 'mix') => {
     setWelcomePackModal({ isOpen: false, langMode: 'mix' });
     try {
+      const { generateWelcomePackHTML } = await import('./welcomePackPrinter.js');
       const htmlContent = generateWelcomePackHTML({
         schedule,
         dayTitles,
@@ -335,13 +199,7 @@ export default function WeeklyPlanner({ onLogout }) {
     }
   };
 
-  const handleToast = (msg) => { setToastMessage(msg); setTimeout(() => setToastMessage(null), 3000); };
 
-  useEffect(() => {
-    if (isDarkMode) document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-    localStorage.setItem('forcepeak_theme', isDarkMode ? 'dark' : 'light');
-  }, [isDarkMode]);
 
   const getDbDateStr = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   const getStartOfWeek = (date) => { const d = new Date(date); const dayOffset = (d.getDay() + 1) % 7; d.setDate(d.getDate() - dayOffset); return d; };
@@ -1084,7 +942,7 @@ export default function WeeklyPlanner({ onLogout }) {
   
   const handlePasteIntoDay = (targetDay) => {
     if (!clipboard) { handleToast('Clipboard is empty'); return; }
-    let newDrills = [];
+    let newDrills;
     if (clipboard.type === 'exercise') newDrills = [{ ...clipboard.data, id: `w-${Date.now()}-${Math.random()}` }]; 
     else if (clipboard.type === 'day') newDrills = clipboard.data.map((d, i) => ({ ...d, id: `w-${Date.now()}-${i}` })); 
     else { handleToast('Use side menu interface to paste a whole week block'); return; }
@@ -1347,7 +1205,6 @@ export default function WeeklyPlanner({ onLogout }) {
       color: PHASE_COLORS[colorIndex].hex
     }]);
     fetchDeployments(selectedAthleteId);
-    fetchWorkoutsAndDeployments();
 
     handleToast(`Meso-Block "${program.program_name}" deployed successfully!`);
   };
@@ -2292,7 +2149,7 @@ export default function WeeklyPlanner({ onLogout }) {
       },
     });
   };
-  const handleEditTemplate = (tpl) => { handleToast('Drag to timeline to alter.'); };
+  const handleEditTemplate = () => { handleToast('Drag to timeline to alter.'); };
   
   const handleSaveLibraryExercise = async () => { 
     if(!addExerciseModal.title.trim()) return; 
@@ -2935,8 +2792,9 @@ export default function WeeklyPlanner({ onLogout }) {
         onClose={closeDeleteDialog}
       />
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
-      {showProfileModal && selectedAthlete && ( <AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /> )}
+      {showProfileModal && selectedAthlete && ( <Suspense fallback={null}><AthleteProfileModal athlete={selectedAthlete} onClose={() => setShowProfileModal(false)} onSave={handleSaveProfile} onDelete={handleDeleteAthlete} /></Suspense> )}
       {showPeriodizationPlanner && (
+        <Suspense fallback={null}>
         <PeriodizationPlanner
           athlete={selectedAthlete}
           onClose={() => setShowPeriodizationPlanner(false)}
@@ -2958,6 +2816,7 @@ export default function WeeklyPlanner({ onLogout }) {
           setBlockData={setBlockData}
           athletes={athletes}
         />
+        </Suspense>
       )}
 
       {showMonthCalendar && (
@@ -4891,7 +4750,7 @@ export default function WeeklyPlanner({ onLogout }) {
 
         <div className={`fixed inset-0 pointer-events-none z-40 transition-all duration-300 ${showLibrary ? 'md:w-96' : 'w-0'}`}>
            <div className="h-full w-full relative" onDragOver={handleDragOver} onDrop={handleLibraryDropzone}>
-             <ExerciseLibrary 
+             <Suspense fallback={null}><ExerciseLibrary 
                showLibrary={showLibrary} 
                setShowLibrary={setShowLibrary} 
                library={library} 
@@ -4921,7 +4780,7 @@ export default function WeeklyPlanner({ onLogout }) {
                  handleToast(`Editing Macro-Cycle: ${macro.program_name}`);
                }}
                onApplyExercise={handleApplyLibraryExercise}
-             />
+             /></Suspense>
            </div>
         </div>
       </div>

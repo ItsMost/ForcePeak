@@ -18,10 +18,9 @@ export function generateWelcomePackHTML({
   dayTitles, 
   weekDatesFull, 
   selectedAthlete, 
-  calculateDayVolume,
+  // calculateDayVolume, onToast are still passed by callers but not needed here
   langMode = 'mix', // 'mix' | 'arabic' | 'english'
-  supabase,
-  onToast
+  supabase
 }) {
   const esc = (str) => {
     if (str === null || str === undefined) return '';
@@ -35,7 +34,6 @@ export function generateWelcomePackHTML({
   const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
   const athleteName = selectedAthlete ? selectedAthlete.name : 'Elite Athlete';
   const dateStart = weekDatesFull[0] ? new Date(weekDatesFull[0]).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
-  const dateEnd = weekDatesFull[6] ? new Date(weekDatesFull[6]).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
   // Theme configuration (Gritty dark slate & energetic athletic orange)
   const T = {
@@ -203,7 +201,7 @@ export function generateWelcomePackHTML({
       const catColor = getCategoryColor(drill.type || 'physical');
       
       // Determine unit formatting: reps for counts, sec for timer holds
-      let repsUnitStr = '';
+      let repsUnitStr;
       const drillUnit = typeof drill.unit === 'string' ? drill.unit.toLowerCase() : '';
       if (drillUnit === 'sec' || drillUnit === 'seconds' || drillUnit === 's') {
         repsUnitStr = 'sec';
@@ -1042,7 +1040,7 @@ export function generateWelcomePackHTML({
     supabase.storage
       .from('welcome-packs')
       .upload(filename, blob, { contentType: 'text/html', cacheControl: '3600' })
-      .then(({ data, error }) => {
+      .then(({ error }) => {
         if (error) {
           console.error('Cloud backup note:', error.message);
         } else {

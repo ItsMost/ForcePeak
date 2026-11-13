@@ -7,8 +7,7 @@ import { supabase } from '../../supabaseClient';
 import ConfirmDeleteModal from './ConfirmDeleteModal.jsx';
 
 
-const DAYS_OF_WEEK = ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-const JS_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+import { DAYS_OF_WEEK } from './plannerUtils.js';
 
 const PHASE_COLORS = [
   { hex: '#3b82f6', border: 'border-blue-500', bg: 'bg-blue-50/10 dark:bg-blue-500/10', text: 'text-blue-500', label: 'Blue (Base)' },
@@ -111,13 +110,13 @@ const PREDEFINED_PHASES = [
 export default function PeriodizationPlanner({
   athlete, onClose, handleToast, programs, refreshDeploymentsCallback,
   selectedBlockId, setSelectedBlockId,
-  isEditingBlock, setIsEditingBlock,
-  activeBlockPhaseIndex, setActiveBlockPhaseIndex,
-  activeBlockWeekIndex, setActiveBlockWeekIndex,
+  setIsEditingBlock,
+  setActiveBlockPhaseIndex,
+  setActiveBlockWeekIndex,
   blockData, setBlockData,
   athletes = []
 }) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const [blockTemplates, setBlockTemplates] = useState([]);
   
   const [activeMesoPhaseIdx, setActiveMesoPhaseIdx] = useState(null);
@@ -1217,9 +1216,6 @@ export default function PeriodizationPlanner({
                           {(blockData.phases || []).map((phase, pIdx) => {
                             const themeColor = PHASE_COLORS[pIdx] || PHASE_COLORS[0];
                             const weeksCount = phase.durationWeeks || 0;
-                            const loadWeeks = (phase.weeks || []).filter(w => w.type === 'Load').length;
-                            const deloadWeeks = (phase.weeks || []).filter(w => w.type === 'Deload').length;
-                            const testWeeks = (phase.weeks || []).filter(w => w.type === 'Test').length;
 
                             return (
                               <div 
@@ -1291,7 +1287,6 @@ export default function PeriodizationPlanner({
                       <div className="space-y-4">
                         {(() => {
                           const phase = blockData.phases?.[activeMesoPhaseIdx];
-                          const themeColor = PHASE_COLORS[activeMesoPhaseIdx] || PHASE_COLORS[0];
                           return (
                             <>
                               <div className="flex justify-between items-center">

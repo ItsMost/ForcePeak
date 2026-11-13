@@ -10,23 +10,25 @@ import { AlertTriangle, Loader2, Trash2 } from 'lucide-react';
  *  - requireName:  when true, the Delete button stays disabled until itemName is typed exactly
  *  - onConfirm:    async () => void  (the real delete)
  *  - onClose:      () => void
+ *
+ * The dialog body only mounts while open, so its typed text / busy state start fresh every time.
  */
-export default function ConfirmDeleteModal({ open, title, message, itemName, requireName = false, onConfirm, onClose }) {
+export default function ConfirmDeleteModal({ open, ...props }) {
+  if (!open) return null;
+  return <ConfirmDeleteDialog {...props} />;
+}
+
+function ConfirmDeleteDialog({ title, message, itemName, requireName = false, onConfirm, onClose }) {
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (!open) return;
-    setTyped('');
-    setBusy(false);
     const t = setTimeout(() => inputRef.current?.focus(), 50);
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', onKey);
     return () => { clearTimeout(t); window.removeEventListener('keydown', onKey); };
-  }, [open, onClose]);
-
-  if (!open) return null;
+  }, [onClose]);
 
   const expected = (itemName || '').trim();
   const nameOk = !requireName || (expected.length > 0 && typed.trim() === expected);
