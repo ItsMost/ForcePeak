@@ -21,12 +21,13 @@ import { useToast } from './hooks/useToast.js';
 import { useDarkMode } from './hooks/useDarkMode.js';
 import { useOfflineSync } from './hooks/useOfflineSync.js';
 import { useCoachWeekData } from '../../features/coach/useCoachWeekData.js';
-import { restrictionFor as findRestriction, whatsappLink as whatsappLinkFor } from '../../features/coach/coachApi.js';
+import { restrictionFor as findRestriction } from '../../features/coach/coachApi.js';
 import CoachBar from '../../features/coach/CoachBar.jsx';
 import DayCoachTools from '../../features/coach/DayCoachTools.jsx';
 const ProgressionModal = lazy(() => import('../../features/coach/ProgressionModal.jsx'));
 const AthleteToolsModal = lazy(() => import('../../features/coach/AthleteToolsModal.jsx'));
 const TodayPanel = lazy(() => import('../../features/coach/TodayPanel.jsx'));
+const SendWorkoutModal = lazy(() => import('../../features/coach/SendWorkoutModal.jsx'));
 
 export default function WeeklyPlanner({ onLogout }) {
   const [isDarkMode, setIsDarkMode] = useDarkMode();
@@ -229,17 +230,8 @@ export default function WeeklyPlanner({ onLogout }) {
   const handleProfileFieldUpdated = (athleteId, field, value) => {
     setAthletes(prev => prev.map(a => (a.id === athleteId ? { ...a, [field]: value, ...(PROFILE_CAMEL[field] ? { [PROFILE_CAMEL[field]]: value } : {}) } : a)));
   };
-  const handleWhatsAppDay = () => {
-    if (!selectedAthlete) return;
-    const todayIdx = weekDatesFull.findIndex(d => d && getDbDateStr(d) === getDbDateStr(new Date()));
-    const idx = todayIdx >= 0 && (schedule[DAYS_OF_WEEK[todayIdx]] || []).length ? todayIdx : DAYS_OF_WEEK.findIndex(d => (schedule[d] || []).length);
-    if (idx < 0) { handleToast('مفيش تمرين في الأسبوع ده تبعته'); return; }
-    const day = DAYS_OF_WEEK[idx];
-    const dateLabel = weekDatesFull[idx].toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-    const lines = (schedule[day] || []).map((d, i) => `${i + 1}) ${d.title}${d.sets ? ` — ${d.sets}×${d.reps || ''} ${d.unit || ''}`.trimEnd() : ''}${d.percentage ? ` @${d.percentage}%` : ''}${d.rest && d.rest !== '0' ? ` (rest ${d.rest})` : ''}`);
-    const text = [`PEAK FORCE · ${selectedAthlete.name}`, dateLabel, dayTitles[day] || '', '', ...lines].filter((x, i) => x || i === 3).join('\n');
-    window.open(whatsappLinkFor(coach.contact?.whatsapp, text), '_blank', 'noopener');
-  };
+  const [showSend, setShowSend] = useState(false);
+  const handleWhatsAppDay = () => { if (selectedAthlete) setShowSend(true); };
   const weekDates = weekDatesFull.map(d => d.getDate());
 
   const pushToHistory = (newSchedule, newTitles, newCompleted) => {
@@ -2824,11 +2816,12 @@ export default function WeeklyPlanner({ onLogout }) {
         onConfirm={deleteDialog.onConfirm || (async () => {})}
         onClose={closeDeleteDialog}
       />
-      {(showProgression || showCoachTools || showToday) && (
+      {(showProgression || showCoachTools || showToday || showSend) && (
         <Suspense fallback={null}>
           <ProgressionModal open={showProgression} onClose={() => setShowProgression(false)} athlete={selectedAthlete} days={DAYS_OF_WEEK} schedule={schedule} dayTitles={dayTitles} weekDatesFull={weekDatesFull} onDone={handleToast} />
           <AthleteToolsModal open={showCoachTools} onClose={() => setShowCoachTools(false)} athlete={selectedAthlete} coach={coach} onToast={handleToast} onProfileUpdated={handleProfileFieldUpdated} />
           <TodayPanel open={showToday} onClose={() => setShowToday(false)} athletes={athletes} onSelectAthlete={(id) => { setSelectedAthleteId(id); localStorage.setItem('lastSelectedAthlete', id); }} />
+          {showSend && <SendWorkoutModal open onClose={() => setShowSend(false)} athlete={selectedAthlete} whatsapp={coach.contact?.whatsapp} days={DAYS_OF_WEEK} schedule={schedule} dayTitles={dayTitles} weekDatesFull={weekDatesFull} onToast={handleToast} />}
         </Suspense>
       )}
       {toastMessage && ( <div className="fixed bottom-20 md:bottom-6 right-6 bg-slate-800 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-[200] animate-[bounce_0.3s_ease-out] print:hidden"><Check className="w-5 h-5 text-green-400" /><span className="font-medium text-sm">{toastMessage}</span></div> )}
